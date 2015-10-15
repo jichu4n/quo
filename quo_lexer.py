@@ -106,6 +106,8 @@ class QuoLexer(object):
       'this': 'THIS',
   }
 
+  t_ignore_COMMENT = r'//[^\n]*'
+
   def t_IDENTIFIER(self, t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
     t.type = self._reserved_words.get(t.value, 'IDENTIFIER')
@@ -118,22 +120,83 @@ class QuoLexer(object):
     t.value = t.value[1:len(t.value) - 1]
     return t
 
-  t_GE = r'>='
-  t_GT = r'>'
-  t_LE = r'<='
-  t_LT = r'<'
-  t_NE = r'!='
-  t_EQ = r'=='
+  def t_GE(self, t):
+    r'>='
+    t.value = t.type
+    return t
+
+  def t_GT(self, t):
+    r'>'
+    t.value = t.type
+    return t
+
+  def t_LE(self, t):
+    r'<='
+    t.value = t.type
+    return t
+
+  def t_LT(self, t):
+    r'<'
+    t.value = t.type
+    return t
+
+  def t_NE(self, t):
+    r'!='
+    t.value = t.type
+    return t
+
+  def t_EQ(self, t):
+    r'=='
+    t.value = t.type
+    return t
+
   t_ASSIGN = r'='
-  t_ADD_EQ = r'\+='
-  t_SUB_EQ = r'-='
-  t_MUL_EQ = r'\*='
-  t_DIV_EQ = r'/='
-  t_ADD = r'\+'
-  t_SUB = r'-'
-  t_MUL = r'\*'
-  t_DIV = r'/'
-  t_MOD = r'%'
+
+  def t_ADD_EQ(self, t):
+    r'\+='
+    t.value = t.type
+    return t
+
+  def t_SUB_EQ(self, t):
+    r'-='
+    t.value = t.type
+    return t
+
+  def t_MUL_EQ(self, t):
+    r'\*='
+    t.value = t.type
+    return t
+
+  def t_DIV_EQ(self, t):
+    r'/='
+    t.value = t.type
+    return t
+
+  def t_ADD(self, t):
+    r'\+'
+    t.value = t.type
+    return t
+
+  def t_SUB(self, t):
+    r'-'
+    t.value = t.type
+    return t
+
+  def t_MUL(self, t):
+    r'\*'
+    t.value = t.type
+    return t
+
+  def t_DIV(self, t):
+    r'/(?!/)'
+    t.value = t.type
+    return t
+
+  def t_MOD(self, t):
+    r'%'
+    t.value = t.type
+    return t
+
   t_L_PAREN = r'\('
   t_R_PAREN = r'\)'
   t_L_BRACKET = r'\['
@@ -146,7 +209,6 @@ class QuoLexer(object):
   t_SEMICOLON = r';'
 
   t_ignore_WHITESPACE = r'[ \t]+'
-  t_ignore_COMMENT = r'//[^\n]*'
 
   def t_newline(self, t):
     r'\n+'

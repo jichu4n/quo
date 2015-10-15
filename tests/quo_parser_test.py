@@ -32,7 +32,7 @@ class QuoParserTest(unittest.TestCase):
     actual_ast_json = actual_ast.to_json()
     self.assertEqual(actual_ast_json, expected_ast_json)
 
-  def test_expr_1(self):
+  def test_primary(self):
     self.assert_ast_match('''a[b.foo[0]['hello']].bar''', 'expr', {
         'type': 'MemberExpr',
         'expr': {
@@ -114,4 +114,66 @@ class QuoParserTest(unittest.TestCase):
                 'arg_exprs': []
             },
         ],
+    })
+
+  def test_binary_arith(self):
+    self.assert_ast_match('a+b*c-d==e--f/g%-+-h', 'expr', {
+        'type': 'BinaryOpExpr',
+        'op': 'EQ',
+        'left_expr': {
+            'type': 'BinaryOpExpr',
+            'op': 'SUB',
+            'left_expr': {
+                'type': 'BinaryOpExpr',
+                'op': 'ADD',
+                'left_expr': {'type': 'VarExpr',
+                              'var': 'a'},
+                'right_expr': {
+                    'type': 'BinaryOpExpr',
+                    'op': 'MUL',
+                    'left_expr': {'type': 'VarExpr',
+                                  'var': 'b'},
+                    'right_expr': {'type': 'VarExpr',
+                                   'var': 'c'},
+                },
+            },
+            'right_expr': {'type': 'VarExpr',
+                           'var': 'd'},
+        },
+        'right_expr': {
+            'type': 'BinaryOpExpr',
+            'op': 'SUB',
+            'left_expr': {'type': 'VarExpr',
+                          'var': 'e'},
+            'right_expr': {
+                'type': 'BinaryOpExpr',
+                'op': 'MOD',
+                'left_expr': {
+                    'type': 'BinaryOpExpr',
+                    'op': 'DIV',
+                    'left_expr': {
+                        'type': 'UnaryOpExpr',
+                        'op': 'SUB',
+                        'expr': {'type': 'VarExpr',
+                                 'var': 'f'},
+                    },
+                    'right_expr': {'type': 'VarExpr',
+                                   'var': 'g'},
+                },
+                'right_expr': {
+                    'type': 'UnaryOpExpr',
+                    'op': 'SUB',
+                    'expr': {
+                        'type': 'UnaryOpExpr',
+                        'op': 'ADD',
+                        'expr': {
+                            'type': 'UnaryOpExpr',
+                            'op': 'SUB',
+                            'expr': {'type': 'VarExpr',
+                                     'var': 'h'},
+                        },
+                    },
+                },
+            },
+        },
     })

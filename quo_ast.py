@@ -37,7 +37,7 @@ class ConstantExpr(Expr):
     self.value = value
 
   def to_json(self):
-    return {'type': 'ConstantExpr', 'value': self.value, }
+    return {'type': 'ConstantExpr', 'value': self.value}
 
 
 class VarExpr(Expr):
@@ -47,7 +47,7 @@ class VarExpr(Expr):
     self.var = var
 
   def to_json(self):
-    return {'type': 'VarExpr', 'var': self.var, }
+    return {'type': 'VarExpr', 'var': self.var}
 
 
 class MemberExpr(Expr):
@@ -98,13 +98,30 @@ class CallExpr(Expr):
 class UnaryOpExpr(Expr):
   """A unary operation."""
 
-  def __init__(self, expr, op):
-    self.expr = expr
+  def __init__(self, op, expr):
     self.op = op
+    self.expr = expr
 
   def to_json(self):
     return {
         'type': 'UnaryOpExpr',
-        'expr': self.expr.to_json(),
         'op': self.op,
+        'expr': self.expr.to_json(),
+    }
+
+
+class BinaryOpExpr(Expr):
+  """A binary operation."""
+
+  def __init__(self, op, left_expr, right_expr):
+    self.op = op
+    self.left_expr = left_expr
+    self.right_expr = right_expr
+
+  def to_json(self):
+    return {
+        'type': 'BinaryOpExpr',
+        'op': self.op,
+        'left_expr': self.left_expr.to_json(),
+        'right_expr': self.right_expr.to_json(),
     }

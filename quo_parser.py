@@ -27,43 +27,63 @@ class QuoParser(object):
 
   tokens = quo_lexer.QuoLexer.tokens
 
-  def p_expr_1_constant(self, p):
-    '''expr_1 : STRING_CONSTANT
+  def p_primary_constant(self, p):
+    '''primary : STRING_CONSTANT
               | INTEGER_CONSTANT
     '''
     p[0] = quo_ast.ConstantExpr(p[1])
 
-  def p_expr_1_var(self, p):
-    '''expr_1 : IDENTIFIER'''
+  def p_primary_var(self, p):
+    '''primary : IDENTIFIER'''
     p[0] = quo_ast.VarExpr(p[1])
 
-  def p_expr_1_paren(self, p):
-    '''expr_1 : L_PAREN expr R_PAREN'''
+  def p_primary_paren(self, p):
+    '''primary : L_PAREN expr R_PAREN'''
     p[0] = p[2]
 
-  def p_expr_1_member(self, p):
-    '''expr_1 : expr_1 DOT IDENTIFIER'''
+  def p_primary_member(self, p):
+    '''primary : primary DOT IDENTIFIER'''
     p[0] = quo_ast.MemberExpr(p[1], p[3])
 
-  def p_expr_1_index(self, p):
-    '''expr_1 : expr_1 L_BRACKET expr R_BRACKET'''
+  def p_primary_index(self, p):
+    '''primary : primary L_BRACKET expr R_BRACKET'''
     p[0] = quo_ast.IndexExpr(p[1], p[3])
 
-  def p_expr_1_call(self, p):
-    '''expr_1 : expr_1 L_PAREN expr_list R_PAREN'''
+  def p_primary_call(self, p):
+    '''primary : primary L_PAREN expr_list R_PAREN'''
     p[0] = quo_ast.CallExpr(p[1], p[3])
 
-  def p_expr_2_expr_1(self, p):
-    '''expr_2 : expr_1'''
+  def p_unary_arith_primary(self, p):
+    '''unary_arith : primary'''
     p[0] = p[1]
 
-  def p_expr_2_unary(self, p):
-    '''expr_2 : ADD expr_2
-              | SUB expr_2'''
-    p[0] = quo_ast.UnaryOpExpr(p[2], p[1])
+  def p_unary_arith(self, p):
+    '''unary_arith : ADD unary_arith
+                   | SUB unary_arith
+    '''
+    p[0] = quo_ast.UnaryOpExpr(p[1], p[2])
+
+  def p_binary_arith_unary_arith(self, p):
+    '''binary_arith : unary_arith'''
+    p[0] = p[1]
+
+  def p_binary_arith(self, p):
+    '''binary_arith : binary_arith ADD binary_arith
+                    | binary_arith SUB binary_arith
+                    | binary_arith MUL binary_arith
+                    | binary_arith DIV binary_arith
+                    | binary_arith MOD binary_arith
+                    | binary_arith EQ binary_arith
+                    | binary_arith NE binary_arith
+                    | binary_arith GT binary_arith
+                    | binary_arith GE binary_arith
+                    | binary_arith LT binary_arith
+                    | binary_arith LE binary_arith
+    '''
+    p[0] = quo_ast.BinaryOpExpr(p[2], p[1], p[3])
 
   def p_expr(self, p):
-    '''expr : expr_2'''
+    '''expr : binary_arith'''
     p[0] = p[1]
 
   def p_expr_list_empty(self, p):
@@ -77,6 +97,12 @@ class QuoParser(object):
   def p_expr_list(self, p):
     '''expr_list : expr COMMA expr_list'''
     p[0] = [p[1]] + p[3]
+
+  # Operator precedence.
+  precedence = (
+      ('nonassoc', 'EQ', 'NE', 'GT', 'GE', 'LT', 'LE'),
+      ('left', 'ADD', 'SUB'),
+      ('left', 'MUL', 'DIV', 'MOD'), )
 
 
 def create_parser(**kwargs):
