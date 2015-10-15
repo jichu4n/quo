@@ -30,7 +30,8 @@ class UnknownCharacterError(Exception):
         self.char = char
 
     def __str__(self):
-        return 'Illegal character \'%s\' (0x%x)' % (self.char, ord(self.char))
+        return '[Line %d] Illegal character \'%s\' (0x%x)' % (
+            self.line_num, self.char, ord(self.char))
 
 
 class QuoLexer(object):
