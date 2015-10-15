@@ -93,3 +93,18 @@ class CallExpr(Expr):
         'expr': self.expr.to_json(),
         'arg_exprs': [arg_expr.to_json() for arg_expr in self.arg_exprs],
     }
+
+
+class UnaryOpExpr(Expr):
+  """A unary operation."""
+
+  def __init__(self, expr, op):
+    self.expr = expr
+    self.op = op
+
+  def to_json(self):
+    return {
+        'type': 'UnaryOpExpr',
+        'expr': self.expr.to_json(),
+        'op': self.op,
+    }

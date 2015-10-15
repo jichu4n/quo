@@ -53,8 +53,17 @@ class QuoParser(object):
     '''expr_1 : expr_1 L_PAREN expr_list R_PAREN'''
     p[0] = quo_ast.CallExpr(p[1], p[3])
 
+  def p_expr_2_expr_1(self, p):
+    '''expr_2 : expr_1'''
+    p[0] = p[1]
+
+  def p_expr_2_unary(self, p):
+    '''expr_2 : ADD expr_2
+              | SUB expr_2'''
+    p[0] = quo_ast.UnaryOpExpr(p[2], p[1])
+
   def p_expr(self, p):
-    '''expr : expr_1'''
+    '''expr : expr_2'''
     p[0] = p[1]
 
   def p_expr_list_empty(self, p):
