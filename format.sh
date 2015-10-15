@@ -17,4 +17,6 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-yapf -r -i --style pep8 $(dirname $0)
+yapf -r -i \
+    --style '{based_on_style: pep8, indent_width: 2}' \
+    $(dirname $0)
