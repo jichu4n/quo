@@ -15,7 +15,7 @@
 #    limitations under the License.                                           #
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-"""Lexical analyzer for Quo."""
+"""Quo lexical analyzer."""
 
 import ply.lex
 
@@ -34,7 +34,7 @@ class UnknownCharacterError(Exception):
 
 
 class QuoLexer(object):
-  """Lexer for Quo, implemented via PLY."""
+  """Quo lexer, implemented via PLY."""
 
   # pylint: disable=invalid-name,no-self-use
   tokens = (
