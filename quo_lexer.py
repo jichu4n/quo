@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                             #
 #    Copyright (C) 2015 Chuan Ji <jichuan89@gmail.com>                        #
