@@ -103,8 +103,8 @@ class LexerTest(unittest.TestCase):
       var model: String;  // Model
       var year: Int;  // Year of manufacture
 
-      function FullSpec(inclYear:Bool=false) : String {
-        var spec : String;
+      function FullSpec(inclYear=false: Bool) : String {
+        var spec: String;
         if (inclYear) {
           spec += this.year.ToString();
         }
@@ -134,10 +134,10 @@ class LexerTest(unittest.TestCase):
         ('IDENTIFIER', 'FullSpec'),
         'L_PAREN',
         ('IDENTIFIER', 'inclYear'),
-        'COLON',
-        ('IDENTIFIER', 'Bool'),
         'ASSIGN',
         ('BOOLEAN_CONSTANT', 'false'),
+        'COLON',
+        ('IDENTIFIER', 'Bool'),
         'R_PAREN',
         'COLON',
         ('IDENTIFIER', 'String'),
