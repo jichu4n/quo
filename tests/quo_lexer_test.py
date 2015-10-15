@@ -23,7 +23,6 @@ import quo_lexer
 
 
 class LexerTest(unittest.TestCase):
-
   def assert_tokens_match(self, input_str, expected_tokens):
     lexer = quo_lexer.create_lexer()
     lexer.input(input_str)

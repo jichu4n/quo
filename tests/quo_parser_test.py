@@ -21,6 +21,97 @@
 import unittest
 import quo_parser
 
+
 class QuoParserTest(unittest.TestCase):
-  def test_foo(self):
-    pass
+
+  maxDiff = None
+
+  def assert_ast_match(self, input_str, start, expected_ast_json):
+    parser = quo_parser.create_parser(start=start, write_tables=False)
+    actual_ast = parser.parse(input_str)
+    actual_ast_json = actual_ast.to_json()
+    self.assertEqual(actual_ast_json, expected_ast_json)
+
+  def test_expr_1(self):
+    self.assert_ast_match('''a[b.foo[0]['hello']].bar''', 'expr', {
+        'type': 'MemberExpr',
+        'expr': {
+            'type': 'IndexExpr',
+            'expr': {'type': 'VarExpr',
+                     'var': 'a'},
+            'index_expr': {
+                'type': 'IndexExpr',
+                'expr': {
+                    'type': 'IndexExpr',
+                    'expr': {
+                        'type': 'MemberExpr',
+                        'expr': {'type': 'VarExpr',
+                                 'var': 'b'},
+                        'member': 'foo',
+                    },
+                    'index_expr': {'type': 'ConstantExpr',
+                                   'value': '0'}
+                },
+                'index_expr': {'type': 'ConstantExpr',
+                               'value': 'hello'}
+            }
+        },
+        'member': 'bar',
+    })
+    self.assert_ast_match('(((a)()(c,)(d()))(e.f()[1],g,h[i].j(),))', 'expr', {
+        'type': 'CallExpr',
+        'expr': {
+            'type': 'CallExpr',
+            'expr': {
+                'type': 'CallExpr',
+                'expr': {
+                    'type': 'CallExpr',
+                    'expr': {'type': 'VarExpr',
+                             'var': 'a'},
+                    'arg_exprs': [],
+                },
+                'arg_exprs': [{'type': 'VarExpr',
+                               'var': 'c'}],
+            },
+            'arg_exprs': [{
+                'type': 'CallExpr',
+                'expr': {'type': 'VarExpr',
+                         'var': 'd'},
+                'arg_exprs': [],
+            }],
+        },
+        'arg_exprs': [
+            {
+                'type': 'IndexExpr',
+                'expr': {
+                    'type': 'CallExpr',
+                    'expr': {
+                        'type': 'MemberExpr',
+                        'expr': {'type': 'VarExpr',
+                                 'var': 'e'},
+                        'member': 'f',
+                    },
+                    'arg_exprs': [],
+                },
+                'index_expr': {'type': 'ConstantExpr',
+                               'value': '1'},
+            },
+            {'type': 'VarExpr',
+             'var': 'g'},
+            {
+                'type': 'CallExpr',
+                'expr': {
+                    'type': 'MemberExpr',
+                    'expr': {
+                        'type': 'IndexExpr',
+                        'expr': {'type': 'VarExpr',
+                                 'var': 'h'},
+                        'index_expr': {'type': 'VarExpr',
+                                       'var': 'i'},
+                    },
+                    'member': 'j',
+                },
+                'arg_exprs': []
+            },
+        ],
+    })
