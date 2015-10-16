@@ -180,17 +180,11 @@ class QuoParser(object):
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
-    p[0] = [
-        quo_ast.VarDeclStmt(var[0], None, var[1])
-        for var in p[1]
-    ]
+    p[0] = [quo_ast.VarDeclStmt(var[0], None, var[1]) for var in p[1]]
 
   def p_var_decls_typed(self, p):
     '''var_decls : var_list type_spec SEMICOLON'''
-    p[0] = [
-        quo_ast.VarDeclStmt(var[0], p[2], var[1])
-        for var in p[1]
-    ]
+    p[0] = [quo_ast.VarDeclStmt(var[0], p[2], var[1]) for var in p[1]]
 
   def p_var_decls_list_empty(self, p):
     '''var_decls_list :'''
@@ -265,6 +259,39 @@ class QuoParser(object):
   def p_stmts(self, p):
     '''stmts : stmt stmts'''
     p[0] = [p[1]] + p[2]
+
+  def p_param_untyped(self, p):
+    '''param : var'''
+    p[0] = quo_ast.Param(p[1][0], None, p[1][1])
+
+  def p_param_typed(self, p):
+    '''param : var type_spec'''
+    p[0] = quo_ast.Param(p[1][0], p[2], p[1][1])
+
+  def p_param_list_empty(self, p):
+    '''param_list :'''
+    p[0] = []
+
+  def p_param_list_one(self, p):
+    '''param_list : param'''
+    p[0] = [p[1]]
+
+  def p_param_list(self, p):
+    '''param_list : param COMMA param_list'''
+    p[0] = [p[1]] + p[3]
+
+  def p_return_type_spec_empty(self, p):
+    '''return_type_spec :'''
+    p[0] = None
+
+  def p_return_type_spec(self, p):
+    '''return_type_spec : type_spec'''
+    p[0] = p[1]
+
+  def p_func_typed(self, p):
+    '''func : FUNCTION IDENTIFIER L_PAREN param_list R_PAREN return_type_spec \
+              L_BRACE stmts R_BRACE'''
+    p[0] = quo_ast.Func(p[2], p[4], p[6], p[8])
 
   # Operator precedence.
   precedence = (

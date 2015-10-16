@@ -30,10 +30,7 @@ class QuoParserTest(unittest.TestCase):
     parser = quo_parser.create_parser(start=start, write_tables=False)
     actual_ast = parser.parse(input_str)
     if isinstance(actual_ast, list):
-      actual_ast_json = [
-          ast_node.to_json()
-          for ast_node in actual_ast
-      ]
+      actual_ast_json = [ast_node.to_json() for ast_node in actual_ast]
     else:
       actual_ast_json = actual_ast.to_json()
     self.assertEqual(actual_ast_json, expected_ast_json)
@@ -411,8 +408,10 @@ class QuoParserTest(unittest.TestCase):
             'init_expr': {
                 'type': 'BinaryOpExpr',
                 'op': 'ADD',
-                'left_expr': {'type': 'ConstantExpr', 'value': '5'},
-                'right_expr': {'type': 'ConstantExpr', 'value': '2'},
+                'left_expr': {'type': 'ConstantExpr',
+                              'value': '5'},
+                'right_expr': {'type': 'ConstantExpr',
+                               'value': '2'},
             },
         },
         {
@@ -447,3 +446,96 @@ class QuoParserTest(unittest.TestCase):
             'init_expr': None,
         },
     ])
+
+  def test_func(self):
+    self.assert_ast_match('''
+    function foo(a, b Int, c = 0, d = 0 Int) {
+      return a + b + c + d;
+    }
+    ''', 'func', {
+        'type': 'Func',
+        'name': 'foo',
+        'params': [
+            {
+                'type': 'Param',
+                'name': 'a',
+                'type_spec': None,
+                'init_expr': None,
+            },
+            {
+                'type': 'Param',
+                'name': 'b',
+                'type_spec': {
+                    'type': 'TypeSpec',
+                    'name': 'Int',
+                    'params': [],
+                },
+                'init_expr': None,
+            },
+            {
+                'type': 'Param',
+                'name': 'c',
+                'type_spec': None,
+                'init_expr': {
+                    'type': 'ConstantExpr',
+                    'value': '0',
+                },
+            },
+            {
+                'type': 'Param',
+                'name': 'd',
+                'type_spec': {
+                    'type': 'TypeSpec',
+                    'name': 'Int',
+                    'params': [],
+                },
+                'init_expr': {
+                    'type': 'ConstantExpr',
+                    'value': '0',
+                },
+            },
+        ],
+        'return_type_spec': None,
+        'stmts': [
+            {
+                'type': 'ReturnStmt',
+                'expr': {
+                    'type': 'BinaryOpExpr',
+                    'op': 'ADD',
+                    'left_expr': {
+                        'type': 'BinaryOpExpr',
+                        'op': 'ADD',
+                        'left_expr': {
+                            'type': 'BinaryOpExpr',
+                            'op': 'ADD',
+                            'left_expr': {'type': 'VarExpr',
+                                          'var': 'a'},
+                            'right_expr': {'type': 'VarExpr',
+                                           'var': 'b'},
+                        },
+                        'right_expr': {'type': 'VarExpr',
+                                       'var': 'c'},
+                    },
+                    'right_expr': {'type': 'VarExpr',
+                                   'var': 'd'},
+                },
+            },
+        ],
+    })
+    self.assert_ast_match('''
+    function foo() Array<Int> {}
+    ''', 'func', {
+        'type': 'Func',
+        'name': 'foo',
+        'params': [],
+        'return_type_spec': {
+            'type': 'TypeSpec',
+            'name': 'Array',
+            'params': [{
+                'type': 'TypeSpec',
+                'name': 'Int',
+                'params': [],
+            }],
+        },
+        'stmts': [],
+    })

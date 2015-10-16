@@ -245,7 +245,7 @@ class MemberTypeSpec(TypeSpec):
 
 
 class VarDeclStmt(Stmt):
-  '''A variable declaration statement.'''
+  """A variable declaration statement."""
 
   def __init__(self, name, type_spec, init_expr):
     self.name = name
@@ -258,4 +258,46 @@ class VarDeclStmt(Stmt):
         'name': self.name,
         'type_spec': self.type_spec.to_json() if self.type_spec else None,
         'init_expr': self.init_expr.to_json() if self.init_expr else None,
+    }
+
+
+class Param(Node):
+  """A function parameter."""
+
+  def __init__(self, name, type_spec, init_expr):
+    self.name = name
+    self.type_spec = type_spec
+    self.init_expr = init_expr
+
+  def to_json(self):
+    return {
+        'type': 'Param',
+        'name': self.name,
+        'type_spec': self.type_spec.to_json() if self.type_spec else None,
+        'init_expr': self.init_expr.to_json() if self.init_expr else None,
+    }
+
+
+class Func(Node):
+  """A function definition."""
+
+  def __init__(self, name, params, return_type_spec, stmts):
+    self.name = name
+    self.params = params
+    self.return_type_spec = return_type_spec
+    self.stmts = stmts
+
+  def to_json(self):
+    return {
+        'type': 'Func',
+        'name': self.name,
+        'params': [
+            param.to_json() for param in self.params
+        ],
+        'return_type_spec': (
+            self.return_type_spec.to_json() if self.return_type_spec else
+            None),
+        'stmts': [
+            stmt.to_json() for stmt in self.stmts
+        ],
     }
