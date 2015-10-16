@@ -242,3 +242,20 @@ class MemberTypeSpec(TypeSpec):
         'parent_type_spec': self.parent_type_spec.to_json(),
     })
     return result
+
+
+class VarDeclStmt(Stmt):
+  '''A variable declaration statement.'''
+
+  def __init__(self, name, type_spec, init_expr):
+    self.name = name
+    self.type_spec = type_spec
+    self.init_expr = init_expr
+
+  def to_json(self):
+    return {
+        'type': 'VarDeclStmt',
+        'name': self.name,
+        'type_spec': self.type_spec.to_json(),
+        'init_expr': self.init_expr.to_json() if self.init_expr else None,
+    }

@@ -29,7 +29,13 @@ class QuoParserTest(unittest.TestCase):
   def assert_ast_match(self, input_str, start, expected_ast_json):
     parser = quo_parser.create_parser(start=start, write_tables=False)
     actual_ast = parser.parse(input_str)
-    actual_ast_json = actual_ast.to_json()
+    if isinstance(actual_ast, list):
+      actual_ast_json = [
+          ast_node.to_json()
+          for ast_node in actual_ast
+      ]
+    else:
+      actual_ast_json = actual_ast.to_json()
     self.assertEqual(actual_ast_json, expected_ast_json)
 
   def test_primary(self):
@@ -346,3 +352,59 @@ class QuoParserTest(unittest.TestCase):
             },
         ],
     })
+
+  def test_var_decl_stmts(self):
+    self.assert_ast_match('''
+    var a Array<Int>;
+    var b = 3, c Int, d String;
+    ''', 'stmts', [
+        {
+            'type': 'VarDeclStmt',
+            'name': 'a',
+            'type_spec': {
+                'type': 'TypeSpec',
+                'name': 'Array',
+                'params': [{
+                    'type': 'TypeSpec',
+                    'name': 'Int',
+                    'params': [],
+                }],
+            },
+            'init_expr': None,
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'b',
+            'type_spec': {
+                'type': 'TypeSpec',
+                'name': 'Int',
+                'params': [],
+            },
+            'init_expr': {
+                'type': 'ConstantExpr',
+                'value': '3',
+            },
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'c',
+            'type_spec': {
+                'type': 'TypeSpec',
+                'name': 'Int',
+                'params': [],
+            },
+            'init_expr': None,
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'd',
+            'type_spec': {
+                'type': 'TypeSpec',
+                'name': 'String',
+                'params': [],
+            },
+            'init_expr': None,
+        },
+    ])
+
+
