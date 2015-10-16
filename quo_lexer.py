@@ -83,7 +83,6 @@ class QuoLexer(object):
       'L_BRACE',
       'R_BRACE',
       'DOT',
-      'COLON',
       'COMMA',
       'SEMICOLON', )
 
@@ -103,7 +102,7 @@ class QuoLexer(object):
       'not': ('NOT', 'NOT'),
       'true': ('BOOLEAN_CONSTANT', True),
       'false': ('BOOLEAN_CONSTANT', False),
-      'this': ('THIS', None),
+      'this': ('THIS', 'THIS'),
   }
 
   t_ignore_COMMENT = r'//[^\n]*'
@@ -205,7 +204,6 @@ class QuoLexer(object):
   t_L_BRACE = r'\{'
   t_R_BRACE = r'\}'
   t_DOT = r'\.'
-  t_COLON = r':'
   t_COMMA = r','
   t_SEMICOLON = r';'
 

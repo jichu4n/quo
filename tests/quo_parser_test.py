@@ -267,7 +267,13 @@ class QuoParserTest(unittest.TestCase):
         'false_stmts': [{
             'type': 'CondStmt',
             'cond_expr': {'type': 'ConstantExpr', 'value': True},
-            'true_stmts': [{'type': 'VarExpr', 'var': 'hello'}],
-            'false_stmts': [{'type': 'VarExpr', 'var': 'bar'}],
+            'true_stmts': [{
+                'type': 'ExprStmt',
+                'expr': {'type': 'VarExpr', 'var': 'hello'},
+            }],
+            'false_stmts': [{
+                'type': 'ExprStmt',
+                'expr': {'type': 'VarExpr', 'var': 'bar'},
+            }],
         }],
     })

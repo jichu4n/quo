@@ -35,7 +35,9 @@ class QuoParser(object):
     p[0] = quo_ast.ConstantExpr(p[1])
 
   def p_primary_var(self, p):
-    '''primary : IDENTIFIER'''
+    '''primary : IDENTIFIER
+               | THIS
+    '''
     p[0] = quo_ast.VarExpr(p[1])
 
   def p_primary_paren(self, p):
@@ -132,6 +134,22 @@ class QuoParser(object):
     '''expr_list : expr COMMA expr_list'''
     p[0] = [p[1]] + p[3]
 
+  def p_expr_stmt(self, p):
+    '''expr_stmt : expr SEMICOLON'''
+    p[0] = quo_ast.ExprStmt(p[1])
+
+  def p_return_stmt(self, p):
+    '''return_stmt : RETURN expr SEMICOLON'''
+    p[0] = quo_ast.ReturnStmt(p[2])
+
+  def p_break_stmt(self, p):
+    '''break_stmt : BREAK SEMICOLON'''
+    p[0] = quo_ast.BreakStmt()
+
+  def p_continue_stmt(self, p):
+    '''continue_stmt : CONTINUE SEMICOLON'''
+    p[0] = quo_ast.ContinueStmt()
+
   def p_cond_stmt_if(self, p):
     '''cond_stmt_if : IF expr L_BRACE stmts R_BRACE'''
     p[0] = quo_ast.CondStmt(p[2], p[4], [])
@@ -148,9 +166,17 @@ class QuoParser(object):
     '''cond_stmt : cond_stmt_if ELSE L_BRACE stmts R_BRACE'''
     p[0] = quo_ast.CondStmt(p[1].cond_expr, p[1].true_stmts, p[4])
 
+  def p_cond_loop_stmt(self, p):
+    '''cond_loop_stmt : WHILE expr L_BRACE stmts R_BRACE'''
+    p[0] = quo_ast.CondLoopStmt(p[2], p[4])
+
   def p_stmt(self, p):
-    '''stmt : expr SEMICOLON
+    '''stmt : expr_stmt
+            | return_stmt
+            | break_stmt
+            | continue_stmt
             | cond_stmt
+            | cond_loop_stmt
     '''
     p[0] = p[1]
 

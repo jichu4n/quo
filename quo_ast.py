@@ -147,7 +147,51 @@ class Stmt(Node):
   pass
 
 
-class CondStmt(Node):
+class ExprStmt(Stmt):
+  """Expression statement."""
+
+  def __init__(self, expr):
+    self.expr = expr
+
+  def to_json(self):
+    return {
+        'type': 'ExprStmt',
+        'expr': self.expr.to_json(),
+    }
+
+
+class ReturnStmt(Stmt):
+  """return statement."""
+
+  def __init__(self, expr):
+    self.expr = expr
+
+  def to_json(self):
+    return {
+        'type': 'ReturnStmt',
+        'expr': self.expr.to_json(),
+    }
+
+
+class BreakStmt(Stmt):
+  """break statement."""
+
+  def to_json(self):
+    return {
+        'type': 'BreakStmt',
+    }
+
+
+class ContinueStmt(Stmt):
+  """continue statement."""
+
+  def to_json(self):
+    return {
+        'type': 'ContinueStmt',
+    }
+
+
+class CondStmt(Stmt):
   """if-else statements."""
 
   def __init__(self, cond_expr, true_stmts, false_stmts):
@@ -161,4 +205,19 @@ class CondStmt(Node):
         'cond_expr': self.cond_expr.to_json(),
         'true_stmts': [stmt.to_json() for stmt in self.true_stmts],
         'false_stmts': [stmt.to_json() for stmt in self.false_stmts],
+    }
+
+
+class CondLoopStmt(Stmt):
+  """Conditional loop statements."""
+
+  def __init__(self, cond_expr, stmts):
+    self.cond_expr = cond_expr
+    self.stmts = stmts
+
+  def to_json(self):
+    return {
+        'type': 'CondStmt',
+        'cond_expr': self.cond_expr.to_json(),
+        'stmts': [stmt.to_json() for stmt in self.stmts],
     }
