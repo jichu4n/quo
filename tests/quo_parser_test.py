@@ -296,3 +296,53 @@ class QuoParserTest(unittest.TestCase):
             }],
         }],
     })
+
+  def test_type_spec(self):
+    self.assert_ast_match('A<B,C<D.E<F>.G,>,H<I>.J<>>', 'type_spec', {
+        'type': 'TypeSpec',
+        'name': 'A',
+        'params': [
+            {
+                'type': 'TypeSpec',
+                'name': 'B',
+                'params': [],
+            },
+            {
+                'type': 'TypeSpec',
+                'name': 'C',
+                'params': [{
+                    'type': 'MemberTypeSpec',
+                    'name': 'G',
+                    'params': [],
+                    'parent_type_spec': {
+                        'type': 'MemberTypeSpec',
+                        'name': 'E',
+                        'params': [{
+                            'type': 'TypeSpec',
+                            'name': 'F',
+                            'params': [],
+                        }],
+                        'parent_type_spec': {
+                            'type': 'TypeSpec',
+                            'name': 'D',
+                            'params': [],
+                        },
+                    },
+                }],
+            },
+            {
+                'type': 'MemberTypeSpec',
+                'name': 'J',
+                'params': [],
+                'parent_type_spec': {
+                    'type': 'TypeSpec',
+                    'name': 'H',
+                    'params': [{
+                        'type': 'TypeSpec',
+                        'name': 'I',
+                        'params': [],
+                    }],
+                },
+            },
+        ],
+    })

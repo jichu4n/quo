@@ -238,6 +238,7 @@ class MemberTypeSpec(TypeSpec):
   def to_json(self):
     result = super().to_json()
     result.update({
+        'type': 'MemberTypeSpec',
         'parent_type_spec': self.parent_type_spec.to_json(),
     })
     return result

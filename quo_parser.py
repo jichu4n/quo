@@ -134,6 +134,34 @@ class QuoParser(object):
     '''expr_list : expr COMMA expr_list'''
     p[0] = [p[1]] + p[3]
 
+  def p_type_spec_primary_name(self, p):
+    '''type_spec_primary : IDENTIFIER'''
+    p[0] = quo_ast.TypeSpec(p[1], [])
+
+  def p_type_spec_primary_name_params(self, p):
+    '''type_spec_primary : IDENTIFIER LT type_spec_list GT'''
+    p[0] = quo_ast.TypeSpec(p[1], p[3])
+
+  def p_type_spec_type_spec_primary(self, p):
+    '''type_spec : type_spec_primary'''
+    p[0] = p[1]
+
+  def p_type_spec_member(self, p):
+    '''type_spec : type_spec DOT type_spec_primary'''
+    p[0] = quo_ast.MemberTypeSpec(p[1], p[3].name, p[3].params)
+
+  def p_type_spec_list_empty(self, p):
+    '''type_spec_list :'''
+    p[0] = []
+
+  def p_type_spec_list_one(self, p):
+    '''type_spec_list : type_spec'''
+    p[0] = [p[1]]
+
+  def p_type_spec_list(self, p):
+    '''type_spec_list : type_spec COMMA type_spec_list'''
+    p[0] = [p[1]] + p[3]
+
   def p_expr_stmt(self, p):
     '''expr_stmt : expr SEMICOLON'''
     p[0] = quo_ast.ExprStmt(p[1])
