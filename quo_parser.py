@@ -166,7 +166,7 @@ class QuoParser(object):
     '''var : IDENTIFIER'''
     p[0] = (p[1], None)
 
-  def p_var_init(self, p):
+  def p_var_init_expr(self, p):
     '''var : IDENTIFIER ASSIGN expr'''
     p[0] = (p[1], p[3])
 
