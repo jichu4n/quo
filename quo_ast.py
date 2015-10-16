@@ -125,3 +125,18 @@ class BinaryOpExpr(Expr):
         'left_expr': self.left_expr.to_json(),
         'right_expr': self.right_expr.to_json(),
     }
+
+
+class AssignExpr(Expr):
+  """Assignment expression."""
+
+  def __init__(self, dest_expr, expr):
+    self.dest_expr = dest_expr
+    self.expr = expr
+
+  def to_json(self):
+    return {
+        'type': 'AssignExpr',
+        'dest_expr': self.dest_expr.to_json(),
+        'expr': self.expr.to_json(),
+    }

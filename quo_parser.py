@@ -29,8 +29,8 @@ class QuoParser(object):
 
   def p_primary_constant(self, p):
     '''primary : STRING_CONSTANT
-              | INTEGER_CONSTANT
-              | BOOLEAN_CONSTANT
+               | INTEGER_CONSTANT
+               | BOOLEAN_CONSTANT
     '''
     p[0] = quo_ast.ConstantExpr(p[1])
 
@@ -101,8 +101,23 @@ class QuoParser(object):
     '''
     p[0] = quo_ast.BinaryOpExpr(p[2], p[1], p[3])
 
+  def p_assign(self, p):
+    '''assign : primary ASSIGN expr'''
+    p[0] = quo_ast.AssignExpr(p[1], p[3])
+
+  def p_assign_op(self, p):
+    '''assign : primary ADD_ASSIGN expr
+              | primary SUB_ASSIGN expr
+              | primary MUL_ASSIGN expr
+              | primary DIV_ASSIGN expr
+    '''
+    p[0] = quo_ast.AssignExpr(p[1], quo_ast.BinaryOpExpr(
+        p[2].split('_')[0], p[1], p[3]))
+
   def p_expr(self, p):
-    '''expr : binary_bool'''
+    '''expr : binary_bool
+            | assign
+    '''
     p[0] = p[1]
 
   def p_expr_list_empty(self, p):

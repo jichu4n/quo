@@ -67,10 +67,10 @@ class QuoLexer(object):
       'NE',
       'ASSIGN',
       'EQ',
-      'ADD_EQ',
-      'SUB_EQ',
-      'MUL_EQ',
-      'DIV_EQ',
+      'ADD_ASSIGN',
+      'SUB_ASSIGN',
+      'MUL_ASSIGN',
+      'DIV_ASSIGN',
       'ADD',
       'SUB',
       'MUL',
@@ -153,22 +153,22 @@ class QuoLexer(object):
 
   t_ASSIGN = r'='
 
-  def t_ADD_EQ(self, t):
+  def t_ADD_ASSIGN(self, t):
     r'\+='
     t.value = t.type
     return t
 
-  def t_SUB_EQ(self, t):
+  def t_SUB_ASSIGN(self, t):
     r'-='
     t.value = t.type
     return t
 
-  def t_MUL_EQ(self, t):
+  def t_MUL_ASSIGN(self, t):
     r'\*='
     t.value = t.type
     return t
 
-  def t_DIV_EQ(self, t):
+  def t_DIV_ASSIGN(self, t):
     r'/='
     t.value = t.type
     return t

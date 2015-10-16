@@ -213,3 +213,29 @@ class QuoParserTest(unittest.TestCase):
         },
         'right_expr': { 'type': 'ConstantExpr', 'value': True },
     })
+
+  def test_assign(self):
+    self.assert_ast_match('a += b = c -= d', 'expr', {
+        'type': 'AssignExpr',
+        'dest_expr': {'type': 'VarExpr', 'var': 'a'},
+        'expr': {
+            'type': 'BinaryOpExpr',
+            'op': 'ADD',
+            'left_expr': {'type': 'VarExpr', 'var': 'a'},
+            'right_expr': {
+                'type': 'AssignExpr',
+                'dest_expr': {'type': 'VarExpr', 'var': 'b'},
+                'expr': {
+                    'type': 'AssignExpr',
+                    'dest_expr': {'type': 'VarExpr', 'var': 'c'},
+                    'expr': {
+                        'type': 'BinaryOpExpr',
+                        'op': 'SUB',
+                        'left_expr': {'type': 'VarExpr', 'var': 'c'},
+                        'right_expr': {'type': 'VarExpr', 'var': 'd'},
+                    },
+                },
+            },
+        },
+    })
+    
