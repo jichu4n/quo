@@ -30,6 +30,7 @@ class QuoParser(object):
   def p_primary_constant(self, p):
     '''primary : STRING_CONSTANT
               | INTEGER_CONSTANT
+              | BOOLEAN_CONSTANT
     '''
     p[0] = quo_ast.ConstantExpr(p[1])
 
@@ -82,8 +83,26 @@ class QuoParser(object):
     '''
     p[0] = quo_ast.BinaryOpExpr(p[2], p[1], p[3])
 
+  def p_unary_bool_binary_arith(self, p):
+    '''unary_bool : binary_arith'''
+    p[0] = p[1]
+
+  def p_unary_bool(self, p):
+    '''unary_bool : NOT unary_bool'''
+    p[0] = quo_ast.UnaryOpExpr(p[1], p[2])
+
+  def p_binary_bool_unary_bool(self, p):
+    '''binary_bool : unary_bool'''
+    p[0] = p[1]
+
+  def p_binary_bool(self, p):
+    '''binary_bool : binary_bool AND binary_bool
+                   | binary_bool OR binary_bool
+    '''
+    p[0] = quo_ast.BinaryOpExpr(p[2], p[1], p[3])
+
   def p_expr(self, p):
-    '''expr : binary_arith'''
+    '''expr : binary_bool'''
     p[0] = p[1]
 
   def p_expr_list_empty(self, p):
@@ -100,6 +119,8 @@ class QuoParser(object):
 
   # Operator precedence.
   precedence = (
+      ('left', 'OR'),
+      ('left', 'AND'),
       ('nonassoc', 'EQ', 'NE', 'GT', 'GE', 'LT', 'LE'),
       ('left', 'ADD', 'SUB'),
       ('left', 'MUL', 'DIV', 'MOD'), )

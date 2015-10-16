@@ -177,3 +177,39 @@ class QuoParserTest(unittest.TestCase):
             },
         },
     })
+
+  def test_binary_bool(self):
+    self.assert_ast_match('a>b or not c<=d and not false or true', 'expr', {
+        'type': 'BinaryOpExpr',
+        'op': 'OR',
+        'left_expr': {
+            'type': 'BinaryOpExpr',
+            'op': 'OR',
+            'left_expr': {
+                'type': 'BinaryOpExpr',
+                'op': 'GT',
+                'left_expr': {'type': 'VarExpr', 'var': 'a'},
+                'right_expr': {'type': 'VarExpr', 'var': 'b'},
+            },
+            'right_expr': {
+                'type': 'BinaryOpExpr',
+                'op': 'AND',
+                'left_expr': {
+                    'type': 'UnaryOpExpr',
+                    'op': 'NOT',
+                    'expr': {
+                        'type': 'BinaryOpExpr',
+                        'op': 'LE',
+                        'left_expr': {'type': 'VarExpr', 'var': 'c'},
+                        'right_expr': {'type': 'VarExpr', 'var': 'd'},
+                    },
+                },
+                'right_expr': {
+                    'type': 'UnaryOpExpr',
+                    'op': 'NOT',
+                    'expr': { 'type': 'ConstantExpr', 'value': False },
+                },
+            },
+        },
+        'right_expr': { 'type': 'ConstantExpr', 'value': True },
+    })

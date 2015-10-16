@@ -99,13 +99,13 @@ class LexerTest(unittest.TestCase):
   def test_sample_program_1(self):
     self.assert_tokens_match("""
     class Car {
-      var make: String;  // Make
-      var model: String;  // Model
-      var year: Int;  // Year of manufacture
+      var make String;  // Make
+      var model String;  // Model
+      var year Int;  // Year of manufacture
 
-      function FullSpec(inclYear=false: Bool) : String {
-        var spec: String;
-        if (inclYear) {
+      function FullSpec(inclYear=false Bool) String {
+        var spec String;
+        if inclYear {
           spec += this.year.ToString();
         }
         spec += ' ' + make + ' ' + model;
@@ -117,17 +117,14 @@ class LexerTest(unittest.TestCase):
         'L_BRACE',
         'VAR',
         ('IDENTIFIER', 'make'),
-        'COLON',
         ('IDENTIFIER', 'String'),
         'SEMICOLON',
         'VAR',
         ('IDENTIFIER', 'model'),
-        'COLON',
         ('IDENTIFIER', 'String'),
         'SEMICOLON',
         'VAR',
         ('IDENTIFIER', 'year'),
-        'COLON',
         ('IDENTIFIER', 'Int'),
         'SEMICOLON',
         'FUNCTION',
@@ -135,22 +132,17 @@ class LexerTest(unittest.TestCase):
         'L_PAREN',
         ('IDENTIFIER', 'inclYear'),
         'ASSIGN',
-        ('BOOLEAN_CONSTANT', 'false'),
-        'COLON',
+        ('BOOLEAN_CONSTANT', False),
         ('IDENTIFIER', 'Bool'),
         'R_PAREN',
-        'COLON',
         ('IDENTIFIER', 'String'),
         'L_BRACE',
         'VAR',
         ('IDENTIFIER', 'spec'),
-        'COLON',
         ('IDENTIFIER', 'String'),
         'SEMICOLON',
         'IF',
-        'L_PAREN',
         ('IDENTIFIER', 'inclYear'),
-        'R_PAREN',
         'L_BRACE',
         ('IDENTIFIER', 'spec'),
         'ADD_EQ',

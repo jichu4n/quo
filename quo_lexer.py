@@ -88,29 +88,30 @@ class QuoLexer(object):
       'SEMICOLON', )
 
   _reserved_words = {
-      'class': 'CLASS',
-      'var': 'VAR',
-      'function': 'FUNCTION',
-      'if': 'IF',
-      'else': 'ELSE',
-      'for': 'FOR',
-      'while': 'WHILE',
-      'continue': 'CONTINUE',
-      'break': 'BREAK',
-      'return': 'RETURN',
-      'and': 'AND',
-      'or': 'OR',
-      'not': 'NOT',
-      'true': 'BOOLEAN_CONSTANT',
-      'false': 'BOOLEAN_CONSTANT',
-      'this': 'THIS',
+      'class': ('CLASS', None),
+      'var': ('VAR', None),
+      'function': ('FUNCTION', None),
+      'if': ('IF', None),
+      'else': ('ELSE', None),
+      'for': ('FOR', None),
+      'while': ('WHILE', None),
+      'continue': ('CONTINUE', None),
+      'break': ('BREAK', None),
+      'return': ('RETURN', None),
+      'and': ('AND', 'AND'),
+      'or': ('OR', 'OR',),
+      'not': ('NOT', 'NOT'),
+      'true': ('BOOLEAN_CONSTANT', True),
+      'false': ('BOOLEAN_CONSTANT', False),
+      'this': ('THIS', None),
   }
 
   t_ignore_COMMENT = r'//[^\n]*'
 
   def t_IDENTIFIER(self, t):
     r'[a-zA-Z_][a-zA-Z0-9_]*'
-    t.type = self._reserved_words.get(t.value, 'IDENTIFIER')
+    if t.value in self._reserved_words:
+      t.type, t.value = self._reserved_words[t.value]
     return t
 
   t_INTEGER_CONSTANT = r'[0-9]+'
