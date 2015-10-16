@@ -356,7 +356,12 @@ class QuoParserTest(unittest.TestCase):
   def test_var_decl_stmts(self):
     self.assert_ast_match('''
     var a Array<Int>;
-    var b = 3, c Int, d String;
+    var {
+      b = 3, c, d = 5 + 2 Int;
+      e = '' String;
+      f, g;
+    }
+    var h;
     ''', 'stmts', [
         {
             'type': 'VarDeclStmt',
@@ -400,11 +405,45 @@ class QuoParserTest(unittest.TestCase):
             'name': 'd',
             'type_spec': {
                 'type': 'TypeSpec',
+                'name': 'Int',
+                'params': [],
+            },
+            'init_expr': {
+                'type': 'BinaryOpExpr',
+                'op': 'ADD',
+                'left_expr': {'type': 'ConstantExpr', 'value': '5'},
+                'right_expr': {'type': 'ConstantExpr', 'value': '2'},
+            },
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'e',
+            'type_spec': {
+                'type': 'TypeSpec',
                 'name': 'String',
                 'params': [],
             },
+            'init_expr': {
+                'type': 'ConstantExpr',
+                'value': '',
+            },
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'f',
+            'type_spec': None,
+            'init_expr': None,
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'g',
+            'type_spec': None,
+            'init_expr': None,
+        },
+        {
+            'type': 'VarDeclStmt',
+            'name': 'h',
+            'type_spec': None,
             'init_expr': None,
         },
     ])
-
-

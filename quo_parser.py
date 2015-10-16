@@ -162,7 +162,7 @@ class QuoParser(object):
     '''type_spec_list : type_spec COMMA type_spec_list'''
     p[0] = [p[1]] + p[3]
 
-  def p_var_primary(self, p):
+  def p_var(self, p):
     '''var : IDENTIFIER'''
     p[0] = (p[1], None)
 
@@ -178,8 +178,15 @@ class QuoParser(object):
     '''var_list : var COMMA var_list'''
     p[0] = [p[1]] + p[3]
 
-  def p_var_decls(self, p):
-    '''var_decls : var_list type_spec'''
+  def p_var_decls_untyped(self, p):
+    '''var_decls : var_list SEMICOLON'''
+    p[0] = [
+        quo_ast.VarDeclStmt(var[0], None, var[1])
+        for var in p[1]
+    ]
+
+  def p_var_decls_typed(self, p):
+    '''var_decls : var_list type_spec SEMICOLON'''
     p[0] = [
         quo_ast.VarDeclStmt(var[0], p[2], var[1])
         for var in p[1]
@@ -189,17 +196,17 @@ class QuoParser(object):
     '''var_decls_list :'''
     p[0] = []
 
-  def p_var_decls_list_one(self, p):
-    '''var_decls_list : var_decls'''
-    p[0] = p[1]
-
   def p_var_decls_list(self, p):
-    '''var_decls_list : var_decls COMMA var_decls_list'''
-    p[0] = p[1] + p[3]
+    '''var_decls_list : var_decls var_decls_list'''
+    p[0] = p[1] + p[2]
 
   def p_var_decls_stmts(self, p):
-    '''var_decl_stmts : VAR var_decls_list SEMICOLON'''
+    '''var_decl_stmts : VAR var_decls'''
     p[0] = p[2]
+
+  def p_var_decls_stmts_block(self, p):
+    '''var_decl_stmts : VAR L_BRACE var_decls_list R_BRACE'''
+    p[0] = p[3]
 
   def p_expr_stmt(self, p):
     '''expr_stmt : expr SEMICOLON'''

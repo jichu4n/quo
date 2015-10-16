@@ -256,6 +256,6 @@ class VarDeclStmt(Stmt):
     return {
         'type': 'VarDeclStmt',
         'name': self.name,
-        'type_spec': self.type_spec.to_json(),
+        'type_spec': self.type_spec.to_json() if self.type_spec else None,
         'init_expr': self.init_expr.to_json() if self.init_expr else None,
     }
