@@ -132,6 +132,36 @@ class QuoParser(object):
     '''expr_list : expr COMMA expr_list'''
     p[0] = [p[1]] + p[3]
 
+  def p_cond_stmt_if(self, p):
+    '''cond_stmt_if : IF expr L_BRACE stmts R_BRACE'''
+    p[0] = quo_ast.CondStmt(p[2], p[4], [])
+
+  def p_cond_stmt_cond_stmt_if(self, p):
+    '''cond_stmt : cond_stmt_if'''
+    p[0] = p[1]
+
+  def p_cond_stmt_if_else_if(self, p):
+    '''cond_stmt : cond_stmt_if ELSE cond_stmt'''
+    p[0] = quo_ast.CondStmt(p[1].cond_expr, p[1].true_stmts, [p[3]])
+
+  def p_cond_stmt_if_else(self, p):
+    '''cond_stmt : cond_stmt_if ELSE L_BRACE stmts R_BRACE'''
+    p[0] = quo_ast.CondStmt(p[1].cond_expr, p[1].true_stmts, p[4])
+
+  def p_stmt(self, p):
+    '''stmt : expr SEMICOLON
+            | cond_stmt
+    '''
+    p[0] = p[1]
+
+  def p_stmts_empty(self, p):
+    '''stmts :'''
+    p[0] = []
+
+  def p_stmts(self, p):
+    '''stmts : stmt stmts'''
+    p[0] = [p[1]] + p[2]
+
   # Operator precedence.
   precedence = (
       ('left', 'OR'),

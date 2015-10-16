@@ -238,4 +238,36 @@ class QuoParserTest(unittest.TestCase):
             },
         },
     })
-    
+
+  def test_cond_stmt(self):
+    self.assert_ast_match('''
+    if a != b { if 3 {} if 4 {}} else if true { hello; } else { bar; }
+    ''', 'stmt', {
+        'type': 'CondStmt',
+        'cond_expr': {
+            'type': 'BinaryOpExpr',
+            'op': 'NE',
+            'left_expr': {'type': 'VarExpr', 'var': 'a'},
+            'right_expr': {'type': 'VarExpr', 'var': 'b'},
+        },
+        'true_stmts': [
+            {
+                'type': 'CondStmt',
+                'cond_expr': {'type': 'ConstantExpr', 'value': '3'},
+                'true_stmts': [],
+                'false_stmts': [],
+            },
+            {
+                'type': 'CondStmt',
+                'cond_expr': {'type': 'ConstantExpr', 'value': '4'},
+                'true_stmts': [],
+                'false_stmts': [],
+            },
+        ],
+        'false_stmts': [{
+            'type': 'CondStmt',
+            'cond_expr': {'type': 'ConstantExpr', 'value': True},
+            'true_stmts': [{'type': 'VarExpr', 'var': 'hello'}],
+            'false_stmts': [{'type': 'VarExpr', 'var': 'bar'}],
+        }],
+    })

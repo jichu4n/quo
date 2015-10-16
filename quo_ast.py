@@ -140,3 +140,25 @@ class AssignExpr(Expr):
         'dest_expr': self.dest_expr.to_json(),
         'expr': self.expr.to_json(),
     }
+
+
+class Stmt(Node):
+  """Base class of statements."""
+  pass
+
+
+class CondStmt(Node):
+  """if-else statements."""
+
+  def __init__(self, cond_expr, true_stmts, false_stmts):
+    self.cond_expr = cond_expr
+    self.true_stmts = true_stmts
+    self.false_stmts = false_stmts
+
+  def to_json(self):
+    return {
+        'type': 'CondStmt',
+        'cond_expr': self.cond_expr.to_json(),
+        'true_stmts': [stmt.to_json() for stmt in self.true_stmts],
+        'false_stmts': [stmt.to_json() for stmt in self.false_stmts],
+    }
