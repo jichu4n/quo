@@ -154,10 +154,7 @@ class ExprStmt(Stmt):
     self.expr = expr
 
   def to_json(self):
-    return {
-        'type': 'ExprStmt',
-        'expr': self.expr.to_json(),
-    }
+    return {'type': 'ExprStmt', 'expr': self.expr.to_json()}
 
 
 class ReturnStmt(Stmt):
@@ -167,28 +164,21 @@ class ReturnStmt(Stmt):
     self.expr = expr
 
   def to_json(self):
-    return {
-        'type': 'ReturnStmt',
-        'expr': self.expr.to_json(),
-    }
+    return {'type': 'ReturnStmt', 'expr': self.expr.to_json()}
 
 
 class BreakStmt(Stmt):
   """break statement."""
 
   def to_json(self):
-    return {
-        'type': 'BreakStmt',
-    }
+    return {'type': 'BreakStmt'}
 
 
 class ContinueStmt(Stmt):
   """continue statement."""
 
   def to_json(self):
-    return {
-        'type': 'ContinueStmt',
-    }
+    return {'type': 'ContinueStmt'}
 
 
 class CondStmt(Stmt):
@@ -220,4 +210,49 @@ class CondLoopStmt(Stmt):
         'type': 'CondStmt',
         'cond_expr': self.cond_expr.to_json(),
         'stmts': [stmt.to_json() for stmt in self.stmts],
+    }
+
+
+class TypeSpec(Node):
+  """Base class for type specifications."""
+  pass
+
+
+class NameTypeSpec(TypeSpec):
+  """A named type."""
+
+  def __init__(self, name):
+    self.name = name
+
+  def to_json(self):
+    return {'type': 'NameTypeSpec', 'name': self.name}
+
+
+class MemberTypeSpec(TypeSpec):
+  """A type nested in another type."""
+
+  def __init__(self, type_spec, member):
+    self.type_spec = type_spec
+    self.member = member
+
+  def to_json(self):
+    return {
+        'type': 'MemberTypeSpec',
+        'type_spec': self.type_spec.to_json(),
+        'member': self.member,
+    }
+
+
+class ParamTypeSpec(TypeSpec):
+  """A parameterized type."""
+
+  def __init__(self, type_spec, params):
+    self.type_spec = type_spec
+    self.params = params
+
+  def to_json(self):
+    return {
+        'type': 'ParamTypeSpec',
+        'type_spec': self.type_spec.to_json(),
+        'params': [param.to_json() for param in self.params],
     }

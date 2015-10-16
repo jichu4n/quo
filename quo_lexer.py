@@ -98,7 +98,7 @@ class QuoLexer(object):
       'break': ('BREAK', None),
       'return': ('RETURN', None),
       'and': ('AND', 'AND'),
-      'or': ('OR', 'OR',),
+      'or': ('OR', 'OR'),
       'not': ('NOT', 'NOT'),
       'true': ('BOOLEAN_CONSTANT', True),
       'false': ('BOOLEAN_CONSTANT', False),
