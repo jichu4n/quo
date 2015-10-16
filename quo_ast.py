@@ -215,44 +215,29 @@ class CondLoopStmt(Stmt):
 
 class TypeSpec(Node):
   """Base class for type specifications."""
-  pass
 
-
-class NameTypeSpec(TypeSpec):
-  """A named type."""
-
-  def __init__(self, name):
+  def __init__(self, name, params):
     self.name = name
+    self.params = params
 
   def to_json(self):
-    return {'type': 'NameTypeSpec', 'name': self.name}
+    return {
+        'type': 'TypeSpec',
+        'name': self.name,
+        'params': [param.to_json() for param in self.params],
+    }
 
 
 class MemberTypeSpec(TypeSpec):
   """A type nested in another type."""
 
-  def __init__(self, type_spec, member):
-    self.type_spec = type_spec
-    self.member = member
+  def __init__(self, parent_type_spec, name, params):
+    super().__init__(name, params)
+    self.parent_type_spec = parent_type_spec
 
   def to_json(self):
-    return {
-        'type': 'MemberTypeSpec',
-        'type_spec': self.type_spec.to_json(),
-        'member': self.member,
-    }
-
-
-class ParamTypeSpec(TypeSpec):
-  """A parameterized type."""
-
-  def __init__(self, type_spec, params):
-    self.type_spec = type_spec
-    self.params = params
-
-  def to_json(self):
-    return {
-        'type': 'ParamTypeSpec',
-        'type_spec': self.type_spec.to_json(),
-        'params': [param.to_json() for param in self.params],
-    }
+    result = super().to_json()
+    result.update({
+        'parent_type_spec': self.parent_type_spec.to_json(),
+    })
+    return result
