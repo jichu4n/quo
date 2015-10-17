@@ -455,15 +455,16 @@ class QuoParserTest(unittest.TestCase):
     ''', 'func', {
         'type': 'Func',
         'name': 'foo',
+        'type_params': [],
         'params': [
             {
-                'type': 'Param',
+                'type': 'FuncParam',
                 'name': 'a',
                 'type_spec': None,
                 'init_expr': None,
             },
             {
-                'type': 'Param',
+                'type': 'FuncParam',
                 'name': 'b',
                 'type_spec': {
                     'type': 'TypeSpec',
@@ -473,7 +474,7 @@ class QuoParserTest(unittest.TestCase):
                 'init_expr': None,
             },
             {
-                'type': 'Param',
+                'type': 'FuncParam',
                 'name': 'c',
                 'type_spec': None,
                 'init_expr': {
@@ -482,7 +483,7 @@ class QuoParserTest(unittest.TestCase):
                 },
             },
             {
-                'type': 'Param',
+                'type': 'FuncParam',
                 'name': 'd',
                 'type_spec': {
                     'type': 'TypeSpec',
@@ -523,10 +524,11 @@ class QuoParserTest(unittest.TestCase):
         ],
     })
     self.assert_ast_match('''
-    function foo() Array<Int> {}
+    function foo<A, B,>() Array<Int> {}
     ''', 'func', {
         'type': 'Func',
         'name': 'foo',
+        'type_params': ['A', 'B'],
         'params': [],
         'return_type_spec': {
             'type': 'TypeSpec',

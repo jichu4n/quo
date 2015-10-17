@@ -261,7 +261,7 @@ class VarDeclStmt(Stmt):
     }
 
 
-class Param(Node):
+class FuncParam(Node):
   """A function parameter."""
 
   def __init__(self, name, type_spec, init_expr):
@@ -271,7 +271,7 @@ class Param(Node):
 
   def to_json(self):
     return {
-        'type': 'Param',
+        'type': 'FuncParam',
         'name': self.name,
         'type_spec': self.type_spec.to_json() if self.type_spec else None,
         'init_expr': self.init_expr.to_json() if self.init_expr else None,
@@ -281,8 +281,9 @@ class Param(Node):
 class Func(Node):
   """A function definition."""
 
-  def __init__(self, name, params, return_type_spec, stmts):
+  def __init__(self, name, type_params, params, return_type_spec, stmts):
     self.name = name
+    self.type_params = type_params
     self.params = params
     self.return_type_spec = return_type_spec
     self.stmts = stmts
@@ -291,6 +292,7 @@ class Func(Node):
     return {
         'type': 'Func',
         'name': self.name,
+        'type_params': self.type_params,
         'params': [
             param.to_json() for param in self.params
         ],

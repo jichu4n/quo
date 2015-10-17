@@ -260,24 +260,48 @@ class QuoParser(object):
     '''stmts : stmt stmts'''
     p[0] = [p[1]] + p[2]
 
-  def p_param_untyped(self, p):
-    '''param : var'''
-    p[0] = quo_ast.Param(p[1][0], None, p[1][1])
+  def p_type_param(self, p):
+    '''type_param : IDENTIFIER'''
+    p[0] = p[1]
 
-  def p_param_typed(self, p):
-    '''param : var type_spec'''
-    p[0] = quo_ast.Param(p[1][0], p[2], p[1][1])
-
-  def p_param_list_empty(self, p):
-    '''param_list :'''
+  def p_type_param_list_empty(self, p):
+    '''type_param_list :'''
     p[0] = []
 
-  def p_param_list_one(self, p):
-    '''param_list : param'''
+  def p_type_param_list_one(self, p):
+    '''type_param_list : type_param'''
     p[0] = [p[1]]
 
-  def p_param_list(self, p):
-    '''param_list : param COMMA param_list'''
+  def p_type_param_list(self, p):
+    '''type_param_list : type_param COMMA type_param_list'''
+    p[0] = [p[1]] + p[3]
+
+  def p_type_params_empty(self, p):
+    '''type_params :'''
+    p[0] = []
+
+  def p_type_params(self, p):
+    '''type_params : LT type_param_list GT'''
+    p[0] = p[2]
+
+  def p_func_param_untyped(self, p):
+    '''func_param : var'''
+    p[0] = quo_ast.FuncParam(p[1][0], None, p[1][1])
+
+  def p_func_param_typed(self, p):
+    '''func_param : var type_spec'''
+    p[0] = quo_ast.FuncParam(p[1][0], p[2], p[1][1])
+
+  def p_func_param_list_empty(self, p):
+    '''func_param_list :'''
+    p[0] = []
+
+  def p_func_param_list_one(self, p):
+    '''func_param_list : func_param'''
+    p[0] = [p[1]]
+
+  def p_func_param_list(self, p):
+    '''func_param_list : func_param COMMA func_param_list'''
     p[0] = [p[1]] + p[3]
 
   def p_return_type_spec_empty(self, p):
@@ -289,9 +313,11 @@ class QuoParser(object):
     p[0] = p[1]
 
   def p_func_typed(self, p):
-    '''func : FUNCTION IDENTIFIER L_PAREN param_list R_PAREN return_type_spec \
+    '''func : FUNCTION IDENTIFIER type_params \
+              L_PAREN func_param_list R_PAREN \
+              return_type_spec \
               L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.Func(p[2], p[4], p[6], p[8])
+    p[0] = quo_ast.Func(p[2], p[3], p[5], p[7], p[9])
 
   # Operator precedence.
   precedence = (
