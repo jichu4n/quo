@@ -15,11 +15,15 @@
 #    limitations under the License.                                           #
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-"""Quo parser."""
+"""Quo parser.
+
+For debugging, run this module to print out an AST for Quo modules. It Will read
+from files supplied on the command line, or stdin if no files are specified.
+"""
 
 import ply.yacc
-import quo_lexer
 import quo_ast
+import quo_lexer
 
 
 class QuoParser(object):
@@ -327,23 +331,29 @@ class QuoParser(object):
     '''super_classes : EXTENDS type_spec_list'''
     p[0] = p[2]
 
-  def p_class_members_empty(self, p):
-    '''class_members :'''
+  def p_members_empty(self, p):
+    '''members :'''
     p[0] = []
 
-  def p_class_members_var_decl_stmts(self, p):
-    '''class_members : var_decl_stmts class_members'''
+  def p_members_var_decl_stmts(self, p):
+    '''members : var_decl_stmts members'''
     p[0] = p[1] + p[2]
 
-  def p_class_members_funcs(self, p):
-    '''class_members : func class_members'''
+  def p_members_func_class(self, p):
+    '''members : func members
+               | class members
+    '''
     p[0] = [p[1]] + p[2]
 
   def p_class(self, p):
     '''class : CLASS IDENTIFIER type_params super_classes \
-               L_BRACE class_members R_BRACE
+               L_BRACE members R_BRACE
     '''
     p[0] = quo_ast.Class(p[2], p[3], p[4], p[6])
+
+  def p_module(self, p):
+    '''module : members'''
+    p[0] = p[1]
 
   # Operator precedence.
   precedence = (
@@ -355,4 +365,20 @@ class QuoParser(object):
 
 
 def create_parser(**kwargs):
+  if 'start' not in kwargs:
+    kwargs['start'] = 'module'
   return ply.yacc.yacc(module=QuoParser(), **kwargs)
+
+
+if __name__ == '__main__':
+  import fileinput
+  import json
+
+  parser = create_parser()
+  lexer = quo_lexer.create_lexer()
+  ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
+  if isinstance(ast, list):
+    ast_json = [ast_node.to_json() for ast_node in ast]
+  else:
+    ast_json = ast.to_json()
+  print(json.dumps(ast_json, indent=2))
