@@ -303,3 +303,28 @@ class Func(Node):
             stmt.to_json() for stmt in self.stmts
         ],
     }
+
+
+class Class(Node):
+  """A class definition."""
+
+  def __init__(self, name, type_params, super_classes, members):
+    self.name = name
+    self.type_params = type_params
+    self.super_classes = super_classes
+    self.members = members
+
+  def to_json(self):
+    return {
+        'type': 'Class',
+        'name': self.name,
+        'type_params': self.type_params,
+        'super_classes': [
+            super_class.to_json()
+            for super_class in self.super_classes
+        ],
+        'members': [
+            member.to_json()
+            for member in self.members
+        ],
+  }

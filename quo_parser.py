@@ -312,12 +312,38 @@ class QuoParser(object):
     '''return_type_spec : type_spec'''
     p[0] = p[1]
 
-  def p_func_typed(self, p):
+  def p_func(self, p):
     '''func : FUNCTION IDENTIFIER type_params \
               L_PAREN func_param_list R_PAREN \
               return_type_spec \
               L_BRACE stmts R_BRACE'''
     p[0] = quo_ast.Func(p[2], p[3], p[5], p[7], p[9])
+
+  def p_super_classes_empty(self, p):
+    '''super_classes :'''
+    p[0] = []
+
+  def p_super_classes(self, p):
+    '''super_classes : EXTENDS type_spec_list'''
+    p[0] = p[2]
+
+  def p_class_members_empty(self, p):
+    '''class_members :'''
+    p[0] = []
+
+  def p_class_members_var_decl_stmts(self, p):
+    '''class_members : var_decl_stmts class_members'''
+    p[0] = p[1] + p[2]
+
+  def p_class_members_funcs(self, p):
+    '''class_members : func class_members'''
+    p[0] = [p[1]] + p[2]
+
+  def p_class(self, p):
+    '''class : CLASS IDENTIFIER type_params super_classes \
+               L_BRACE class_members R_BRACE
+    '''
+    p[0] = quo_ast.Class(p[2], p[3], p[4], p[6])
 
   # Operator precedence.
   precedence = (

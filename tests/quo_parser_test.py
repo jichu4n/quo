@@ -541,3 +541,106 @@ class QuoParserTest(unittest.TestCase):
         },
         'stmts': [],
     })
+
+  def test_class(self):
+    self.assert_ast_match('class A {}', 'class', {
+        'type': 'Class',
+        'name': 'A',
+        'type_params': [],
+        'super_classes': [],
+        'members': [],
+    })
+    self.assert_ast_match('class A<> extends B<T, Int>, C {}', 'class', {
+        'type': 'Class',
+        'name': 'A',
+        'type_params': [],
+        'super_classes': [
+            {
+                'type': 'TypeSpec',
+                'name': 'B',
+                'params': [
+                    {
+                        'type': 'TypeSpec',
+                        'name': 'T',
+                        'params': [],
+                    },
+                    {
+                        'type': 'TypeSpec',
+                        'name': 'Int',
+                        'params': [],
+                    },
+                ],
+            },
+            {
+                'type': 'TypeSpec',
+                'name': 'C',
+                'params': [],
+            },
+        ],
+        'members': [],
+    })
+    self.assert_ast_match('''
+    class MyClass<T> extends Array<T> {
+      var a;
+      function f() Int { return 42; }
+      var b = 0, c Int;
+    }''', 'class', {
+        'type': 'Class',
+        'name': 'MyClass',
+        'type_params': ['T'],
+        'super_classes': [{
+            'type': 'TypeSpec',
+            'name': 'Array',
+            'params': [{
+                'type': 'TypeSpec',
+                'name': 'T',
+                'params': [],
+            }],
+        }],
+        'members': [
+            {
+                'type': 'VarDeclStmt',
+                'name': 'a',
+                'type_spec': None,
+                'init_expr': None,
+            }, {
+                'type': 'Func',
+                'name': 'f',
+                'type_params': [],
+                'params': [],
+                'return_type_spec': {
+                    'type': 'TypeSpec',
+                    'name': 'Int',
+                    'params': [],
+                },
+                'stmts': [{
+                    'type': 'ReturnStmt',
+                    'expr': {
+                        'type': 'ConstantExpr',
+                        'value': '42',
+                    },
+                }],
+            }, {
+                'type': 'VarDeclStmt',
+                'name': 'b',
+                'type_spec': {
+                    'type': 'TypeSpec',
+                    'name': 'Int',
+                    'params': [],
+                },
+                'init_expr': {
+                    'type': 'ConstantExpr',
+                    'value': '0',
+                },
+            }, {
+                'type': 'VarDeclStmt',
+                'name': 'c',
+                'type_spec': {
+                    'type': 'TypeSpec',
+                    'name': 'Int',
+                    'params': [],
+                },
+                'init_expr': None,
+            },
+        ],
+    })

@@ -40,6 +40,7 @@ class QuoLexer(object):
   tokens = (
       # Program structure.
       'CLASS',
+      'EXTENDS',
       'VAR',
       'FUNCTION',
       # Control structures.
@@ -88,8 +89,10 @@ class QuoLexer(object):
 
   _reserved_words = {
       'class': ('CLASS', None),
+      'extends': ('EXTENDS', None),
       'var': ('VAR', None),
       'function': ('FUNCTION', None),
+      'fn': ('FUNCTION', None),
       'if': ('IF', None),
       'else': ('ELSE', None),
       'for': ('FOR', None),

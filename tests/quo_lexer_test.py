@@ -97,7 +97,7 @@ class LexerTest(unittest.TestCase):
 
   def test_sample_program_1(self):
     self.assert_tokens_match("""
-    class Car {
+    class Car extends Vehicle {
       var make String;  // Make
       var model String;  // Model
       var year Int;  // Year of manufacture
@@ -113,6 +113,8 @@ class LexerTest(unittest.TestCase):
     }""", [
         'CLASS',
         ('IDENTIFIER', 'Car'),
+        'EXTENDS',
+        ('IDENTIFIER', 'Vehicle'),
         'L_BRACE',
         'VAR',
         ('IDENTIFIER', 'make'),
