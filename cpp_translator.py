@@ -23,6 +23,7 @@ files are specified.
 """
 
 import quo_ast
+import string
 
 
 class CppTranslatorVisitor(quo_ast.Visitor):
@@ -32,7 +33,9 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   """
 
   def visit_constant_expr(self, node, args):
-    if isinstance(node.value, str):
+    if node.value is None:
+      return 'nullptr'
+    elif isinstance(node.value, str):
       return '"%s"' % node.value
     elif isinstance(node.value, bool):
       return str(node.value).lower()
@@ -190,12 +193,35 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     inheritance = (
         ' : public %s' % ', '.join(args['super_classes']) if
         args['super_classes'] else '')
+    members = args['members'][:]
+    for i in range(len(node.members)):
+      if isinstance(node.members[i], quo_ast.Func):
+        members[i] = 'virtual ' + members[i]
+      if self.is_public(node.members[i]):
+        members[i] = 'public: ' + members[i]
+      elif self.is_protected(node.members[i]):
+        members[i] = 'protected: ' + members[i]
+      elif self.is_private(node.members[i]):
+        members[i] = 'private: ' + members[i]
+      else:
+        raise ValueError(
+            'Cannot determine visibility of class member: %s' %
+            node.members[i].name)
     return 'class %s%s%s {\n%s\n}' % (
         node.name, self.translate_type_params(node), inheritance,
-        self.indent_stmts(args['members']))
+        self.indent_stmts(members))
 
   def visit_module(self, node, args):
-    return '\n\n'.join(args['members'])
+    members = args['members'][:]
+    for i in range(len(node.members)):
+      if self.is_public(node.members[i]):
+        pass
+      elif self.is_protected(node.members[i]):
+        raise ValueError(
+            'Protected class member at module scope: %s' % node.members[i].name)
+      elif self.is_private(node.members[i]):
+        members[i] = 'static ' + members[i]
+    return '\n\n'.join(members)
 
   @staticmethod
   def indent_stmts(stmts, indent_str='  '):
@@ -212,6 +238,18 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   @staticmethod
   def translate_type_params(node):
     return '<%s>' % (', '.join(node.type_params)) if node.type_params else ''
+
+  @staticmethod
+  def is_public(node):
+    return node.name[0] in string.ascii_uppercase
+
+  @staticmethod
+  def is_protected(node):
+    return node.name[0] == '_'
+
+  @staticmethod
+  def is_private(node):
+    return node.name[0] in string.ascii_lowercase
 
 
 if __name__ == '__main__':
