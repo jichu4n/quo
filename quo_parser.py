@@ -372,13 +372,16 @@ def create_parser(**kwargs):
 
 if __name__ == '__main__':
   import fileinput
-  import json
+  import yaml
 
   parser = create_parser()
   lexer = quo_lexer.create_lexer()
   ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
+  serialize_visitor = quo_ast.SerializeVisitor()
   if isinstance(ast, list):
-    ast_json = [ast_node.to_json() for ast_node in ast]
+    ast_serialized = [ast_node.accept(serialize_visitor) for ast_node in ast]
+    ast_text = yaml.dump_all(ast_serialized, explicit_start=True)
   else:
-    ast_json = ast.to_json()
-  print(json.dumps(ast_json, indent=2))
+    ast_serialized = ast.accept(serialize_visitor)
+    ast_text = yaml.dump(ast_serialized)
+  print(ast_text)

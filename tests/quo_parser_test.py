@@ -19,6 +19,7 @@
 # pylint: disable=missing-docstring
 
 import unittest
+import quo_ast
 import quo_parser
 
 
@@ -26,14 +27,17 @@ class QuoParserTest(unittest.TestCase):
 
   maxDiff = None
 
-  def assert_ast_match(self, input_str, start, expected_ast_json):
+  def assert_ast_match(self, input_str, start, expected_ast_serialized):
     parser = quo_parser.create_parser(start=start, write_tables=False)
     actual_ast = parser.parse(input_str)
+    serialize_visitor = quo_ast.SerializeVisitor()
     if isinstance(actual_ast, list):
-      actual_ast_json = [ast_node.to_json() for ast_node in actual_ast]
+      actual_ast_serialized = [
+          ast_node.accept(serialize_visitor) for ast_node in actual_ast
+      ]
     else:
-      actual_ast_json = actual_ast.to_json()
-    self.assertEqual(actual_ast_json, expected_ast_json)
+      actual_ast_serialized = actual_ast.accept(serialize_visitor)
+    self.assertEqual(actual_ast_serialized, expected_ast_serialized)
 
   def test_primary(self):
     self.assert_ast_match('''a[b.foo[0]['hello']].bar''', 'expr', {
@@ -603,7 +607,8 @@ class QuoParserTest(unittest.TestCase):
                 'name': 'a',
                 'type_spec': None,
                 'init_expr': None,
-            }, {
+            },
+            {
                 'type': 'Func',
                 'name': 'f',
                 'type_params': [],
@@ -620,7 +625,8 @@ class QuoParserTest(unittest.TestCase):
                         'value': '42',
                     },
                 }],
-            }, {
+            },
+            {
                 'type': 'VarDeclStmt',
                 'name': 'b',
                 'type_spec': {
@@ -632,7 +638,8 @@ class QuoParserTest(unittest.TestCase):
                     'type': 'ConstantExpr',
                     'value': '0',
                 },
-            }, {
+            },
+            {
                 'type': 'VarDeclStmt',
                 'name': 'c',
                 'type_spec': {

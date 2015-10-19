@@ -1,4 +1,6 @@
 ply
+inflection
+pyyaml
 
 pylint
 nose

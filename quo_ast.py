@@ -17,12 +17,14 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 """Quo abstract syntax tree."""
 
+import inflection
+
 
 class Node(object):
   """Base class for an abstract syntax tree node."""
 
-  def to_json(self):
-    raise NotImplementedError()
+  def accept(self, visitor):
+    return visitor.visit(self)
 
 
 class Expr(Node):
@@ -36,18 +38,12 @@ class ConstantExpr(Expr):
   def __init__(self, value):
     self.value = value
 
-  def to_json(self):
-    return {'type': 'ConstantExpr', 'value': self.value}
-
 
 class VarExpr(Expr):
   """A variable reference."""
 
   def __init__(self, var):
     self.var = var
-
-  def to_json(self):
-    return {'type': 'VarExpr', 'var': self.var}
 
 
 class MemberExpr(Expr):
@@ -57,12 +53,8 @@ class MemberExpr(Expr):
     self.expr = expr
     self.member = member
 
-  def to_json(self):
-    return {
-        'type': 'MemberExpr',
-        'expr': self.expr.to_json(),
-        'member': self.member,
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {'expr': self.expr.accept(visitor), })
 
 
 class IndexExpr(Expr):
@@ -72,12 +64,11 @@ class IndexExpr(Expr):
     self.expr = expr
     self.index_expr = index_expr
 
-  def to_json(self):
-    return {
-        'type': 'IndexExpr',
-        'expr': self.expr.to_json(),
-        'index_expr': self.index_expr.to_json(),
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'expr': self.expr.accept(visitor),
+        'index_expr': self.index_expr.accept(visitor),
+    })
 
 
 class CallExpr(Expr):
@@ -87,12 +78,13 @@ class CallExpr(Expr):
     self.expr = expr
     self.arg_exprs = arg_exprs
 
-  def to_json(self):
-    return {
-        'type': 'CallExpr',
-        'expr': self.expr.to_json(),
-        'arg_exprs': [arg_expr.to_json() for arg_expr in self.arg_exprs],
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'expr': self.expr.accept(visitor),
+        'arg_exprs': [
+            arg_expr.accept(visitor) for arg_expr in self.arg_exprs
+        ],
+    })
 
 
 class UnaryOpExpr(Expr):
@@ -102,12 +94,8 @@ class UnaryOpExpr(Expr):
     self.op = op
     self.expr = expr
 
-  def to_json(self):
-    return {
-        'type': 'UnaryOpExpr',
-        'op': self.op,
-        'expr': self.expr.to_json(),
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {'expr': self.expr.accept(visitor), })
 
 
 class BinaryOpExpr(Expr):
@@ -118,13 +106,11 @@ class BinaryOpExpr(Expr):
     self.left_expr = left_expr
     self.right_expr = right_expr
 
-  def to_json(self):
-    return {
-        'type': 'BinaryOpExpr',
-        'op': self.op,
-        'left_expr': self.left_expr.to_json(),
-        'right_expr': self.right_expr.to_json(),
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'left_expr': self.left_expr.accept(visitor),
+        'right_expr': self.right_expr.accept(visitor),
+    })
 
 
 class AssignExpr(Expr):
@@ -134,12 +120,11 @@ class AssignExpr(Expr):
     self.dest_expr = dest_expr
     self.expr = expr
 
-  def to_json(self):
-    return {
-        'type': 'AssignExpr',
-        'dest_expr': self.dest_expr.to_json(),
-        'expr': self.expr.to_json(),
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'dest_expr': self.dest_expr.accept(visitor),
+        'expr': self.expr.accept(visitor),
+    })
 
 
 class Stmt(Node):
@@ -153,8 +138,8 @@ class ExprStmt(Stmt):
   def __init__(self, expr):
     self.expr = expr
 
-  def to_json(self):
-    return {'type': 'ExprStmt', 'expr': self.expr.to_json()}
+  def accept(self, visitor):
+    return visitor.visit(self, {'expr': self.expr.accept(visitor), })
 
 
 class ReturnStmt(Stmt):
@@ -163,22 +148,18 @@ class ReturnStmt(Stmt):
   def __init__(self, expr):
     self.expr = expr
 
-  def to_json(self):
-    return {'type': 'ReturnStmt', 'expr': self.expr.to_json()}
+  def accept(self, visitor):
+    return visitor.visit(self, {'expr': self.expr.accept(visitor), })
 
 
 class BreakStmt(Stmt):
   """break statement."""
-
-  def to_json(self):
-    return {'type': 'BreakStmt'}
+  pass
 
 
 class ContinueStmt(Stmt):
   """continue statement."""
-
-  def to_json(self):
-    return {'type': 'ContinueStmt'}
+  pass
 
 
 class CondStmt(Stmt):
@@ -189,13 +170,16 @@ class CondStmt(Stmt):
     self.true_stmts = true_stmts
     self.false_stmts = false_stmts
 
-  def to_json(self):
-    return {
-        'type': 'CondStmt',
-        'cond_expr': self.cond_expr.to_json(),
-        'true_stmts': [stmt.to_json() for stmt in self.true_stmts],
-        'false_stmts': [stmt.to_json() for stmt in self.false_stmts],
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'cond_expr': self.cond_expr.accept(visitor),
+        'true_stmts': [
+            stmt.accept(visitor) for stmt in self.true_stmts
+        ],
+        'false_stmts': [
+            stmt.accept(visitor) for stmt in self.false_stmts
+        ],
+    })
 
 
 class CondLoopStmt(Stmt):
@@ -205,12 +189,13 @@ class CondLoopStmt(Stmt):
     self.cond_expr = cond_expr
     self.stmts = stmts
 
-  def to_json(self):
-    return {
-        'type': 'CondStmt',
-        'cond_expr': self.cond_expr.to_json(),
-        'stmts': [stmt.to_json() for stmt in self.stmts],
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'cond_expr': self.cond_expr.accept(visitor),
+        'stmts': [
+            stmt.accept(visitor) for stmt in self.stmts
+        ],
+    })
 
 
 class TypeSpec(Node):
@@ -220,12 +205,10 @@ class TypeSpec(Node):
     self.name = name
     self.params = params
 
-  def to_json(self):
-    return {
-        'type': 'TypeSpec',
-        'name': self.name,
-        'params': [param.to_json() for param in self.params],
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'params': [param.accept(visitor) for param in self.params],
+    })
 
 
 class MemberTypeSpec(TypeSpec):
@@ -235,13 +218,11 @@ class MemberTypeSpec(TypeSpec):
     super().__init__(name, params)
     self.parent_type_spec = parent_type_spec
 
-  def to_json(self):
-    result = super().to_json()
-    result.update({
-        'type': 'MemberTypeSpec',
-        'parent_type_spec': self.parent_type_spec.to_json(),
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'params': [param.accept(visitor) for param in self.params],
+        'parent_type_spec': self.parent_type_spec.accept(visitor),
     })
-    return result
 
 
 class VarDeclStmt(Stmt):
@@ -252,13 +233,13 @@ class VarDeclStmt(Stmt):
     self.type_spec = type_spec
     self.init_expr = init_expr
 
-  def to_json(self):
-    return {
-        'type': 'VarDeclStmt',
-        'name': self.name,
-        'type_spec': self.type_spec.to_json() if self.type_spec else None,
-        'init_expr': self.init_expr.to_json() if self.init_expr else None,
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'type_spec': (
+            self.type_spec.accept(visitor) if self.type_spec else None),
+        'init_expr': (
+            self.init_expr.accept(visitor) if self.init_expr else None),
+    })
 
 
 class FuncParam(Node):
@@ -269,13 +250,13 @@ class FuncParam(Node):
     self.type_spec = type_spec
     self.init_expr = init_expr
 
-  def to_json(self):
-    return {
-        'type': 'FuncParam',
-        'name': self.name,
-        'type_spec': self.type_spec.to_json() if self.type_spec else None,
-        'init_expr': self.init_expr.to_json() if self.init_expr else None,
-    }
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'type_spec': (
+            self.type_spec.accept(visitor) if self.type_spec else None),
+        'init_expr': (
+            self.init_expr.accept(visitor) if self.init_expr else None),
+    })
 
 
 class Func(Node):
@@ -288,21 +269,14 @@ class Func(Node):
     self.return_type_spec = return_type_spec
     self.stmts = stmts
 
-  def to_json(self):
-    return {
-        'type': 'Func',
-        'name': self.name,
-        'type_params': self.type_params,
-        'params': [
-            param.to_json() for param in self.params
-        ],
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'params': [param.accept(visitor) for param in self.params],
         'return_type_spec': (
-            self.return_type_spec.to_json() if self.return_type_spec else
+            self.return_type_spec.accept(visitor) if self.return_type_spec else
             None),
-        'stmts': [
-            stmt.to_json() for stmt in self.stmts
-        ],
-    }
+        'stmts': [stmt.accept(visitor) for stmt in self.stmts],
+    })
 
 
 class Class(Node):
@@ -314,17 +288,151 @@ class Class(Node):
     self.super_classes = super_classes
     self.members = members
 
-  def to_json(self):
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'super_classes': [
+            super_class.accept(visitor) for super_class in self.super_classes
+        ],
+        'members': [member.accept(visitor) for member in self.members],
+    })
+
+
+class Visitor(object):
+  """Base class for AST visitors."""
+
+  def visit(self, node, child_node_results={}):
+    type_name = type(node).__name__
+    visit_fn_name = 'visit_%s' % inflection.underscore(type_name)
+    visit_fn = getattr(self, visit_fn_name, self.unknown_node_type)
+    return visit_fn(node, child_node_results)
+
+  def unknown_node_type(self, node, _):
+    visitor_type_name = type(self).__name__
+    type_name = type(node).__name__
+    error_message = 'Visitor %s has no defined visit method for class %s' % (
+        visitor_type_name, type_name)
+    logging.error(error_message)
+    raise NotImplementedError(error_message)
+
+
+class SerializeVisitor(Visitor):
+  """An AST visitor that serializes an AST for debugging."""
+
+  def visit_constant_expr(self, node, args):
+    return {'type': 'ConstantExpr', 'value': node.value}
+
+  def visit_var_expr(self, node, args):
+    return {'type': 'VarExpr', 'var': node.var}
+
+  def visit_member_expr(self, node, args):
+    return {
+        'type': 'MemberExpr',
+        'expr': args['expr'],
+        'member': node.member,
+    }
+
+  def visit_index_expr(self, node, args):
+    return {
+        'type': 'IndexExpr',
+        'expr': args['expr'],
+        'index_expr': args['index_expr'],
+    }
+
+  def visit_call_expr(self, node, args):
+    return {
+        'type': 'CallExpr',
+        'expr': args['expr'],
+        'arg_exprs': args['arg_exprs'],
+    }
+
+  def visit_unary_op_expr(self, node, args):
+    return {'type': 'UnaryOpExpr', 'op': node.op, 'expr': args['expr'], }
+
+  def visit_binary_op_expr(self, node, args):
+    return {
+        'type': 'BinaryOpExpr',
+        'op': node.op,
+        'left_expr': args['left_expr'],
+        'right_expr': args['right_expr'],
+    }
+
+  def visit_assign_expr(self, node, args):
+    return {
+        'type': 'AssignExpr',
+        'dest_expr': args['dest_expr'],
+        'expr': args['expr'],
+    }
+
+  def visit_expr_stmt(self, node, args):
+    return {'type': 'ExprStmt', 'expr': args['expr']}
+
+  def visit_return_stmt(self, node, args):
+    return {'type': 'ReturnStmt', 'expr': args['expr']}
+
+  def visit_break_stmt(self, node, args):
+    return {'type': 'BreakStmt'}
+
+  def visit_continue_stmt(self, node, args):
+    return {'type': 'ContinueStmt'}
+
+  def visit_cond_stmt(self, node, args):
+    return {
+        'type': 'CondStmt',
+        'cond_expr': args['cond_expr'],
+        'true_stmts': args['true_stmts'],
+        'false_stmts': args['false_stmts'],
+    }
+
+  def visit_cond_loop_stmt(self, node, args):
+    return {
+        'type': 'CondStmt',
+        'cond_expr': args['cond_expr'],
+        'stmts': args['stmts'],
+    }
+
+  def visit_type_spec(self, node, args):
+    return {'type': 'TypeSpec', 'name': node.name, 'params': args['params'], }
+
+  def visit_member_type_spec(self, node, args):
+    result = self.visit_type_spec(node, args)
+
+    result.update({
+        'type': 'MemberTypeSpec',
+        'parent_type_spec': args['parent_type_spec'],
+    })
+    return result
+
+  def visit_var_decl_stmt(self, node, args):
+    return {
+        'type': 'VarDeclStmt',
+        'name': node.name,
+        'type_spec': args['type_spec'],
+        'init_expr': args['init_expr'],
+    }
+
+  def visit_func_param(self, node, args):
+    return {
+        'type': 'FuncParam',
+        'name': node.name,
+        'type_spec': args['type_spec'],
+        'init_expr': args['init_expr'],
+    }
+
+  def visit_func(self, node, args):
+    return {
+        'type': 'Func',
+        'name': node.name,
+        'type_params': node.type_params,
+        'params': args['params'],
+        'return_type_spec': args['return_type_spec'],
+        'stmts': args['stmts'],
+    }
+
+  def visit_class(self, node, args):
     return {
         'type': 'Class',
-        'name': self.name,
-        'type_params': self.type_params,
-        'super_classes': [
-            super_class.to_json()
-            for super_class in self.super_classes
-        ],
-        'members': [
-            member.to_json()
-            for member in self.members
-        ],
-  }
+        'name': node.name,
+        'type_params': node.type_params,
+        'super_classes': args['super_classes'],
+        'members': args['members'],
+    }
