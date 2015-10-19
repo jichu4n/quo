@@ -119,8 +119,10 @@ class QuoParser(object):
               | primary MUL_ASSIGN expr
               | primary DIV_ASSIGN expr
     '''
+    # TODO: This is not technically correct as it would re-evaluate the dest
+    # expr, which may have side effects.
     p[0] = quo_ast.AssignExpr(p[1], quo_ast.BinaryOpExpr(
-        p[2].split('_')[0], p[1], p[3]))
+        p[2].split('_')[0], p[3], p[1]))
 
   def p_expr(self, p):
     '''expr : binary_bool
@@ -168,6 +170,14 @@ class QuoParser(object):
     '''type_spec_list : type_spec COMMA type_spec_list'''
     p[0] = [p[1]] + p[3]
 
+  def p_var_mode_own(self, p):
+    '''var_mode :'''
+    p[0] = 'OWN'
+
+  def p_var_mode_borrow(self, p):
+    '''var_mode : BORROW'''
+    p[0] = 'BORROW'
+
   def p_var(self, p):
     '''var : IDENTIFIER'''
     p[0] = (p[1], None)
@@ -177,20 +187,20 @@ class QuoParser(object):
     p[0] = (p[1], p[3])
 
   def p_var_list_one(self, p):
-    '''var_list : var'''
-    p[0] = [p[1]]
+    '''var_list : var_mode var'''
+    p[0] = [(p[2][0], p[2][1], p[1])]
 
   def p_var_list(self, p):
-    '''var_list : var COMMA var_list'''
-    p[0] = [p[1]] + p[3]
+    '''var_list : var_mode var COMMA var_list'''
+    p[0] = [(p[2][0], p[2][1], p[1])] + p[4]
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
-    p[0] = [quo_ast.VarDeclStmt(var[0], None, var[1]) for var in p[1]]
+    p[0] = [quo_ast.VarDeclStmt(var[0], None, var[2], var[1]) for var in p[1]]
 
   def p_var_decls_typed(self, p):
     '''var_decls : var_list type_spec SEMICOLON'''
-    p[0] = [quo_ast.VarDeclStmt(var[0], p[2], var[1]) for var in p[1]]
+    p[0] = [quo_ast.VarDeclStmt(var[0], p[2], var[2], var[1]) for var in p[1]]
 
   def p_var_decls_list_empty(self, p):
     '''var_decls_list :'''

@@ -228,9 +228,10 @@ class MemberTypeSpec(TypeSpec):
 class VarDeclStmt(Stmt):
   """A variable declaration statement."""
 
-  def __init__(self, name, type_spec, init_expr):
+  def __init__(self, name, type_spec, mode, init_expr):
     self.name = name
     self.type_spec = type_spec
+    self.mode = mode
     self.init_expr = init_expr
 
   def accept(self, visitor):
@@ -420,6 +421,7 @@ class SerializerVisitor(Visitor):
         'type': 'VarDeclStmt',
         'name': node.name,
         'type_spec': args['type_spec'],
+        'mode': node.mode,
         'init_expr': args['init_expr'],
     }
 

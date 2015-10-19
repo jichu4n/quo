@@ -34,10 +34,10 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   def visit_constant_expr(self, node, args):
     if isinstance(node.value, str):
       return '"%s"' % node.value
-    elif isinstance(node.value, int):
-      return str(node.value)
     elif isinstance(node.value, bool):
       return str(node.value).lower()
+    elif isinstance(node.value, int):
+      return str(node.value)
     else:
       raise NotImplementedError(
           'Unknown constant type: %s' % type(node.value).__name__)
@@ -60,11 +60,11 @@ class CppTranslatorVisitor(quo_ast.Visitor):
 
   def visit_unary_op_expr(self, node, args):
     op_map = {
-        'ADD': '+',
-        'SUB': '-',
-        'NOT': '!',
-        'BORROW': '',
-        'MOVE': 'std::move',
+        'ADD': '+(%s)',
+        'SUB': '-(%s)',
+        'NOT': '!(%s)',
+        'BORROW': '&(*(%s))',
+        'MOVE': 'std::move(%s)',
     }
     if node.op not in op_map:
       raise NotImplementedError('Unknown unary op: %s' % node.op)
@@ -74,7 +74,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
       expr = args['expr'][1:]
     else:
       expr = args['expr']
-    return '%s(%s)' % (op_map[node.op], expr)
+    return op_map[node.op] % expr
 
   def visit_binary_op_expr(self, node, args):
     op_map = {
@@ -102,7 +102,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
       raise ValueError('Invalid LHS in assignment: %s' % args['dest_expr'])
     if (isinstance(node.expr, quo_ast.UnaryOpExpr) and
         node.expr.op == 'BORROW'):
-      raise ValueError('Invalid RHS in assignment: %s' % args['expr'])
+      dest_expr = args['dest_expr'][1:]
     elif (isinstance(node.expr, quo_ast.UnaryOpExpr) and
           node.expr.op == 'MOVE'):
       dest_expr = args['dest_expr'][1:]
@@ -127,7 +127,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   def visit_cond_stmt(self, node, args):
     stmt = 'if (%s) {\n%s\n}' % (
         args['cond_expr'], self.indent_stmts(args['true_stmts']))
-    if self.false_stmts:
+    if node.false_stmts:
       stmt += ' else {\n%s\n}' % self.indent_stmts(args['false_stmts'])
     return stmt
 
@@ -144,9 +144,16 @@ class CppTranslatorVisitor(quo_ast.Visitor):
 
   def visit_var_decl_stmt(self, node, args):
     type_spec = args['type_spec'] if args['type_spec'] else 'Object'
-    init_expr = args['init_expr'] if args['init_expr'] else ''
-    return '::std::unique_ptr<%s> %s(new %s(%s));' % (
-        type_spec, node.name, type_spec, init_expr)
+    if node.mode == 'OWN':
+      init_expr = args['init_expr'] if args['init_expr'] else ''
+      return '::std::unique_ptr<%s> %s(new %s(%s));' % (
+          type_spec, node.name, type_spec, init_expr)
+    elif node.mode == 'BORROW':
+      init_expr = ' = %s' % args['init_expr'] if args['init_expr'] else ''
+      return '%s* %s%s;' % (
+          type_spec, node.name, init_expr)
+    else:
+      raise NotImplementedError('Unknown var mode: %s' % node.mode)
 
   def visit_func_param(self, node, args):
     base_type = args['type_spec'] if args['type_spec'] else 'Object'
@@ -157,7 +164,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
           base_type, node.name, base_type, name)
     elif node.mode == 'BORROW':
       name = node.name
-      type_spec = '::std::unique_ptr<%s>&' % base_type
+      type_spec = '%s*' % base_type
       init_stmt = None
     elif node.mode == 'MOVE':
       name = node.name
@@ -172,7 +179,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     return_type_spec = (
         args['return_type_spec'] if args['return_type_spec'] else 'Object')
     stmts = [
-        param[1] for param in args['params'] if param is not None
+        param[1] for param in args['params'] if param[1] is not None
     ] + args['stmts']
     return '%s %s%s(%s) {\n%s\n}' % (
         return_type_spec, node.name, self.translate_type_params(node),

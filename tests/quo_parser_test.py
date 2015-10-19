@@ -364,7 +364,7 @@ class QuoParserTest(unittest.TestCase):
     var {
       b = 3, c, d = 5 + 2 Int;
       e = '' String;
-      f, g;
+      f, &g;
     }
     var h;
     ''', 'stmts', [
@@ -380,6 +380,7 @@ class QuoParserTest(unittest.TestCase):
                     'params': [],
                 }],
             },
+            'mode': 'OWN',
             'init_expr': None,
         },
         {
@@ -390,6 +391,7 @@ class QuoParserTest(unittest.TestCase):
                 'name': 'Int',
                 'params': [],
             },
+            'mode': 'OWN',
             'init_expr': {
                 'type': 'ConstantExpr',
                 'value': 3,
@@ -403,6 +405,7 @@ class QuoParserTest(unittest.TestCase):
                 'name': 'Int',
                 'params': [],
             },
+            'mode': 'OWN',
             'init_expr': None,
         },
         {
@@ -413,6 +416,7 @@ class QuoParserTest(unittest.TestCase):
                 'name': 'Int',
                 'params': [],
             },
+            'mode': 'OWN',
             'init_expr': {
                 'type': 'BinaryOpExpr',
                 'op': 'ADD',
@@ -430,6 +434,7 @@ class QuoParserTest(unittest.TestCase):
                 'name': 'String',
                 'params': [],
             },
+            'mode': 'OWN',
             'init_expr': {
                 'type': 'ConstantExpr',
                 'value': '',
@@ -439,11 +444,13 @@ class QuoParserTest(unittest.TestCase):
             'type': 'VarDeclStmt',
             'name': 'f',
             'type_spec': None,
+            'mode': 'OWN',
             'init_expr': None,
         },
         {
             'type': 'VarDeclStmt',
             'name': 'g',
+            'mode': 'BORROW',
             'type_spec': None,
             'init_expr': None,
         },
@@ -451,6 +458,7 @@ class QuoParserTest(unittest.TestCase):
             'type': 'VarDeclStmt',
             'name': 'h',
             'type_spec': None,
+            'mode': 'OWN',
             'init_expr': None,
         },
     ])
@@ -595,7 +603,7 @@ class QuoParserTest(unittest.TestCase):
     class MyClass<T> extends Array<T> {
       var a;
       function f() Int { return 42; }
-      var b = 0, c Int;
+      var &b = &foo, c Int;
     }''', 'class', {
         'type': 'Class',
         'name': 'MyClass',
@@ -614,6 +622,7 @@ class QuoParserTest(unittest.TestCase):
                 'type': 'VarDeclStmt',
                 'name': 'a',
                 'type_spec': None,
+                'mode': 'OWN',
                 'init_expr': None,
             },
             {
@@ -642,9 +651,14 @@ class QuoParserTest(unittest.TestCase):
                     'name': 'Int',
                     'params': [],
                 },
+                'mode': 'BORROW',
                 'init_expr': {
-                    'type': 'ConstantExpr',
-                    'value': 0,
+                    'type': 'UnaryOpExpr',
+                    'op': 'BORROW',
+                    'expr': {
+                        'type': 'VarExpr',
+                        'var': 'foo',
+                    },
                 },
             },
             {
@@ -655,6 +669,7 @@ class QuoParserTest(unittest.TestCase):
                     'name': 'Int',
                     'params': [],
                 },
+                'mode': 'OWN',
                 'init_expr': None,
             },
         ],
