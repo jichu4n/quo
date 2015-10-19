@@ -184,10 +184,12 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     stmts = [
         param[1] for param in args['params'] if param[1] is not None
     ] + args['stmts']
-    return '%s %s%s(%s) {\n%s\n}' % (
-        return_type_spec, node.name, self.translate_type_params(node),
-        ', '.join(param[0]
-                  for param in args['params']), self.indent_stmts(stmts))
+    return '%s%s %s%s(%s) {\n%s\n}' % (
+        self.translate_template(node), return_type_spec, node.name,
+        self.translate_type_params(node), ', '.join(
+            param[0]
+            for param in args['params']),
+        self.indent_stmts(stmts))
 
   def visit_class(self, node, args):
     inheritance = (
@@ -207,8 +209,9 @@ class CppTranslatorVisitor(quo_ast.Visitor):
         raise ValueError(
             'Cannot determine visibility of class member: %s' %
             node.members[i].name)
-    return 'class %s%s%s {\n%s\n}' % (
-        node.name, self.translate_type_params(node), inheritance,
+    return '%sclass %s%s%s {\n%s\n}' % (
+        self.translate_template(node), node.name,
+        self.translate_type_params(node), inheritance,
         self.indent_stmts(members))
 
   def visit_module(self, node, args):
@@ -238,6 +241,12 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   @staticmethod
   def translate_type_params(node):
     return '<%s>' % (', '.join(node.type_params)) if node.type_params else ''
+
+  @staticmethod
+  def translate_template(node):
+    return 'template<%s>\n' % (', '.join(
+        'typename ' + type_param
+        for type_param in node.type_params)) if node.type_params else ''
 
   @staticmethod
   def is_public(node):
