@@ -297,6 +297,18 @@ class Class(Node):
     })
 
 
+class Module(Node):
+  """A module definition."""
+
+  def __init__(self, members):
+    self.members = members
+
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'members': [member.accept(visitor) for member in self.members],
+    })
+
+
 class Visitor(object):
   """Base class for AST visitors."""
 
@@ -315,7 +327,7 @@ class Visitor(object):
     raise NotImplementedError(error_message)
 
 
-class SerializeVisitor(Visitor):
+class SerializerVisitor(Visitor):
   """An AST visitor that serializes an AST for debugging."""
 
   def visit_constant_expr(self, node, args):
@@ -434,5 +446,11 @@ class SerializeVisitor(Visitor):
         'name': node.name,
         'type_params': node.type_params,
         'super_classes': args['super_classes'],
+        'members': args['members'],
+    }
+
+  def visit_module(self, node, args):
+    return {
+        'type': 'Module',
         'members': args['members'],
     }

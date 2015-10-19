@@ -30,13 +30,13 @@ class QuoParserTest(unittest.TestCase):
   def assert_ast_match(self, input_str, start, expected_ast_serialized):
     parser = quo_parser.create_parser(start=start, write_tables=False)
     actual_ast = parser.parse(input_str)
-    serialize_visitor = quo_ast.SerializeVisitor()
+    serializer_visitor = quo_ast.SerializerVisitor()
     if isinstance(actual_ast, list):
       actual_ast_serialized = [
-          ast_node.accept(serialize_visitor) for ast_node in actual_ast
+          ast_node.accept(serializer_visitor) for ast_node in actual_ast
       ]
     else:
-      actual_ast_serialized = actual_ast.accept(serialize_visitor)
+      actual_ast_serialized = actual_ast.accept(serializer_visitor)
     self.assertEqual(actual_ast_serialized, expected_ast_serialized)
 
   def test_primary(self):

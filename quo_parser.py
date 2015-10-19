@@ -354,7 +354,7 @@ class QuoParser(object):
 
   def p_module(self, p):
     '''module : members'''
-    p[0] = p[1]
+    p[0] = quo_ast.Module(p[1])
 
   # Operator precedence.
   precedence = (
@@ -378,11 +378,11 @@ if __name__ == '__main__':
   parser = create_parser()
   lexer = quo_lexer.create_lexer()
   ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
-  serialize_visitor = quo_ast.SerializeVisitor()
+  serializer_visitor = quo_ast.SerializerVisitor()
   if isinstance(ast, list):
-    ast_serialized = [ast_node.accept(serialize_visitor) for ast_node in ast]
+    ast_serialized = [ast_node.accept(serializer_visitor) for ast_node in ast]
     ast_text = yaml.dump_all(ast_serialized, explicit_start=True)
   else:
-    ast_serialized = ast.accept(serialize_visitor)
+    ast_serialized = ast.accept(serializer_visitor)
     ast_text = yaml.dump(ast_serialized)
   print(ast_text)
