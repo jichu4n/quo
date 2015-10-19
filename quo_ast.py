@@ -281,6 +281,23 @@ class Func(Node):
     })
 
 
+class ExternFunc(Node):
+  """An external (C/C++) function declaration."""
+
+  def __init__(self, name, params, return_type_spec):
+    self.name = name
+    self.params = params
+    self.return_type_spec = return_type_spec
+
+  def accept(self, visitor):
+    return visitor.visit(self, {
+        'params': [param.accept(visitor) for param in self.params],
+        'return_type_spec': (
+            self.return_type_spec.accept(visitor) if self.return_type_spec else
+            None),
+    })
+
+
 class Class(Node):
   """A class definition."""
 
@@ -442,6 +459,14 @@ class SerializerVisitor(Visitor):
         'params': args['params'],
         'return_type_spec': args['return_type_spec'],
         'stmts': args['stmts'],
+    }
+
+  def visit_extern_func(self, node, args):
+    return {
+        'type': 'ExternFunc',
+        'name': node.name,
+        'params': args['params'],
+        'return_type_spec': args['return_type_spec'],
     }
 
   def visit_class(self, node, args):

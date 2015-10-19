@@ -191,6 +191,14 @@ class CppTranslatorVisitor(quo_ast.Visitor):
             for param in args['params']),
         self.indent_stmts(stmts))
 
+  def visit_extern_func(self, node, args):
+    return_type_spec = (
+        args['return_type_spec'] if args['return_type_spec'] else 'Object')
+    return 'extern "C" %s %s(%s);' % (
+        return_type_spec,
+        node.name,
+        ', '.join(param[0] for param in args['params']))
+
   def visit_class(self, node, args):
     inheritance = (
         ' : public %s' % ', '.join(args['super_classes']) if
@@ -217,7 +225,9 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   def visit_module(self, node, args):
     members = args['members'][:]
     for i in range(len(node.members)):
-      if self.is_public(node.members[i]):
+      if isinstance(node.members[i], quo_ast.ExternFunc):
+        pass
+      elif self.is_public(node.members[i]):
         pass
       elif self.is_protected(node.members[i]):
         raise ValueError(

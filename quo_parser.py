@@ -122,7 +122,7 @@ class QuoParser(object):
     # TODO: This is not technically correct as it would re-evaluate the dest
     # expr, which may have side effects.
     p[0] = quo_ast.AssignExpr(p[1], quo_ast.BinaryOpExpr(
-        p[2].split('_')[0], p[3], p[1]))
+        p[2].split('_')[0], p[1], p[3]))
 
   def p_expr(self, p):
     '''expr : binary_bool
@@ -357,28 +357,43 @@ class QuoParser(object):
     '''super_classes : EXTENDS type_spec_list'''
     p[0] = p[2]
 
-  def p_members_empty(self, p):
-    '''members :'''
+  def p_class_members_empty(self, p):
+    '''class_members :'''
     p[0] = []
 
-  def p_members_var_decl_stmts(self, p):
-    '''members : var_decl_stmts members'''
+  def p_class_members_var_decl_stmts(self, p):
+    '''class_members : var_decl_stmts class_members'''
     p[0] = p[1] + p[2]
 
-  def p_members_func_class(self, p):
-    '''members : func members
-               | class members
+  def p_class_members_func_class(self, p):
+    '''class_members : func class_members
+                     | class class_members
     '''
     p[0] = [p[1]] + p[2]
 
   def p_class(self, p):
     '''class : CLASS IDENTIFIER type_params super_classes \
-               L_BRACE members R_BRACE
+               L_BRACE class_members R_BRACE
     '''
     p[0] = quo_ast.Class(p[2], p[3], p[4], p[6])
 
+  def p_extern_func(self, p):
+    '''extern_func : EXTERN FUNCTION IDENTIFIER \
+                     L_PAREN func_param_list R_PAREN \
+                     return_type_spec SEMICOLON
+    '''
+    p[0] = quo_ast.ExternFunc(p[3], p[5], p[7])
+
+  def p_module_members_class_members(self, p):
+    '''module_members : class_members'''
+    p[0] = p[1]
+
+  def p_module_members(self, p):
+    '''module_members : class_members extern_func module_members'''
+    p[0] = p[1] + [p[2]] + p[3]
+
   def p_module(self, p):
-    '''module : members'''
+    '''module : module_members'''
     p[0] = quo_ast.Module(p[1])
 
   # Operator precedence.

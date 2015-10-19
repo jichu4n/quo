@@ -43,6 +43,7 @@ class QuoLexer(object):
       'EXTENDS',
       'VAR',
       'FUNCTION',
+      'EXTERN',
       # Control structures.
       'IF',
       'ELSE',
@@ -95,6 +96,7 @@ class QuoLexer(object):
       'var': ('VAR', None),
       'function': ('FUNCTION', None),
       'fn': ('FUNCTION', None),
+      'extern': ('EXTERN', None),
       'if': ('IF', None),
       'else': ('ELSE', None),
       'for': ('FOR', None),
