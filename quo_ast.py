@@ -245,8 +245,9 @@ class VarDeclStmt(Stmt):
 class FuncParam(Node):
   """A function parameter."""
 
-  def __init__(self, name, type_spec, init_expr):
+  def __init__(self, name, mode, type_spec, init_expr):
     self.name = name
+    self.mode = mode
     self.type_spec = type_spec
     self.init_expr = init_expr
 
@@ -358,7 +359,7 @@ class SerializerVisitor(Visitor):
     }
 
   def visit_unary_op_expr(self, node, args):
-    return {'type': 'UnaryOpExpr', 'op': node.op, 'expr': args['expr'], }
+    return {'type': 'UnaryOpExpr', 'op': node.op, 'expr': args['expr']}
 
   def visit_binary_op_expr(self, node, args):
     return {
@@ -426,6 +427,7 @@ class SerializerVisitor(Visitor):
     return {
         'type': 'FuncParam',
         'name': node.name,
+        'mode': node.mode,
         'type_spec': args['type_spec'],
         'init_expr': args['init_expr'],
     }
@@ -450,7 +452,4 @@ class SerializerVisitor(Visitor):
     }
 
   def visit_module(self, node, args):
-    return {
-        'type': 'Module',
-        'members': args['members'],
-    }
+    return {'type': 'Module', 'members': args['members'], }

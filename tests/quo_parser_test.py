@@ -57,7 +57,7 @@ class QuoParserTest(unittest.TestCase):
                         'member': 'foo',
                     },
                     'index_expr': {'type': 'ConstantExpr',
-                                   'value': '0'}
+                                   'value': 0}
                 },
                 'index_expr': {'type': 'ConstantExpr',
                                'value': 'hello'}
@@ -101,7 +101,7 @@ class QuoParserTest(unittest.TestCase):
                     'arg_exprs': [],
                 },
                 'index_expr': {'type': 'ConstantExpr',
-                               'value': '1'},
+                               'value': 1},
             },
             {'type': 'VarExpr',
              'var': 'g'},
@@ -279,14 +279,14 @@ class QuoParserTest(unittest.TestCase):
             {
                 'type': 'CondStmt',
                 'cond_expr': {'type': 'ConstantExpr',
-                              'value': '3'},
+                              'value': 3},
                 'true_stmts': [],
                 'false_stmts': [],
             },
             {
                 'type': 'CondStmt',
                 'cond_expr': {'type': 'ConstantExpr',
-                              'value': '4'},
+                              'value': 4},
                 'true_stmts': [],
                 'false_stmts': [],
             },
@@ -392,7 +392,7 @@ class QuoParserTest(unittest.TestCase):
             },
             'init_expr': {
                 'type': 'ConstantExpr',
-                'value': '3',
+                'value': 3,
             },
         },
         {
@@ -417,9 +417,9 @@ class QuoParserTest(unittest.TestCase):
                 'type': 'BinaryOpExpr',
                 'op': 'ADD',
                 'left_expr': {'type': 'ConstantExpr',
-                              'value': '5'},
+                              'value': 5},
                 'right_expr': {'type': 'ConstantExpr',
-                               'value': '2'},
+                               'value': 2},
             },
         },
         {
@@ -457,7 +457,7 @@ class QuoParserTest(unittest.TestCase):
 
   def test_func(self):
     self.assert_ast_match('''
-    function foo(a, b Int, c = 0, d = 0 Int) {
+    function foo(a, &b Int, ~c = 0, d = 0 Int) {
       return a + b + c + d;
     }
     ''', 'func', {
@@ -468,12 +468,14 @@ class QuoParserTest(unittest.TestCase):
             {
                 'type': 'FuncParam',
                 'name': 'a',
+                'mode': 'COPY',
                 'type_spec': None,
                 'init_expr': None,
             },
             {
                 'type': 'FuncParam',
                 'name': 'b',
+                'mode': 'BORROW',
                 'type_spec': {
                     'type': 'TypeSpec',
                     'name': 'Int',
@@ -484,15 +486,17 @@ class QuoParserTest(unittest.TestCase):
             {
                 'type': 'FuncParam',
                 'name': 'c',
+                'mode': 'MOVE',
                 'type_spec': None,
                 'init_expr': {
                     'type': 'ConstantExpr',
-                    'value': '0',
+                    'value': 0,
                 },
             },
             {
                 'type': 'FuncParam',
                 'name': 'd',
+                'mode': 'COPY',
                 'type_spec': {
                     'type': 'TypeSpec',
                     'name': 'Int',
@@ -500,7 +504,7 @@ class QuoParserTest(unittest.TestCase):
                 },
                 'init_expr': {
                     'type': 'ConstantExpr',
-                    'value': '0',
+                    'value': 0,
                 },
             },
         ],
@@ -626,7 +630,7 @@ class QuoParserTest(unittest.TestCase):
                     'type': 'ReturnStmt',
                     'expr': {
                         'type': 'ConstantExpr',
-                        'value': '42',
+                        'value': 42,
                     },
                 }],
             },
@@ -640,7 +644,7 @@ class QuoParserTest(unittest.TestCase):
                 },
                 'init_expr': {
                     'type': 'ConstantExpr',
-                    'value': '0',
+                    'value': 0,
                 },
             },
             {

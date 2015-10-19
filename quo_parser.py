@@ -67,6 +67,7 @@ class QuoParser(object):
   def p_unary_arith(self, p):
     '''unary_arith : ADD unary_arith
                    | SUB unary_arith
+                   | BORROW unary_arith
                    | MOVE unary_arith
     '''
     p[0] = quo_ast.UnaryOpExpr(p[1], p[2])
@@ -289,13 +290,27 @@ class QuoParser(object):
     '''type_params : LT type_param_list GT'''
     p[0] = p[2]
 
-  def p_func_param_untyped(self, p):
-    '''func_param : var'''
-    p[0] = quo_ast.FuncParam(p[1][0], None, p[1][1])
+  def p_func_param_mode_empty(self, p):
+    '''func_param_mode :'''
+    p[0] = 'COPY'
 
-  def p_func_param_typed(self, p):
-    '''func_param : var type_spec'''
-    p[0] = quo_ast.FuncParam(p[1][0], p[2], p[1][1])
+  def p_func_param_mode(self, p):
+    '''func_param_mode : BORROW
+                       | MOVE
+    '''
+    p[0] = p[1]
+
+  def p_func_param_type_spec_empty(self, p):
+    '''func_param_type_spec :'''
+    p[0] = None
+
+  def p_func_param_type_spec(self, p):
+    '''func_param_type_spec : type_spec'''
+    p[0] = p[1]
+
+  def p_func_param(self, p):
+    '''func_param : func_param_mode var func_param_type_spec'''
+    p[0] = quo_ast.FuncParam(p[2][0], p[1], p[3], p[2][1])
 
   def p_func_param_list_empty(self, p):
     '''func_param_list :'''
@@ -379,10 +394,4 @@ if __name__ == '__main__':
   lexer = quo_lexer.create_lexer()
   ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
   serializer_visitor = quo_ast.SerializerVisitor()
-  if isinstance(ast, list):
-    ast_serialized = [ast_node.accept(serializer_visitor) for ast_node in ast]
-    ast_text = yaml.dump_all(ast_serialized, explicit_start=True)
-  else:
-    ast_serialized = ast.accept(serializer_visitor)
-    ast_text = yaml.dump(ast_serialized)
-  print(ast_text)
+  print(yaml.dump(ast.accept(serializer_visitor)))

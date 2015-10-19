@@ -77,6 +77,7 @@ class QuoLexer(object):
       'MUL',
       'DIV',
       'MOD',
+      'BORROW',
       'MOVE',
       'L_PAREN',
       'R_PAREN',
@@ -117,7 +118,10 @@ class QuoLexer(object):
       t.type, t.value = self._reserved_words[t.value]
     return t
 
-  t_INTEGER_CONSTANT = r'[0-9]+'
+  def t_INTEGER_CONSTANT(self, t):
+    r'[0-9]+'
+    t.value = int(t.value)
+    return t
 
   def t_STRING_CONSTANT(self, t):
     r"'([^']|\\')*'"
@@ -198,6 +202,11 @@ class QuoLexer(object):
 
   def t_MOD(self, t):
     r'%'
+    t.value = t.type
+    return t
+
+  def t_BORROW(self, t):
+    r'&'
     t.value = t.type
     return t
 
