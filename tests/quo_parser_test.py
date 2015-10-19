@@ -124,7 +124,7 @@ class QuoParserTest(unittest.TestCase):
     })
 
   def test_binary_arith(self):
-    self.assert_ast_match('a+b*c-d==e--f/g%-+-h', 'expr', {
+    self.assert_ast_match('a+b*c-d==e--f/g%~-+-h', 'expr', {
         'type': 'BinaryOpExpr',
         'op': 'EQ',
         'left_expr': {
@@ -169,15 +169,19 @@ class QuoParserTest(unittest.TestCase):
                 },
                 'right_expr': {
                     'type': 'UnaryOpExpr',
-                    'op': 'SUB',
+                    'op': 'MOVE',
                     'expr': {
                         'type': 'UnaryOpExpr',
-                        'op': 'ADD',
+                        'op': 'SUB',
                         'expr': {
                             'type': 'UnaryOpExpr',
-                            'op': 'SUB',
-                            'expr': {'type': 'VarExpr',
-                                     'var': 'h'},
+                            'op': 'ADD',
+                            'expr': {
+                                'type': 'UnaryOpExpr',
+                                'op': 'SUB',
+                                'expr': {'type': 'VarExpr',
+                                         'var': 'h'},
+                            },
                         },
                     },
                 },

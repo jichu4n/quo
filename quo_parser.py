@@ -67,6 +67,7 @@ class QuoParser(object):
   def p_unary_arith(self, p):
     '''unary_arith : ADD unary_arith
                    | SUB unary_arith
+                   | MOVE unary_arith
     '''
     p[0] = quo_ast.UnaryOpExpr(p[1], p[2])
 

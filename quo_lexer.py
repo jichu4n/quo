@@ -77,6 +77,7 @@ class QuoLexer(object):
       'MUL',
       'DIV',
       'MOD',
+      'MOVE',
       'L_PAREN',
       'R_PAREN',
       'L_BRACKET',
@@ -197,6 +198,11 @@ class QuoLexer(object):
 
   def t_MOD(self, t):
     r'%'
+    t.value = t.type
+    return t
+
+  def t_MOVE(self, t):
+    r'~'
     t.value = t.type
     return t
 
