@@ -112,3 +112,15 @@ class CppTranslatorTest(unittest.TestCase):
     '''
     self.assert_result_equal(quo_str, 'F', [], 42);
     self.assert_result_equal(quo_str, 'X', [], 42);
+
+  def test_array(self):
+    self.assert_result_equal('''
+        extern fn Test() Int {
+          var a Array<Int>;
+          a.Append(4);
+          a.Append(10);
+          a.Append(20);
+          a[0] = 9;
+          return a[0] * a[2] + a.Length();
+        }
+    ''', 'Test', [], 183)

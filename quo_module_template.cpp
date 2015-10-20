@@ -6,9 +6,10 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 typedef int Int;
-using ::std::string;
+typedef ::std::string String;
 
 
 template<typename T>
@@ -18,11 +19,24 @@ Int Print(const T& t) {
 }
 
 template<typename T>
-Int Println(const T& t) {
-  Print(t);
-  ::std::cout << ::std::endl;
-  return 0;
-}
+class Array {
+  public:
+    ::std::unique_ptr<T>& operator [] (int idx) {
+      return vector_[idx];
+    }
+    void Append(const T& t) {
+      vector_.emplace_back(new T(t));
+    }
+    void Append(::std::unique_ptr<T> t) {
+      vector_.emplace_back(std::move(t));
+    }
+    Int Length() {
+      return vector_.size();
+    }
+  private:
+    ::std::vector<::std::unique_ptr<T>> vector_;
+};
+
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
