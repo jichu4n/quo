@@ -517,6 +517,7 @@ class QuoParserTest(unittest.TestCase):
             },
         ],
         'return_type_spec': None,
+        'cc': 'DEFAULT',
         'stmts': [
             {
                 'type': 'ReturnStmt',
@@ -544,7 +545,7 @@ class QuoParserTest(unittest.TestCase):
         ],
     })
     self.assert_ast_match('''
-    function foo<A, B,>() Array<Int> {}
+    extern function foo<A, B,>() Array<Int> {}
     ''', 'func', {
         'type': 'Func',
         'name': 'foo',
@@ -559,6 +560,7 @@ class QuoParserTest(unittest.TestCase):
                 'params': [],
             }],
         },
+        'cc': 'C',
         'stmts': [],
     })
 
@@ -635,6 +637,7 @@ class QuoParserTest(unittest.TestCase):
                     'name': 'Int',
                     'params': [],
                 },
+                'cc': 'DEFAULT',
                 'stmts': [{
                     'type': 'ReturnStmt',
                     'expr': {

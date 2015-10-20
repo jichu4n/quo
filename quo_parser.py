@@ -342,12 +342,20 @@ class QuoParser(object):
     '''return_type_spec : type_spec'''
     p[0] = p[1]
 
+  def p_func_cc_empty(self, p):
+    '''func_cc :'''
+    p[0] = 'DEFAULT'
+
+  def p_func_cc_c(self, p):
+    '''func_cc : EXTERN'''
+    p[0] = 'C'
+
   def p_func(self, p):
-    '''func : FUNCTION IDENTIFIER type_params \
+    '''func : func_cc FUNCTION IDENTIFIER type_params \
               L_PAREN func_param_list R_PAREN \
               return_type_spec \
               L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.Func(p[2], p[3], p[5], p[7], p[9])
+    p[0] = quo_ast.Func(p[3], p[4], p[6], p[8], p[1], p[10])
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''

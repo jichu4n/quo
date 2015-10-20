@@ -22,8 +22,18 @@ modules. It Will read from files supplied on the command line, or stdin if no
 files are specified.
 """
 
+import ctypes
+import datetime
+import jinja2
+import os
+import logging
 import quo_ast
+import quo_lexer
+import quo_parser
+import shutil
 import string
+import subprocess
+import tempfile
 
 
 class CppTranslatorVisitor(quo_ast.Visitor):
@@ -162,7 +172,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     base_type = args['type_spec'] if args['type_spec'] else 'Object'
     if node.mode == 'COPY':
       name = '_' + node.name
-      type_spec = base_type
+      type_spec = 'const %s&' % base_type
       init_stmt = '::std::unique_ptr<%s> %s(new %s(%s));' % (
           base_type, node.name, base_type, name)
     elif node.mode == 'BORROW':
@@ -184,7 +194,14 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     stmts = [
         param[1] for param in args['params'] if param[1] is not None
     ] + args['stmts']
-    return '%s%s %s%s(%s) {\n%s\n}' % (
+    if node.cc == 'DEFAULT':
+      cc = ''
+    elif node.cc == 'C':
+      cc = 'extern "C" '
+    else:
+      raise NotImplementedError('Unknown calling convention: %s' % node.cc)
+    return '%s%s%s %s%s(%s) {\n%s\n}' % (
+        cc,
         self.translate_template(node), return_type_spec, node.name,
         self.translate_type_params(node), ', '.join(
             param[0]
@@ -201,8 +218,9 @@ class CppTranslatorVisitor(quo_ast.Visitor):
 
   def visit_class(self, node, args):
     inheritance = (
-        ' : public %s' % ', '.join(args['super_classes']) if
-        args['super_classes'] else '')
+        ' : %s' % ', '.join(
+            'public ' + super_class for super_class in args['super_classes'])
+        if args['super_classes'] else '')
     members = args['members'][:]
     for i in range(len(node.members)):
       if isinstance(node.members[i], quo_ast.Func):
@@ -217,7 +235,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
         raise ValueError(
             'Cannot determine visibility of class member: %s' %
             node.members[i].name)
-    return '%sclass %s%s%s {\n%s\n}' % (
+    return '%sclass %s%s%s {\n%s\n};' % (
         self.translate_template(node), node.name,
         self.translate_type_params(node), inheritance,
         self.indent_stmts(members))
@@ -227,7 +245,9 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     for i in range(len(node.members)):
       if isinstance(node.members[i], quo_ast.ExternFunc):
         pass
-      elif self.is_public(node.members[i]):
+      elif (self.is_public(node.members[i]) or
+          isinstance(node.members[i], quo_ast.Func) and
+          node.members[i].name == 'main'):
         pass
       elif self.is_protected(node.members[i]):
         raise ValueError(
@@ -271,14 +291,80 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     return node.name[0] in string.ascii_lowercase
 
 
-if __name__ == '__main__':
-  import fileinput
-  import quo_lexer
-  import quo_parser
-  import yaml
-
+def quo_to_cpp(quo_str):
+  """Translates a Quo module to C++."""
   parser = quo_parser.create_parser()
   lexer = quo_lexer.create_lexer()
-  ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
+  ast = parser.parse(quo_str, lexer=lexer)
   translator_visitor = CppTranslatorVisitor()
-  print(ast.accept(translator_visitor))
+  content = ast.accept(translator_visitor)
+
+  jinja_env = jinja2.Environment(
+      loader=jinja2.FileSystemLoader(os.path.dirname(__file__)))
+  template = jinja_env.get_template('quo_module_template.cpp')
+  return template.render(
+      ts=datetime.datetime.now().isoformat(), content=content)
+
+
+def get_cpp_compiler():
+  """Returns the C++ compiler binary name based on availability."""
+  if 'CXX' in os.environ:
+    return os.environ['CXX']
+  candidates = ['clang++', 'g++']
+  for candidate in candidates:
+    path = shutil.which(candidate)
+    if path is not None:
+      return path
+  raise IOError('Cannot find C++ compiler')
+
+
+def compile_cpp(cpp_str, dest_dir=None):
+  """Compiles a C++ module to a shared lib and returns a path to the result."""
+  if dest_dir is None:
+    dest_dir = tempfile.gettempdir()
+  fd, output_file_path = tempfile.mkstemp(suffix='.so', dir=dest_dir)
+  os.close(fd)
+  cmd = [
+      get_cpp_compiler(),
+      '-Wall',
+      '-shared',
+      '-fPIC',
+      '-xc++',
+      '-std=c++0x',
+      '-o', output_file_path,
+      '-',
+  ]
+  logging.info('Spawning compiler: %s', ' '.join(cmd))
+  compiler_proc = subprocess.run(cmd, input=cpp_str.encode('utf-8'), check=True)
+  return output_file_path
+
+
+def compile_and_load(quo_str, dest_dir=None):
+  """Compiles a Quo module and returns it as a loaded shared lib."""
+  logging.info('Compiling Quo module:\n%s', quo_str)
+
+  cpp_str = quo_to_cpp(quo_str)
+  logging.info('Generated C++ code:\n%s', cpp_str)
+
+  lib_path = compile_cpp(cpp_str)
+
+  logging.info('Loading shared library %s', lib_path)
+  lib = ctypes.cdll.LoadLibrary(lib_path)
+  os.remove(lib_path)
+  return lib
+
+
+if __name__ == '__main__':
+  import fileinput
+
+  # Set up logging.
+  logging.basicConfig(
+      level=logging.INFO,
+      style='{',
+      format='{levelname:.1}{asctime} {filename}:{lineno}] {message}')
+
+  lib = compile_and_load('\n'.join(fileinput.input()))
+
+  logging.info('Executing main()')
+  exit_code = lib.main()
+  logging.info('Return code: %d', exit_code)

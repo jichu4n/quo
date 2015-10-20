@@ -264,11 +264,12 @@ class FuncParam(Node):
 class Func(Node):
   """A function definition."""
 
-  def __init__(self, name, type_params, params, return_type_spec, stmts):
+  def __init__(self, name, type_params, params, return_type_spec, cc, stmts):
     self.name = name
     self.type_params = type_params
     self.params = params
     self.return_type_spec = return_type_spec
+    self.cc = cc
     self.stmts = stmts
 
   def accept(self, visitor):
@@ -458,6 +459,7 @@ class SerializerVisitor(Visitor):
         'type_params': node.type_params,
         'params': args['params'],
         'return_type_spec': args['return_type_spec'],
+        'cc': node.cc,
         'stmts': args['stmts'],
     }
 
