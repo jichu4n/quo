@@ -21,8 +21,8 @@ Int Print(const T& t) {
 template<typename T>
 class Array {
   public:
-    ::std::unique_ptr<T>& operator [] (int idx) {
-      return vector_[idx];
+    T* operator [] (int idx) {
+      return vector_[idx].get();
     }
     void Append(const T& t) {
       vector_.emplace_back(new T(t));

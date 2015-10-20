@@ -342,20 +342,22 @@ class QuoParser(object):
     '''return_type_spec : type_spec'''
     p[0] = p[1]
 
-  def p_func_cc_empty(self, p):
-    '''func_cc :'''
-    p[0] = 'DEFAULT'
+  def p_return_mode_empty(self, p):
+    '''return_mode :'''
+    p[0] = 'COPY'
 
-  def p_func_cc_c(self, p):
-    '''func_cc : EXTERN'''
-    p[0] = 'C'
+  def p_return_mode(self, p):
+    '''return_mode : BORROW
+                   | MOVE
+    '''
+    p[0] = p[1]
 
   def p_func(self, p):
-    '''func : func_cc FUNCTION IDENTIFIER type_params \
+    '''func : FUNCTION IDENTIFIER type_params \
               L_PAREN func_param_list R_PAREN \
-              return_type_spec \
+              return_mode return_type_spec \
               L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.Func(p[3], p[4], p[6], p[8], p[1], p[10])
+    p[0] = quo_ast.Func(p[2], p[3], p[5], p[8], p[7], 'DEFAULT', p[10])
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''
@@ -392,13 +394,33 @@ class QuoParser(object):
     '''
     p[0] = quo_ast.ExternFunc(p[3], p[5], p[7])
 
-  def p_module_members_class_members(self, p):
-    '''module_members : class_members'''
-    p[0] = p[1]
+  def p_func_cc_empty(self, p):
+    '''func_cc :'''
+    p[0] = 'DEFAULT'
 
-  def p_module_members(self, p):
-    '''module_members : class_members extern_func module_members'''
-    p[0] = p[1] + [p[2]] + p[3]
+  def p_func_cc_c(self, p):
+    '''func_cc : EXPORT'''
+    p[0] = 'C'
+
+  def p_module_func(self, p):
+    '''module_func : func_cc func'''
+    p[0] = p[2]
+    p[0].cc = p[1]
+
+  def p_module_members_empty(self, p):
+    '''module_members :'''
+    p[0] = []
+
+  def p_module_members_var_decl_stmts(self, p):
+    '''module_members : var_decl_stmts module_members'''
+    p[0] = p[1] + p[2]
+
+  def p_module_members_func_class(self, p):
+    '''module_members : module_func module_members
+                      | extern_func module_members
+                      | class module_members
+    '''
+    p[0] = [p[1]] + p[2]
 
   def p_module(self, p):
     '''module : module_members'''

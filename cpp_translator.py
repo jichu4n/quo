@@ -81,9 +81,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     }
     if node.op not in op_map:
       raise NotImplementedError('Unknown unary op: %s' % node.op)
-    if node.op in ('BORROW', 'MOVE'):
-      if args['expr'][0] != '*':
-        raise ValueError('Invalid borrow / move operand: %s' % args['expr'])
+    if node.op in ('BORROW', 'MOVE') and args['expr'][0] == '*':
       expr = args['expr'][1:]
     else:
       expr = args['expr']
@@ -159,12 +157,19 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     type_spec = args['type_spec'] if args['type_spec'] else 'Object'
     if node.mode == 'OWN':
       init_expr = args['init_expr'] if args['init_expr'] else ''
-      local_decl = '::std::unique_ptr<%s> %s(new %s(%s));' % (
-          type_spec, node.name, type_spec, init_expr)
+      if (isinstance(node.init_expr, quo_ast.UnaryOpExpr) and
+          node.init_expr.op == 'MOVE'):
+        local_decl = '::std::unique_ptr<%s> %s = %s;' % (
+            type_spec, node.name, init_expr)
+        class_member_init_expr = '%s = %s;' % (
+            node.name, init_expr);
+      else:
+        local_decl = '::std::unique_ptr<%s> %s(new %s(%s));' % (
+            type_spec, node.name, type_spec, init_expr)
+        class_member_init_expr = '%s.reset(new %s(%s));' % (
+            node.name, type_spec, init_expr);
       class_member_decl = '::std::unique_ptr<%s> %s;' % (
           type_spec, node.name)
-      class_member_init_expr = '%s.reset(new %s(%s));' % (
-          node.name, type_spec, init_expr);
     elif node.mode == 'BORROW':
       init_expr = ' = %s' % args['init_expr'] if args['init_expr'] else ''
       local_decl = '%s* %s%s;' % (
@@ -198,8 +203,16 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     return ('%s %s%s' % (type_spec, name, init_expr), init_stmt)
 
   def visit_func(self, node, args):
-    return_type_spec = (
+    return_base_type = (
         args['return_type_spec'] if args['return_type_spec'] else 'Object')
+    if node.return_mode == 'COPY':
+      return_type = return_base_type
+    elif node.return_mode == 'BORROW':
+      return_type = '%s*' % return_base_type
+    elif node.return_mode == 'MOVE':
+      return_type = '::std::unique_ptr<%s>' % return_base_type
+    else:
+      raise NotImplementedError('Unknown return mode: %s' % node.returnmode)
     stmts = [
         param[1] for param in args['params'] if param[1] is not None
     ]
@@ -217,7 +230,7 @@ class CppTranslatorVisitor(quo_ast.Visitor):
       raise NotImplementedError('Unknown calling convention: %s' % node.cc)
     return '%s%s%s %s%s(%s) {\n%s\n}' % (
         cc,
-        self.translate_template(node), return_type_spec, node.name,
+        self.translate_template(node), return_type, node.name,
         self.translate_type_params(node), ', '.join(
             param[0]
             for param in args['params']),
@@ -264,9 +277,11 @@ class CppTranslatorVisitor(quo_ast.Visitor):
   def visit_module(self, node, args):
     members = args['members'][:]
     for i in range(len(node.members)):
-      if isinstance(node.members[i], quo_ast.ExternFunc):
-        pass
-      elif (self.is_public(node.members[i]) or
+      if isinstance(node.members[i], quo_ast.VarDeclStmt):
+        members[i] = members[i][0]
+
+      if (isinstance(node.members[i], quo_ast.ExternFunc) or
+          self.is_public(node.members[i]) or
           isinstance(node.members[i], quo_ast.Func) and
           node.members[i].name == 'main'):
         pass

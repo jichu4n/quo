@@ -36,20 +36,20 @@ class CppTranslatorTest(unittest.TestCase):
 
   def test_sanity(self):
     self.assert_result_equal(
-        'extern fn Sum(a Int, b Int) Int { return a + b; }',
+        'export fn Sum(a Int, b Int) Int { return a + b; }',
         'Sum', [byref(c_int(1)), byref(c_int(100))],
         101)
 
   def test_arg_passing(self):
     self.assert_result_equal('''
         fn sumCopy(a Int, b Int) Int { return a + b; }
-        extern fn TestCopy() Int {
+        export fn TestCopy() Int {
           return sumCopy(1, 100);
         }
     ''', 'TestCopy', [], 101)
     self.assert_result_equal('''
         fn sumBorrow(&a Int, &b Int) Int { return a + b; }
-        extern fn TestBorrow() Int {
+        export fn TestBorrow() Int {
           var a = 1, b = 100 Int;
           var r1 = sumBorrow(&a, &b) Int;
           var r2 = sumBorrow(&a, &b) Int;
@@ -58,11 +58,31 @@ class CppTranslatorTest(unittest.TestCase):
     ''', 'TestBorrow', [], 202)
     self.assert_result_equal('''
         fn sumMove(~a Int, ~b Int) Int { return a + b; }
-        extern fn TestMove() Int {
+        export fn TestMove() Int {
           var a = 1, b = 100 Int;
           return sumMove(~a, ~b);
         }
     ''', 'TestMove', [], 101)
+
+  def test_return(self):
+    self.assert_result_equal('''
+        var a = 100 Int;
+        fn retBorrow() &Int { return &a; }
+        export fn TestBorrow() Int {
+          var &x = retBorrow() Int;
+          x = 33;
+          return a;
+        }
+    ''', 'TestBorrow', [], 33)
+    self.assert_result_equal('''
+        var a = 100 Int;
+        fn retMove() ~Int { return ~a; }
+        export fn TestMove() Int {
+          var x = ~retMove() Int;
+          x = 33;
+          return x;
+        }
+    ''', 'TestMove', [], 33)
 
   def test_class_inheritance(self):
     quo_str = '''
@@ -81,11 +101,11 @@ class CppTranslatorTest(unittest.TestCase):
             return 103;
           }
         }
-        extern fn F() Int {
+        export fn F() Int {
           var a Derived;
           return a.F();
         }
-        extern fn G() Int {
+        export fn G() Int {
           var a Derived;
           return a.G();
         }
@@ -101,11 +121,11 @@ class CppTranslatorTest(unittest.TestCase):
         return X;
       }
     }
-    extern fn F() Int {
+    export fn F() Int {
       var a A;
       return a.F();
     }
-    extern fn X() Int {
+    export fn X() Int {
       var a A;
       return a.X;
     }
@@ -115,7 +135,7 @@ class CppTranslatorTest(unittest.TestCase):
 
   def test_array(self):
     self.assert_result_equal('''
-        extern fn Test() Int {
+        export fn Test() Int {
           var a Array<Int>;
           a.Append(4);
           a.Append(10);
