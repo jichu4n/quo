@@ -4,15 +4,11 @@
  */
 
 #include <iostream>
-#include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 typedef int Int;
 using ::std::string;
-using ::std::vector;
-using ::std::map;
 
 
 template<typename T>
@@ -28,5 +24,9 @@ Int Println(const T& t) {
   return 0;
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 {{ content }}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

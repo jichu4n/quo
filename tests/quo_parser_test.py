@@ -28,7 +28,7 @@ class QuoParserTest(unittest.TestCase):
   maxDiff = None
 
   def assert_ast_match(self, input_str, start, expected_ast_serialized):
-    parser = quo_parser.create_parser(start=start, write_tables=False)
+    parser = quo_parser.create_parser(start=start)
     actual_ast = parser.parse(input_str)
     serializer_visitor = quo_ast.SerializerVisitor()
     if isinstance(actual_ast, list):

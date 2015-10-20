@@ -159,14 +159,23 @@ class CppTranslatorVisitor(quo_ast.Visitor):
     type_spec = args['type_spec'] if args['type_spec'] else 'Object'
     if node.mode == 'OWN':
       init_expr = args['init_expr'] if args['init_expr'] else ''
-      return '::std::unique_ptr<%s> %s(new %s(%s));' % (
+      local_decl = '::std::unique_ptr<%s> %s(new %s(%s));' % (
           type_spec, node.name, type_spec, init_expr)
+      class_member_decl = '::std::unique_ptr<%s> %s;' % (
+          type_spec, node.name)
+      class_member_init_expr = '%s.reset(new %s(%s));' % (
+          node.name, type_spec, init_expr);
     elif node.mode == 'BORROW':
       init_expr = ' = %s' % args['init_expr'] if args['init_expr'] else ''
-      return '%s* %s%s;' % (
+      local_decl = '%s* %s%s;' % (
           type_spec, node.name, init_expr)
+      class_member_decl = '%s* %s;' % (type_spec, node.name)
+      class_member_init_expr = (
+          '%s%s;' % (node.name, init_expr) if args['init_expr'] else None)
     else:
       raise NotImplementedError('Unknown var mode: %s' % node.mode)
+
+    return (local_decl, class_member_decl, class_member_init_expr)
 
   def visit_func_param(self, node, args):
     base_type = args['type_spec'] if args['type_spec'] else 'Object'
@@ -193,7 +202,13 @@ class CppTranslatorVisitor(quo_ast.Visitor):
         args['return_type_spec'] if args['return_type_spec'] else 'Object')
     stmts = [
         param[1] for param in args['params'] if param[1] is not None
-    ] + args['stmts']
+    ]
+    for i in range(len(node.stmts)):
+      if isinstance(node.stmts[i], quo_ast.VarDeclStmt):
+        stmt = args['stmts'][i][0]
+      else:
+        stmt = args['stmts'][i]
+      stmts.append(stmt)
     if node.cc == 'DEFAULT':
       cc = ''
     elif node.cc == 'C':
@@ -222,9 +237,13 @@ class CppTranslatorVisitor(quo_ast.Visitor):
             'public ' + super_class for super_class in args['super_classes'])
         if args['super_classes'] else '')
     members = args['members'][:]
+    constructor_stmts = []
     for i in range(len(node.members)):
       if isinstance(node.members[i], quo_ast.Func):
         members[i] = 'virtual ' + members[i]
+      elif isinstance(node.members[i], quo_ast.VarDeclStmt):
+        constructor_stmts.append(members[i][2])
+        members[i] = members[i][1]
       if self.is_public(node.members[i]):
         members[i] = 'public: ' + members[i]
       elif self.is_protected(node.members[i]):
@@ -235,10 +254,12 @@ class CppTranslatorVisitor(quo_ast.Visitor):
         raise ValueError(
             'Cannot determine visibility of class member: %s' %
             node.members[i].name)
+    constructor = 'public: %s() {\n%s\n}' % (
+        node.name, self.indent_stmts(constructor_stmts))
     return '%sclass %s%s%s {\n%s\n};' % (
         self.translate_template(node), node.name,
         self.translate_type_params(node), inheritance,
-        self.indent_stmts(members))
+        self.indent_stmts([constructor] + members))
 
   def visit_module(self, node, args):
     members = args['members'][:]

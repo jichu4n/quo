@@ -64,7 +64,7 @@ class CppTranslatorTest(unittest.TestCase):
         }
     ''', 'TestMove', [], 101)
 
-  def test_class(self):
+  def test_class_inheritance(self):
     quo_str = '''
         class Base1 {
           fn F() Int {
@@ -92,3 +92,23 @@ class CppTranslatorTest(unittest.TestCase):
     '''
     self.assert_result_equal(quo_str, 'F', [], 103)
     self.assert_result_equal(quo_str, 'G', [], 102)
+
+  def test_class_members(self):
+    quo_str = '''
+    class A {
+      var X = 42 Int;
+      fn F() Int {
+        return X;
+      }
+    }
+    extern fn F() Int {
+      var a A;
+      return a.F();
+    }
+    extern fn X() Int {
+      var a A;
+      return a.X;
+    }
+    '''
+    self.assert_result_equal(quo_str, 'F', [], 42);
+    self.assert_result_equal(quo_str, 'X', [], 42);
