@@ -69,7 +69,7 @@ class CppTranslatorTest(unittest.TestCase):
         var a = 100 Int;
         fn retBorrow() &Int { return &a; }
         export fn TestBorrow() Int {
-          var &x = retBorrow() Int;
+          var &x = &retBorrow() Int;
           x = 33;
           return a;
         }
