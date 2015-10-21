@@ -354,12 +354,19 @@ def get_cpp_compiler():
   raise IOError('Cannot find C++ compiler')
 
 
+# Directory containing C++ runtime code.
+_CPP_RUNTIME_DIR = 'cpp_runtime'
+
+
 def compile_cpp(cpp_str, dest_dir=None):
   """Compiles a C++ module to a shared lib and returns a path to the result."""
   if dest_dir is None:
     dest_dir = tempfile.gettempdir()
   fd, output_file_path = tempfile.mkstemp(suffix='.so', dir=dest_dir)
   os.close(fd)
+  cpp_runtime_dir_path = os.path.join(
+      os.path.realpath(os.path.dirname(__file__)),
+      _CPP_RUNTIME_DIR)
   cmd = [
       get_cpp_compiler(),
       '-Wall',
@@ -367,6 +374,7 @@ def compile_cpp(cpp_str, dest_dir=None):
       '-fPIC',
       '-xc++',
       '-std=c++0x',
+      '-I%s' % cpp_runtime_dir_path,
       '-o', output_file_path,
       '-',
   ]
