@@ -18,7 +18,7 @@
 """Quo to C++ translator.
 
 For debugging, run this module to print out the translated C++ module for Quo
-modules. It Will read from files supplied on the command line, or stdin if no
+modules. It will read from files supplied on the command line, or stdin if no
 files are specified.
 """
 
@@ -407,7 +407,7 @@ if __name__ == '__main__':
       style='{',
       format='{levelname:.1}{asctime} {filename}:{lineno}] {message}')
 
-  lib = compile_and_load('\n'.join(fileinput.input()))
+  lib = compile_and_load(''.join(fileinput.input()))
 
   logging.info('Executing main()')
   exit_code = lib.main()
