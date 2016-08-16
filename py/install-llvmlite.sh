@@ -22,7 +22,7 @@ LLVM_URL="http://llvm.org/releases/3.7.1/${LLVM_DIR_NAME}.tar.xz"
 LLVM_DEST_DIR=/opt
 LLVMLITE_VERSION='0.12.1'
 
-pip2 install enum34
+sudo -H pip2 install enum34
 curl "$LLVM_URL" | \
   sudo tar xv --xz -C "$LLVM_DEST_DIR"
 for pip in pip2 pip3; do
