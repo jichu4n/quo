@@ -800,65 +800,66 @@ void protobuf_AddDesc_ast_2eproto_impl() {
     "\016\n\006member\030\002 \001(\t\";\n\tIndexExpr\022\023\n\004expr\030\001 \001"
     "(\0132\005.Expr\022\031\n\nindex_expr\030\002 \001(\0132\005.Expr\"9\n\010"
     "CallExpr\022\023\n\004expr\030\001 \001(\0132\005.Expr\022\030\n\targ_exp"
-    "rs\030\002 \003(\0132\005.Expr\"z\n\013UnaryOpExpr\022\033\n\002op\030\001 \001"
-    "(\0162\017.UnaryOpExpr.Op\022\023\n\004expr\030\002 \001(\0132\005.Expr"
-    "\"9\n\002Op\022\013\n\007UNKNOWN\020\000\022\007\n\003ADD\020\001\022\007\n\003SUB\020\002\022\n\n"
-    "\006BORROW\020\003\022\010\n\004MOVE\020\004\"\321\001\n\014BinaryOpExpr\022\034\n\002"
-    "op\030\001 \001(\0162\020.BinaryOpExpr.Op\022\030\n\tleft_expr\030"
-    "\002 \001(\0132\005.Expr\022\031\n\nright_expr\030\003 \001(\0132\005.Expr\""
-    "n\n\002Op\022\013\n\007UNKNOWN\020\000\022\007\n\003ADD\020\001\022\007\n\003SUB\020\002\022\007\n\003"
-    "MUL\020\003\022\007\n\003DIV\020\004\022\007\n\003MOD\020\005\022\006\n\002EQ\020\006\022\006\n\002NE\020\007\022"
-    "\006\n\002GT\020\010\022\006\n\002GE\020\t\022\006\n\002LT\020\n\022\006\n\002LE\020\013\"A\n\nAssig"
-    "nExpr\022\030\n\tdest_expr\030\001 \001(\0132\005.Expr\022\031\n\nvalue"
-    "_expr\030\002 \001(\0132\005.Expr\"\206\002\n\004Expr\022!\n\010constant\030"
-    "\001 \001(\0132\r.ConstantExprH\000\022\027\n\003var\030\002 \001(\0132\010.Va"
-    "rExprH\000\022\035\n\006member\030\003 \001(\0132\013.MemberExprH\000\022\033"
-    "\n\005index\030\004 \001(\0132\n.IndexExprH\000\022\031\n\004call\030\005 \001("
-    "\0132\t.CallExprH\000\022 \n\010unary_op\030\006 \001(\0132\014.Unary"
-    "OpExprH\000\022\"\n\tbinary_op\030\007 \001(\0132\r.BinaryOpEx"
-    "prH\000\022\035\n\006assign\030\010 \001(\0132\013.AssignExprH\000B\006\n\004t"
-    "ype\"\037\n\010ExprStmt\022\023\n\004expr\030\001 \001(\0132\005.Expr\"\036\n\007"
-    "RetStmt\022\023\n\004expr\030\001 \001(\0132\005.Expr\"\t\n\007BrkStmt\""
-    "\n\n\010ContStmt\"]\n\010CondStmt\022\030\n\tcond_expr\030\001 \001"
-    "(\0132\005.Expr\022\032\n\ntrue_block\030\002 \001(\0132\006.Block\022\033\n"
-    "\013false_block\030\003 \001(\0132\006.Block\"\?\n\014CondLoopSt"
-    "mt\022\030\n\tcond_expr\030\001 \001(\0132\005.Expr\022\025\n\005block\030\002 "
-    "\001(\0132\006.Block\"\236\001\n\013VarDeclStmt\022\014\n\004name\030\001 \001("
-    "\t\022\034\n\ttype_spec\030\002 \001(\0132\t.TypeSpec\022\037\n\004mode\030"
-    "\003 \001(\0162\021.VarDeclStmt.Mode\022\030\n\tinit_expr\030\004 "
-    "\001(\0132\005.Expr\"(\n\004Mode\022\013\n\007UNKNOWN\020\000\022\007\n\003OWN\020\001"
-    "\022\n\n\006BORROW\020\002\"\327\001\n\004Stmt\022\031\n\004expr\030\001 \001(\0132\t.Ex"
-    "prStmtH\000\022\027\n\003ret\030\002 \001(\0132\010.RetStmtH\000\022\027\n\003brk"
-    "\030\003 \001(\0132\010.BrkStmtH\000\022\031\n\004cont\030\004 \001(\0132\t.ContS"
-    "tmtH\000\022\031\n\004cond\030\005 \001(\0132\t.CondStmtH\000\022\"\n\tcond"
-    "_loop\030\006 \001(\0132\r.CondLoopStmtH\000\022 \n\010var_decl"
-    "\030\007 \001(\0132\014.VarDeclStmtH\000B\006\n\004type\"\035\n\005Block\022"
-    "\024\n\005stmts\030\001 \003(\0132\005.Stmt\"\245\001\n\tFuncParam\022\014\n\004n"
-    "ame\030\001 \001(\t\022\035\n\004mode\030\002 \001(\0162\017.FuncParam.Mode"
-    "\022\034\n\ttype_spec\030\003 \001(\0132\t.TypeSpec\022\030\n\tinit_e"
-    "xpr\030\004 \001(\0132\005.Expr\"3\n\004Mode\022\013\n\007UNKNOWN\020\000\022\010\n"
-    "\004COPY\020\001\022\n\n\006BORROW\020\002\022\010\n\004MOVE\020\003\"\223\002\n\004Func\022\014"
-    "\n\004name\030\001 \001(\t\022\023\n\013type_params\030\002 \003(\t\022\032\n\006par"
-    "ams\030\003 \001(\0132\n.FuncParam\022#\n\020return_type_spe"
-    "c\030\004 \001(\0132\t.TypeSpec\022%\n\013return_mode\030\005 \001(\0162"
-    "\020.Func.ReturnMode\022\024\n\002cc\030\006 \001(\0162\010.Func.CC\022"
-    "\025\n\005block\030\007 \001(\0132\006.Block\"9\n\nReturnMode\022\013\n\007"
-    "UNKNOWN\020\000\022\010\n\004COPY\020\001\022\n\n\006BORROW\020\002\022\010\n\004MOVE\020"
-    "\003\"\030\n\002CC\022\013\n\007DEFAULT\020\000\022\005\n\001C\020\001\"[\n\nExternFun"
-    "c\022\014\n\004name\030\001 \001(\t\022\032\n\006params\030\002 \003(\0132\n.FuncPa"
-    "ram\022#\n\020return_type_spec\030\003 \001(\0132\t.TypeSpec"
-    "\"\303\001\n\005Class\022\014\n\004name\030\001 \001(\t\022\023\n\013type_params\030"
-    "\002 \003(\t\022\025\n\rsuper_classes\030\003 \003(\t\022\036\n\007members\030"
-    "\004 \003(\0132\r.Class.Member\032`\n\006Member\022\025\n\003cls\030\001 "
-    "\001(\0132\006.ClassH\000\022\025\n\004func\030\002 \001(\0132\005.FuncH\000\022 \n\010"
-    "var_decl\030\003 \001(\0132\014.VarDeclStmtH\000B\006\n\004type\"\276"
-    "\001\n\006Module\022\014\n\004name\030\001 \001(\t\022\037\n\007members\030\002 \003(\013"
-    "2\016.Module.Member\032\204\001\n\006Member\022\025\n\003cls\030\001 \001(\013"
-    "2\006.ClassH\000\022\025\n\004func\030\002 \001(\0132\005.FuncH\000\022 \n\010var"
-    "_decl\030\003 \001(\0132\014.VarDeclStmtH\000\022\"\n\013extern_fu"
-    "nc\030\004 \001(\0132\013.ExternFuncH\000B\006\n\004type\"N\n\010TypeS"
-    "pec\022\014\n\004name\030\001 \001(\t\022\031\n\006params\030\002 \003(\0132\t.Type"
-    "Spec\022\031\n\006parent\030\003 \001(\0132\t.TypeSpecb\006proto3", 2639);
+    "rs\030\002 \003(\0132\005.Expr\"\203\001\n\013UnaryOpExpr\022\033\n\002op\030\001 "
+    "\001(\0162\017.UnaryOpExpr.Op\022\023\n\004expr\030\002 \001(\0132\005.Exp"
+    "r\"B\n\002Op\022\013\n\007UNKNOWN\020\000\022\007\n\003ADD\020\001\022\007\n\003SUB\020\002\022\n"
+    "\n\006BORROW\020\003\022\010\n\004MOVE\020\004\022\007\n\003NOT\020\005\"\342\001\n\014Binary"
+    "OpExpr\022\034\n\002op\030\001 \001(\0162\020.BinaryOpExpr.Op\022\030\n\t"
+    "left_expr\030\002 \001(\0132\005.Expr\022\031\n\nright_expr\030\003 \001"
+    "(\0132\005.Expr\"\177\n\002Op\022\013\n\007UNKNOWN\020\000\022\007\n\003ADD\020\001\022\007\n"
+    "\003SUB\020\002\022\007\n\003MUL\020\003\022\007\n\003DIV\020\004\022\007\n\003MOD\020\005\022\006\n\002EQ\020"
+    "\006\022\006\n\002NE\020\007\022\006\n\002GT\020\010\022\006\n\002GE\020\t\022\006\n\002LT\020\n\022\006\n\002LE\020"
+    "\013\022\007\n\003AND\020\014\022\006\n\002OR\020\r\"A\n\nAssignExpr\022\030\n\tdest"
+    "_expr\030\001 \001(\0132\005.Expr\022\031\n\nvalue_expr\030\002 \001(\0132\005"
+    ".Expr\"\206\002\n\004Expr\022!\n\010constant\030\001 \001(\0132\r.Const"
+    "antExprH\000\022\027\n\003var\030\002 \001(\0132\010.VarExprH\000\022\035\n\006me"
+    "mber\030\003 \001(\0132\013.MemberExprH\000\022\033\n\005index\030\004 \001(\013"
+    "2\n.IndexExprH\000\022\031\n\004call\030\005 \001(\0132\t.CallExprH"
+    "\000\022 \n\010unary_op\030\006 \001(\0132\014.UnaryOpExprH\000\022\"\n\tb"
+    "inary_op\030\007 \001(\0132\r.BinaryOpExprH\000\022\035\n\006assig"
+    "n\030\010 \001(\0132\013.AssignExprH\000B\006\n\004type\"\037\n\010ExprSt"
+    "mt\022\023\n\004expr\030\001 \001(\0132\005.Expr\"\036\n\007RetStmt\022\023\n\004ex"
+    "pr\030\001 \001(\0132\005.Expr\"\t\n\007BrkStmt\"\n\n\010ContStmt\"]"
+    "\n\010CondStmt\022\030\n\tcond_expr\030\001 \001(\0132\005.Expr\022\032\n\n"
+    "true_block\030\002 \001(\0132\006.Block\022\033\n\013false_block\030"
+    "\003 \001(\0132\006.Block\"\?\n\014CondLoopStmt\022\030\n\tcond_ex"
+    "pr\030\001 \001(\0132\005.Expr\022\025\n\005block\030\002 \001(\0132\006.Block\"\236"
+    "\001\n\013VarDeclStmt\022\014\n\004name\030\001 \001(\t\022\034\n\ttype_spe"
+    "c\030\002 \001(\0132\t.TypeSpec\022\037\n\004mode\030\003 \001(\0162\021.VarDe"
+    "clStmt.Mode\022\030\n\tinit_expr\030\004 \001(\0132\005.Expr\"(\n"
+    "\004Mode\022\013\n\007UNKNOWN\020\000\022\007\n\003OWN\020\001\022\n\n\006BORROW\020\002\""
+    "\327\001\n\004Stmt\022\031\n\004expr\030\001 \001(\0132\t.ExprStmtH\000\022\027\n\003r"
+    "et\030\002 \001(\0132\010.RetStmtH\000\022\027\n\003brk\030\003 \001(\0132\010.BrkS"
+    "tmtH\000\022\031\n\004cont\030\004 \001(\0132\t.ContStmtH\000\022\031\n\004cond"
+    "\030\005 \001(\0132\t.CondStmtH\000\022\"\n\tcond_loop\030\006 \001(\0132\r"
+    ".CondLoopStmtH\000\022 \n\010var_decl\030\007 \001(\0132\014.VarD"
+    "eclStmtH\000B\006\n\004type\"\035\n\005Block\022\024\n\005stmts\030\001 \003("
+    "\0132\005.Stmt\"\245\001\n\tFuncParam\022\014\n\004name\030\001 \001(\t\022\035\n\004"
+    "mode\030\002 \001(\0162\017.FuncParam.Mode\022\034\n\ttype_spec"
+    "\030\003 \001(\0132\t.TypeSpec\022\030\n\tinit_expr\030\004 \001(\0132\005.E"
+    "xpr\"3\n\004Mode\022\013\n\007UNKNOWN\020\000\022\010\n\004COPY\020\001\022\n\n\006BO"
+    "RROW\020\002\022\010\n\004MOVE\020\003\"\223\002\n\004Func\022\014\n\004name\030\001 \001(\t\022"
+    "\023\n\013type_params\030\002 \003(\t\022\032\n\006params\030\003 \003(\0132\n.F"
+    "uncParam\022#\n\020return_type_spec\030\004 \001(\0132\t.Typ"
+    "eSpec\022%\n\013return_mode\030\005 \001(\0162\020.Func.Return"
+    "Mode\022\024\n\002cc\030\006 \001(\0162\010.Func.CC\022\025\n\005block\030\007 \001("
+    "\0132\006.Block\"9\n\nReturnMode\022\013\n\007UNKNOWN\020\000\022\010\n\004"
+    "COPY\020\001\022\n\n\006BORROW\020\002\022\010\n\004MOVE\020\003\"\030\n\002CC\022\013\n\007DE"
+    "FAULT\020\000\022\005\n\001C\020\001\"[\n\nExternFunc\022\014\n\004name\030\001 \001"
+    "(\t\022\032\n\006params\030\002 \003(\0132\n.FuncParam\022#\n\020return"
+    "_type_spec\030\003 \001(\0132\t.TypeSpec\"\316\001\n\005Class\022\014\n"
+    "\004name\030\001 \001(\t\022\023\n\013type_params\030\002 \003(\t\022 \n\rsupe"
+    "r_classes\030\003 \003(\0132\t.TypeSpec\022\036\n\007members\030\004 "
+    "\003(\0132\r.Class.Member\032`\n\006Member\022\025\n\003cls\030\001 \001("
+    "\0132\006.ClassH\000\022\025\n\004func\030\002 \001(\0132\005.FuncH\000\022 \n\010va"
+    "r_decl\030\003 \001(\0132\014.VarDeclStmtH\000B\006\n\004type\"\276\001\n"
+    "\006Module\022\014\n\004name\030\001 \001(\t\022\037\n\007members\030\002 \003(\0132\016"
+    ".Module.Member\032\204\001\n\006Member\022\025\n\003cls\030\001 \001(\0132\006"
+    ".ClassH\000\022\025\n\004func\030\002 \001(\0132\005.FuncH\000\022 \n\010var_d"
+    "ecl\030\003 \001(\0132\014.VarDeclStmtH\000\022\"\n\013extern_func"
+    "\030\004 \001(\0132\013.ExternFuncH\000B\006\n\004type\"N\n\010TypeSpe"
+    "c\022\014\n\004name\030\001 \001(\t\022\031\n\006params\030\002 \003(\0132\t.TypeSp"
+    "ec\022\031\n\006parent\030\003 \001(\0132\t.TypeSpecb\006proto3", 2677);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "ast.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_ast_2eproto);
@@ -2778,6 +2779,7 @@ bool UnaryOpExpr_Op_IsValid(int value) {
     case 2:
     case 3:
     case 4:
+    case 5:
       return true;
     default:
       return false;
@@ -2790,6 +2792,7 @@ const UnaryOpExpr_Op UnaryOpExpr::ADD;
 const UnaryOpExpr_Op UnaryOpExpr::SUB;
 const UnaryOpExpr_Op UnaryOpExpr::BORROW;
 const UnaryOpExpr_Op UnaryOpExpr::MOVE;
+const UnaryOpExpr_Op UnaryOpExpr::NOT;
 const UnaryOpExpr_Op UnaryOpExpr::Op_MIN;
 const UnaryOpExpr_Op UnaryOpExpr::Op_MAX;
 const int UnaryOpExpr::Op_ARRAYSIZE;
@@ -3143,6 +3146,8 @@ bool BinaryOpExpr_Op_IsValid(int value) {
     case 9:
     case 10:
     case 11:
+    case 12:
+    case 13:
       return true;
     default:
       return false;
@@ -3162,6 +3167,8 @@ const BinaryOpExpr_Op BinaryOpExpr::GT;
 const BinaryOpExpr_Op BinaryOpExpr::GE;
 const BinaryOpExpr_Op BinaryOpExpr::LT;
 const BinaryOpExpr_Op BinaryOpExpr::LE;
+const BinaryOpExpr_Op BinaryOpExpr::AND;
+const BinaryOpExpr_Op BinaryOpExpr::OR;
 const BinaryOpExpr_Op BinaryOpExpr::Op_MIN;
 const BinaryOpExpr_Op BinaryOpExpr::Op_MAX;
 const int BinaryOpExpr::Op_ARRAYSIZE;
@@ -8895,8 +8902,6 @@ Func::Func()
 }
 
 void Func::InitAsDefaultInstance() {
-  params_ = const_cast< ::FuncParam*>(
-      ::FuncParam::internal_default_instance());
   return_type_spec_ = const_cast< ::TypeSpec*>(
       ::TypeSpec::internal_default_instance());
   block_ = const_cast< ::Block*>(
@@ -8913,7 +8918,6 @@ Func::Func(const Func& from)
 
 void Func::SharedCtor() {
   name_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  params_ = NULL;
   return_type_spec_ = NULL;
   block_ = NULL;
   ::memset(&return_mode_, 0, reinterpret_cast<char*>(&cc_) -
@@ -8929,7 +8933,6 @@ Func::~Func() {
 void Func::SharedDtor() {
   name_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   if (this != &Func_default_instance_.get()) {
-    delete params_;
     delete return_type_spec_;
     delete block_;
   }
@@ -8980,8 +8983,6 @@ void Func::Clear() {
 
   ZR_(return_mode_, cc_);
   name_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  if (GetArenaNoVirtual() == NULL && params_ != NULL) delete params_;
-  params_ = NULL;
   if (GetArenaNoVirtual() == NULL && return_type_spec_ != NULL) delete return_type_spec_;
   return_type_spec_ = NULL;
   if (GetArenaNoVirtual() == NULL && block_ != NULL) delete block_;
@@ -8991,6 +8992,7 @@ void Func::Clear() {
 #undef ZR_
 
   type_params_.Clear();
+  params_.Clear();
 }
 
 bool Func::MergePartialFromCodedStream(
@@ -9038,15 +9040,19 @@ bool Func::MergePartialFromCodedStream(
         break;
       }
 
-      // optional .FuncParam params = 3;
+      // repeated .FuncParam params = 3;
       case 3: {
         if (tag == 26) {
          parse_params:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
-               input, mutable_params()));
+          DO_(input->IncrementRecursionDepth());
+         parse_loop_params:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
+                input, add_params()));
         } else {
           goto handle_unusual;
         }
+        if (input->ExpectTag(26)) goto parse_loop_params;
+        input->UnsafeDecrementRecursionDepth();
         if (input->ExpectTag(34)) goto parse_return_type_spec;
         break;
       }
@@ -9153,10 +9159,10 @@ void Func::SerializeWithCachedSizes(
       2, this->type_params(i), output);
   }
 
-  // optional .FuncParam params = 3;
-  if (this->has_params()) {
+  // repeated .FuncParam params = 3;
+  for (unsigned int i = 0, n = this->params_size(); i < n; i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      3, *this->params_, output);
+      3, this->params(i), output);
   }
 
   // optional .TypeSpec return_type_spec = 4;
@@ -9211,11 +9217,11 @@ void Func::SerializeWithCachedSizes(
       WriteStringToArray(2, this->type_params(i), target);
   }
 
-  // optional .FuncParam params = 3;
-  if (this->has_params()) {
+  // repeated .FuncParam params = 3;
+  for (unsigned int i = 0, n = this->params_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       InternalWriteMessageNoVirtualToArray(
-        3, *this->params_, false, target);
+        3, this->params(i), false, target);
   }
 
   // optional .TypeSpec return_type_spec = 4;
@@ -9259,13 +9265,6 @@ size_t Func::ByteSizeLong() const {
         this->name());
   }
 
-  // optional .FuncParam params = 3;
-  if (this->has_params()) {
-    total_size += 1 +
-      ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
-        *this->params_);
-  }
-
   // optional .TypeSpec return_type_spec = 4;
   if (this->has_return_type_spec()) {
     total_size += 1 +
@@ -9298,6 +9297,17 @@ size_t Func::ByteSizeLong() const {
   for (int i = 0; i < this->type_params_size(); i++) {
     total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
       this->type_params(i));
+  }
+
+  // repeated .FuncParam params = 3;
+  {
+    unsigned int count = this->params_size();
+    total_size += 1UL * count;
+    for (unsigned int i = 0; i < count; i++) {
+      total_size +=
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->params(i));
+    }
   }
 
   int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
@@ -9334,12 +9344,10 @@ void Func::MergeFrom(const Func& from) {
 void Func::UnsafeMergeFrom(const Func& from) {
   GOOGLE_DCHECK(&from != this);
   type_params_.UnsafeMergeFrom(from.type_params_);
+  params_.MergeFrom(from.params_);
   if (from.name().size() > 0) {
 
     name_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.name_);
-  }
-  if (from.has_params()) {
-    mutable_params()->::FuncParam::MergeFrom(from.params());
   }
   if (from.has_return_type_spec()) {
     mutable_return_type_spec()->::TypeSpec::MergeFrom(from.return_type_spec());
@@ -9381,7 +9389,7 @@ void Func::Swap(Func* other) {
 void Func::InternalSwap(Func* other) {
   name_.Swap(&other->name_);
   type_params_.UnsafeArenaSwap(&other->type_params_);
-  std::swap(params_, other->params_);
+  params_.UnsafeArenaSwap(&other->params_);
   std::swap(return_type_spec_, other->return_type_spec_);
   std::swap(return_mode_, other->return_mode_);
   std::swap(cc_, other->cc_);
@@ -9500,43 +9508,34 @@ Func::mutable_type_params() {
   return &type_params_;
 }
 
-// optional .FuncParam params = 3;
-bool Func::has_params() const {
-  return this != internal_default_instance() && params_ != NULL;
+// repeated .FuncParam params = 3;
+int Func::params_size() const {
+  return params_.size();
 }
 void Func::clear_params() {
-  if (GetArenaNoVirtual() == NULL && params_ != NULL) delete params_;
-  params_ = NULL;
+  params_.Clear();
 }
-const ::FuncParam& Func::params() const {
+const ::FuncParam& Func::params(int index) const {
   // @@protoc_insertion_point(field_get:Func.params)
-  return params_ != NULL ? *params_
-                         : *::FuncParam::internal_default_instance();
+  return params_.Get(index);
 }
-::FuncParam* Func::mutable_params() {
-  
-  if (params_ == NULL) {
-    params_ = new ::FuncParam;
-  }
+::FuncParam* Func::mutable_params(int index) {
   // @@protoc_insertion_point(field_mutable:Func.params)
+  return params_.Mutable(index);
+}
+::FuncParam* Func::add_params() {
+  // @@protoc_insertion_point(field_add:Func.params)
+  return params_.Add();
+}
+::google::protobuf::RepeatedPtrField< ::FuncParam >*
+Func::mutable_params() {
+  // @@protoc_insertion_point(field_mutable_list:Func.params)
+  return &params_;
+}
+const ::google::protobuf::RepeatedPtrField< ::FuncParam >&
+Func::params() const {
+  // @@protoc_insertion_point(field_list:Func.params)
   return params_;
-}
-::FuncParam* Func::release_params() {
-  // @@protoc_insertion_point(field_release:Func.params)
-  
-  ::FuncParam* temp = params_;
-  params_ = NULL;
-  return temp;
-}
-void Func::set_allocated_params(::FuncParam* params) {
-  delete params_;
-  params_ = params;
-  if (params) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_set_allocated:Func.params)
 }
 
 // optional .TypeSpec return_type_spec = 4;
@@ -10562,29 +10561,26 @@ bool Class::MergePartialFromCodedStream(
         break;
       }
 
-      // repeated string super_classes = 3;
+      // repeated .TypeSpec super_classes = 3;
       case 3: {
         if (tag == 26) {
          parse_super_classes:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->add_super_classes()));
-          DO_(::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-            this->super_classes(this->super_classes_size() - 1).data(),
-            this->super_classes(this->super_classes_size() - 1).length(),
-            ::google::protobuf::internal::WireFormatLite::PARSE,
-            "Class.super_classes"));
+          DO_(input->IncrementRecursionDepth());
+         parse_loop_super_classes:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
+                input, add_super_classes()));
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(26)) goto parse_super_classes;
-        if (input->ExpectTag(34)) goto parse_members;
+        if (input->ExpectTag(26)) goto parse_loop_super_classes;
+        if (input->ExpectTag(34)) goto parse_loop_members;
+        input->UnsafeDecrementRecursionDepth();
         break;
       }
 
       // repeated .Class.Member members = 4;
       case 4: {
         if (tag == 34) {
-         parse_members:
           DO_(input->IncrementRecursionDepth());
          parse_loop_members:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtualNoRecursionDepth(
@@ -10642,13 +10638,9 @@ void Class::SerializeWithCachedSizes(
       2, this->type_params(i), output);
   }
 
-  // repeated string super_classes = 3;
-  for (int i = 0; i < this->super_classes_size(); i++) {
-    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-      this->super_classes(i).data(), this->super_classes(i).length(),
-      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "Class.super_classes");
-    ::google::protobuf::internal::WireFormatLite::WriteString(
+  // repeated .TypeSpec super_classes = 3;
+  for (unsigned int i = 0, n = this->super_classes_size(); i < n; i++) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
       3, this->super_classes(i), output);
   }
 
@@ -10686,14 +10678,11 @@ void Class::SerializeWithCachedSizes(
       WriteStringToArray(2, this->type_params(i), target);
   }
 
-  // repeated string super_classes = 3;
-  for (int i = 0; i < this->super_classes_size(); i++) {
-    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
-      this->super_classes(i).data(), this->super_classes(i).length(),
-      ::google::protobuf::internal::WireFormatLite::SERIALIZE,
-      "Class.super_classes");
+  // repeated .TypeSpec super_classes = 3;
+  for (unsigned int i = 0, n = this->super_classes_size(); i < n; i++) {
     target = ::google::protobuf::internal::WireFormatLite::
-      WriteStringToArray(3, this->super_classes(i), target);
+      InternalWriteMessageNoVirtualToArray(
+        3, this->super_classes(i), false, target);
   }
 
   // repeated .Class.Member members = 4;
@@ -10726,12 +10715,15 @@ size_t Class::ByteSizeLong() const {
       this->type_params(i));
   }
 
-  // repeated string super_classes = 3;
-  total_size += 1 *
-      ::google::protobuf::internal::FromIntSize(this->super_classes_size());
-  for (int i = 0; i < this->super_classes_size(); i++) {
-    total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
-      this->super_classes(i));
+  // repeated .TypeSpec super_classes = 3;
+  {
+    unsigned int count = this->super_classes_size();
+    total_size += 1UL * count;
+    for (unsigned int i = 0; i < count; i++) {
+      total_size +=
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->super_classes(i));
+    }
   }
 
   // repeated .Class.Member members = 4;
@@ -10779,7 +10771,7 @@ void Class::MergeFrom(const Class& from) {
 void Class::UnsafeMergeFrom(const Class& from) {
   GOOGLE_DCHECK(&from != this);
   type_params_.UnsafeMergeFrom(from.type_params_);
-  super_classes_.UnsafeMergeFrom(from.super_classes_);
+  super_classes_.MergeFrom(from.super_classes_);
   members_.MergeFrom(from.members_);
   if (from.name().size() > 0) {
 
@@ -11089,59 +11081,34 @@ Class::mutable_type_params() {
   return &type_params_;
 }
 
-// repeated string super_classes = 3;
+// repeated .TypeSpec super_classes = 3;
 int Class::super_classes_size() const {
   return super_classes_.size();
 }
 void Class::clear_super_classes() {
   super_classes_.Clear();
 }
-const ::std::string& Class::super_classes(int index) const {
+const ::TypeSpec& Class::super_classes(int index) const {
   // @@protoc_insertion_point(field_get:Class.super_classes)
   return super_classes_.Get(index);
 }
-::std::string* Class::mutable_super_classes(int index) {
+::TypeSpec* Class::mutable_super_classes(int index) {
   // @@protoc_insertion_point(field_mutable:Class.super_classes)
   return super_classes_.Mutable(index);
 }
-void Class::set_super_classes(int index, const ::std::string& value) {
-  // @@protoc_insertion_point(field_set:Class.super_classes)
-  super_classes_.Mutable(index)->assign(value);
-}
-void Class::set_super_classes(int index, const char* value) {
-  super_classes_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:Class.super_classes)
-}
-void Class::set_super_classes(int index, const char* value, size_t size) {
-  super_classes_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:Class.super_classes)
-}
-::std::string* Class::add_super_classes() {
-  // @@protoc_insertion_point(field_add_mutable:Class.super_classes)
+::TypeSpec* Class::add_super_classes() {
+  // @@protoc_insertion_point(field_add:Class.super_classes)
   return super_classes_.Add();
 }
-void Class::add_super_classes(const ::std::string& value) {
-  super_classes_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:Class.super_classes)
-}
-void Class::add_super_classes(const char* value) {
-  super_classes_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:Class.super_classes)
-}
-void Class::add_super_classes(const char* value, size_t size) {
-  super_classes_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:Class.super_classes)
-}
-const ::google::protobuf::RepeatedPtrField< ::std::string>&
-Class::super_classes() const {
-  // @@protoc_insertion_point(field_list:Class.super_classes)
-  return super_classes_;
-}
-::google::protobuf::RepeatedPtrField< ::std::string>*
+::google::protobuf::RepeatedPtrField< ::TypeSpec >*
 Class::mutable_super_classes() {
   // @@protoc_insertion_point(field_mutable_list:Class.super_classes)
   return &super_classes_;
+}
+const ::google::protobuf::RepeatedPtrField< ::TypeSpec >&
+Class::super_classes() const {
+  // @@protoc_insertion_point(field_list:Class.super_classes)
+  return super_classes_;
 }
 
 // repeated .Class.Member members = 4;

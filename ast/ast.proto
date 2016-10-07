@@ -201,7 +201,7 @@ message Func {
   }
   string name = 1;
   repeated string type_params = 2;
-  FuncParam params = 3;
+  repeated FuncParam params = 3;
   TypeSpec return_type_spec = 4;
   ReturnMode return_mode = 5;
   CC cc = 6;

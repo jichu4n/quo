@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='ast.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\tast.proto\"W\n\x0c\x43onstantExpr\x12\x15\n\x0bstringValue\x18\x01 \x01(\tH\x00\x12\x12\n\x08intValue\x18\x02 \x01(\x03H\x00\x12\x13\n\tboolValue\x18\x03 \x01(\x08H\x00\x42\x07\n\x05value\"\x16\n\x07VarExpr\x12\x0b\n\x03var\x18\x01 \x01(\t\"1\n\nMemberExpr\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x0e\n\x06member\x18\x02 \x01(\t\";\n\tIndexExpr\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x19\n\nindex_expr\x18\x02 \x01(\x0b\x32\x05.Expr\"9\n\x08\x43\x61llExpr\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x18\n\targ_exprs\x18\x02 \x03(\x0b\x32\x05.Expr\"z\n\x0bUnaryOpExpr\x12\x1b\n\x02op\x18\x01 \x01(\x0e\x32\x0f.UnaryOpExpr.Op\x12\x13\n\x04\x65xpr\x18\x02 \x01(\x0b\x32\x05.Expr\"9\n\x02Op\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03\x41\x44\x44\x10\x01\x12\x07\n\x03SUB\x10\x02\x12\n\n\x06\x42ORROW\x10\x03\x12\x08\n\x04MOVE\x10\x04\"\xd1\x01\n\x0c\x42inaryOpExpr\x12\x1c\n\x02op\x18\x01 \x01(\x0e\x32\x10.BinaryOpExpr.Op\x12\x18\n\tleft_expr\x18\x02 \x01(\x0b\x32\x05.Expr\x12\x19\n\nright_expr\x18\x03 \x01(\x0b\x32\x05.Expr\"n\n\x02Op\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03\x41\x44\x44\x10\x01\x12\x07\n\x03SUB\x10\x02\x12\x07\n\x03MUL\x10\x03\x12\x07\n\x03\x44IV\x10\x04\x12\x07\n\x03MOD\x10\x05\x12\x06\n\x02\x45Q\x10\x06\x12\x06\n\x02NE\x10\x07\x12\x06\n\x02GT\x10\x08\x12\x06\n\x02GE\x10\t\x12\x06\n\x02LT\x10\n\x12\x06\n\x02LE\x10\x0b\"A\n\nAssignExpr\x12\x18\n\tdest_expr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x19\n\nvalue_expr\x18\x02 \x01(\x0b\x32\x05.Expr\"\x86\x02\n\x04\x45xpr\x12!\n\x08\x63onstant\x18\x01 \x01(\x0b\x32\r.ConstantExprH\x00\x12\x17\n\x03var\x18\x02 \x01(\x0b\x32\x08.VarExprH\x00\x12\x1d\n\x06member\x18\x03 \x01(\x0b\x32\x0b.MemberExprH\x00\x12\x1b\n\x05index\x18\x04 \x01(\x0b\x32\n.IndexExprH\x00\x12\x19\n\x04\x63\x61ll\x18\x05 \x01(\x0b\x32\t.CallExprH\x00\x12 \n\x08unary_op\x18\x06 \x01(\x0b\x32\x0c.UnaryOpExprH\x00\x12\"\n\tbinary_op\x18\x07 \x01(\x0b\x32\r.BinaryOpExprH\x00\x12\x1d\n\x06\x61ssign\x18\x08 \x01(\x0b\x32\x0b.AssignExprH\x00\x42\x06\n\x04type\"\x1f\n\x08\x45xprStmt\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\"\x1e\n\x07RetStmt\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\"\t\n\x07\x42rkStmt\"\n\n\x08\x43ontStmt\"]\n\x08\x43ondStmt\x12\x18\n\tcond_expr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x1a\n\ntrue_block\x18\x02 \x01(\x0b\x32\x06.Block\x12\x1b\n\x0b\x66\x61lse_block\x18\x03 \x01(\x0b\x32\x06.Block\"?\n\x0c\x43ondLoopStmt\x12\x18\n\tcond_expr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x15\n\x05\x62lock\x18\x02 \x01(\x0b\x32\x06.Block\"\x9e\x01\n\x0bVarDeclStmt\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1c\n\ttype_spec\x18\x02 \x01(\x0b\x32\t.TypeSpec\x12\x1f\n\x04mode\x18\x03 \x01(\x0e\x32\x11.VarDeclStmt.Mode\x12\x18\n\tinit_expr\x18\x04 \x01(\x0b\x32\x05.Expr\"(\n\x04Mode\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03OWN\x10\x01\x12\n\n\x06\x42ORROW\x10\x02\"\xd7\x01\n\x04Stmt\x12\x19\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\t.ExprStmtH\x00\x12\x17\n\x03ret\x18\x02 \x01(\x0b\x32\x08.RetStmtH\x00\x12\x17\n\x03\x62rk\x18\x03 \x01(\x0b\x32\x08.BrkStmtH\x00\x12\x19\n\x04\x63ont\x18\x04 \x01(\x0b\x32\t.ContStmtH\x00\x12\x19\n\x04\x63ond\x18\x05 \x01(\x0b\x32\t.CondStmtH\x00\x12\"\n\tcond_loop\x18\x06 \x01(\x0b\x32\r.CondLoopStmtH\x00\x12 \n\x08var_decl\x18\x07 \x01(\x0b\x32\x0c.VarDeclStmtH\x00\x42\x06\n\x04type\"\x1d\n\x05\x42lock\x12\x14\n\x05stmts\x18\x01 \x03(\x0b\x32\x05.Stmt\"\xa5\x01\n\tFuncParam\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1d\n\x04mode\x18\x02 \x01(\x0e\x32\x0f.FuncParam.Mode\x12\x1c\n\ttype_spec\x18\x03 \x01(\x0b\x32\t.TypeSpec\x12\x18\n\tinit_expr\x18\x04 \x01(\x0b\x32\x05.Expr\"3\n\x04Mode\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x08\n\x04\x43OPY\x10\x01\x12\n\n\x06\x42ORROW\x10\x02\x12\x08\n\x04MOVE\x10\x03\"\x93\x02\n\x04\x46unc\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0btype_params\x18\x02 \x03(\t\x12\x1a\n\x06params\x18\x03 \x01(\x0b\x32\n.FuncParam\x12#\n\x10return_type_spec\x18\x04 \x01(\x0b\x32\t.TypeSpec\x12%\n\x0breturn_mode\x18\x05 \x01(\x0e\x32\x10.Func.ReturnMode\x12\x14\n\x02\x63\x63\x18\x06 \x01(\x0e\x32\x08.Func.CC\x12\x15\n\x05\x62lock\x18\x07 \x01(\x0b\x32\x06.Block\"9\n\nReturnMode\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x08\n\x04\x43OPY\x10\x01\x12\n\n\x06\x42ORROW\x10\x02\x12\x08\n\x04MOVE\x10\x03\"\x18\n\x02\x43\x43\x12\x0b\n\x07\x44\x45\x46\x41ULT\x10\x00\x12\x05\n\x01\x43\x10\x01\"[\n\nExternFunc\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1a\n\x06params\x18\x02 \x03(\x0b\x32\n.FuncParam\x12#\n\x10return_type_spec\x18\x03 \x01(\x0b\x32\t.TypeSpec\"\xc3\x01\n\x05\x43lass\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0btype_params\x18\x02 \x03(\t\x12\x15\n\rsuper_classes\x18\x03 \x03(\t\x12\x1e\n\x07members\x18\x04 \x03(\x0b\x32\r.Class.Member\x1a`\n\x06Member\x12\x15\n\x03\x63ls\x18\x01 \x01(\x0b\x32\x06.ClassH\x00\x12\x15\n\x04\x66unc\x18\x02 \x01(\x0b\x32\x05.FuncH\x00\x12 \n\x08var_decl\x18\x03 \x01(\x0b\x32\x0c.VarDeclStmtH\x00\x42\x06\n\x04type\"\xbe\x01\n\x06Module\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1f\n\x07members\x18\x02 \x03(\x0b\x32\x0e.Module.Member\x1a\x84\x01\n\x06Member\x12\x15\n\x03\x63ls\x18\x01 \x01(\x0b\x32\x06.ClassH\x00\x12\x15\n\x04\x66unc\x18\x02 \x01(\x0b\x32\x05.FuncH\x00\x12 \n\x08var_decl\x18\x03 \x01(\x0b\x32\x0c.VarDeclStmtH\x00\x12\"\n\x0b\x65xtern_func\x18\x04 \x01(\x0b\x32\x0b.ExternFuncH\x00\x42\x06\n\x04type\"N\n\x08TypeSpec\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x19\n\x06params\x18\x02 \x03(\x0b\x32\t.TypeSpec\x12\x19\n\x06parent\x18\x03 \x01(\x0b\x32\t.TypeSpecb\x06proto3')
+  serialized_pb=_b('\n\tast.proto\"W\n\x0c\x43onstantExpr\x12\x15\n\x0bstringValue\x18\x01 \x01(\tH\x00\x12\x12\n\x08intValue\x18\x02 \x01(\x03H\x00\x12\x13\n\tboolValue\x18\x03 \x01(\x08H\x00\x42\x07\n\x05value\"\x16\n\x07VarExpr\x12\x0b\n\x03var\x18\x01 \x01(\t\"1\n\nMemberExpr\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x0e\n\x06member\x18\x02 \x01(\t\";\n\tIndexExpr\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x19\n\nindex_expr\x18\x02 \x01(\x0b\x32\x05.Expr\"9\n\x08\x43\x61llExpr\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x18\n\targ_exprs\x18\x02 \x03(\x0b\x32\x05.Expr\"\x83\x01\n\x0bUnaryOpExpr\x12\x1b\n\x02op\x18\x01 \x01(\x0e\x32\x0f.UnaryOpExpr.Op\x12\x13\n\x04\x65xpr\x18\x02 \x01(\x0b\x32\x05.Expr\"B\n\x02Op\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03\x41\x44\x44\x10\x01\x12\x07\n\x03SUB\x10\x02\x12\n\n\x06\x42ORROW\x10\x03\x12\x08\n\x04MOVE\x10\x04\x12\x07\n\x03NOT\x10\x05\"\xe2\x01\n\x0c\x42inaryOpExpr\x12\x1c\n\x02op\x18\x01 \x01(\x0e\x32\x10.BinaryOpExpr.Op\x12\x18\n\tleft_expr\x18\x02 \x01(\x0b\x32\x05.Expr\x12\x19\n\nright_expr\x18\x03 \x01(\x0b\x32\x05.Expr\"\x7f\n\x02Op\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03\x41\x44\x44\x10\x01\x12\x07\n\x03SUB\x10\x02\x12\x07\n\x03MUL\x10\x03\x12\x07\n\x03\x44IV\x10\x04\x12\x07\n\x03MOD\x10\x05\x12\x06\n\x02\x45Q\x10\x06\x12\x06\n\x02NE\x10\x07\x12\x06\n\x02GT\x10\x08\x12\x06\n\x02GE\x10\t\x12\x06\n\x02LT\x10\n\x12\x06\n\x02LE\x10\x0b\x12\x07\n\x03\x41ND\x10\x0c\x12\x06\n\x02OR\x10\r\"A\n\nAssignExpr\x12\x18\n\tdest_expr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x19\n\nvalue_expr\x18\x02 \x01(\x0b\x32\x05.Expr\"\x86\x02\n\x04\x45xpr\x12!\n\x08\x63onstant\x18\x01 \x01(\x0b\x32\r.ConstantExprH\x00\x12\x17\n\x03var\x18\x02 \x01(\x0b\x32\x08.VarExprH\x00\x12\x1d\n\x06member\x18\x03 \x01(\x0b\x32\x0b.MemberExprH\x00\x12\x1b\n\x05index\x18\x04 \x01(\x0b\x32\n.IndexExprH\x00\x12\x19\n\x04\x63\x61ll\x18\x05 \x01(\x0b\x32\t.CallExprH\x00\x12 \n\x08unary_op\x18\x06 \x01(\x0b\x32\x0c.UnaryOpExprH\x00\x12\"\n\tbinary_op\x18\x07 \x01(\x0b\x32\r.BinaryOpExprH\x00\x12\x1d\n\x06\x61ssign\x18\x08 \x01(\x0b\x32\x0b.AssignExprH\x00\x42\x06\n\x04type\"\x1f\n\x08\x45xprStmt\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\"\x1e\n\x07RetStmt\x12\x13\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\x05.Expr\"\t\n\x07\x42rkStmt\"\n\n\x08\x43ontStmt\"]\n\x08\x43ondStmt\x12\x18\n\tcond_expr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x1a\n\ntrue_block\x18\x02 \x01(\x0b\x32\x06.Block\x12\x1b\n\x0b\x66\x61lse_block\x18\x03 \x01(\x0b\x32\x06.Block\"?\n\x0c\x43ondLoopStmt\x12\x18\n\tcond_expr\x18\x01 \x01(\x0b\x32\x05.Expr\x12\x15\n\x05\x62lock\x18\x02 \x01(\x0b\x32\x06.Block\"\x9e\x01\n\x0bVarDeclStmt\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1c\n\ttype_spec\x18\x02 \x01(\x0b\x32\t.TypeSpec\x12\x1f\n\x04mode\x18\x03 \x01(\x0e\x32\x11.VarDeclStmt.Mode\x12\x18\n\tinit_expr\x18\x04 \x01(\x0b\x32\x05.Expr\"(\n\x04Mode\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x07\n\x03OWN\x10\x01\x12\n\n\x06\x42ORROW\x10\x02\"\xd7\x01\n\x04Stmt\x12\x19\n\x04\x65xpr\x18\x01 \x01(\x0b\x32\t.ExprStmtH\x00\x12\x17\n\x03ret\x18\x02 \x01(\x0b\x32\x08.RetStmtH\x00\x12\x17\n\x03\x62rk\x18\x03 \x01(\x0b\x32\x08.BrkStmtH\x00\x12\x19\n\x04\x63ont\x18\x04 \x01(\x0b\x32\t.ContStmtH\x00\x12\x19\n\x04\x63ond\x18\x05 \x01(\x0b\x32\t.CondStmtH\x00\x12\"\n\tcond_loop\x18\x06 \x01(\x0b\x32\r.CondLoopStmtH\x00\x12 \n\x08var_decl\x18\x07 \x01(\x0b\x32\x0c.VarDeclStmtH\x00\x42\x06\n\x04type\"\x1d\n\x05\x42lock\x12\x14\n\x05stmts\x18\x01 \x03(\x0b\x32\x05.Stmt\"\xa5\x01\n\tFuncParam\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1d\n\x04mode\x18\x02 \x01(\x0e\x32\x0f.FuncParam.Mode\x12\x1c\n\ttype_spec\x18\x03 \x01(\x0b\x32\t.TypeSpec\x12\x18\n\tinit_expr\x18\x04 \x01(\x0b\x32\x05.Expr\"3\n\x04Mode\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x08\n\x04\x43OPY\x10\x01\x12\n\n\x06\x42ORROW\x10\x02\x12\x08\n\x04MOVE\x10\x03\"\x93\x02\n\x04\x46unc\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0btype_params\x18\x02 \x03(\t\x12\x1a\n\x06params\x18\x03 \x03(\x0b\x32\n.FuncParam\x12#\n\x10return_type_spec\x18\x04 \x01(\x0b\x32\t.TypeSpec\x12%\n\x0breturn_mode\x18\x05 \x01(\x0e\x32\x10.Func.ReturnMode\x12\x14\n\x02\x63\x63\x18\x06 \x01(\x0e\x32\x08.Func.CC\x12\x15\n\x05\x62lock\x18\x07 \x01(\x0b\x32\x06.Block\"9\n\nReturnMode\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x08\n\x04\x43OPY\x10\x01\x12\n\n\x06\x42ORROW\x10\x02\x12\x08\n\x04MOVE\x10\x03\"\x18\n\x02\x43\x43\x12\x0b\n\x07\x44\x45\x46\x41ULT\x10\x00\x12\x05\n\x01\x43\x10\x01\"[\n\nExternFunc\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1a\n\x06params\x18\x02 \x03(\x0b\x32\n.FuncParam\x12#\n\x10return_type_spec\x18\x03 \x01(\x0b\x32\t.TypeSpec\"\xce\x01\n\x05\x43lass\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x13\n\x0btype_params\x18\x02 \x03(\t\x12 \n\rsuper_classes\x18\x03 \x03(\x0b\x32\t.TypeSpec\x12\x1e\n\x07members\x18\x04 \x03(\x0b\x32\r.Class.Member\x1a`\n\x06Member\x12\x15\n\x03\x63ls\x18\x01 \x01(\x0b\x32\x06.ClassH\x00\x12\x15\n\x04\x66unc\x18\x02 \x01(\x0b\x32\x05.FuncH\x00\x12 \n\x08var_decl\x18\x03 \x01(\x0b\x32\x0c.VarDeclStmtH\x00\x42\x06\n\x04type\"\xbe\x01\n\x06Module\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x1f\n\x07members\x18\x02 \x03(\x0b\x32\x0e.Module.Member\x1a\x84\x01\n\x06Member\x12\x15\n\x03\x63ls\x18\x01 \x01(\x0b\x32\x06.ClassH\x00\x12\x15\n\x04\x66unc\x18\x02 \x01(\x0b\x32\x05.FuncH\x00\x12 \n\x08var_decl\x18\x03 \x01(\x0b\x32\x0c.VarDeclStmtH\x00\x12\"\n\x0b\x65xtern_func\x18\x04 \x01(\x0b\x32\x0b.ExternFuncH\x00\x42\x06\n\x04type\"N\n\x08TypeSpec\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x19\n\x06params\x18\x02 \x03(\x0b\x32\t.TypeSpec\x12\x19\n\x06parent\x18\x03 \x01(\x0b\x32\t.TypeSpecb\x06proto3')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -51,11 +51,15 @@ _UNARYOPEXPR_OP = _descriptor.EnumDescriptor(
       name='MOVE', index=4, number=4,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='NOT', index=5, number=5,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=362,
-  serialized_end=419,
+  serialized_start=363,
+  serialized_end=429,
 )
 _sym_db.RegisterEnumDescriptor(_UNARYOPEXPR_OP)
 
@@ -113,11 +117,19 @@ _BINARYOPEXPR_OP = _descriptor.EnumDescriptor(
       name='LE', index=11, number=11,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='AND', index=12, number=12,
+      options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='OR', index=13, number=13,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=521,
-  serialized_end=631,
+  serialized_start=531,
+  serialized_end=658,
 )
 _sym_db.RegisterEnumDescriptor(_BINARYOPEXPR_OP)
 
@@ -142,8 +154,8 @@ _VARDECLSTMT_MODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1332,
-  serialized_end=1372,
+  serialized_start=1359,
+  serialized_end=1399,
 )
 _sym_db.RegisterEnumDescriptor(_VARDECLSTMT_MODE)
 
@@ -172,8 +184,8 @@ _FUNCPARAM_MODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1738,
-  serialized_end=1789,
+  serialized_start=1765,
+  serialized_end=1816,
 )
 _sym_db.RegisterEnumDescriptor(_FUNCPARAM_MODE)
 
@@ -202,8 +214,8 @@ _FUNC_RETURNMODE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1984,
-  serialized_end=2041,
+  serialized_start=2011,
+  serialized_end=2068,
 )
 _sym_db.RegisterEnumDescriptor(_FUNC_RETURNMODE)
 
@@ -224,8 +236,8 @@ _FUNC_CC = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=2043,
-  serialized_end=2067,
+  serialized_start=2070,
+  serialized_end=2094,
 )
 _sym_db.RegisterEnumDescriptor(_FUNC_CC)
 
@@ -457,8 +469,8 @@ _UNARYOPEXPR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=297,
-  serialized_end=419,
+  serialized_start=298,
+  serialized_end=429,
 )
 
 
@@ -503,8 +515,8 @@ _BINARYOPEXPR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=422,
-  serialized_end=631,
+  serialized_start=432,
+  serialized_end=658,
 )
 
 
@@ -541,8 +553,8 @@ _ASSIGNEXPR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=633,
-  serialized_end=698,
+  serialized_start=660,
+  serialized_end=725,
 )
 
 
@@ -624,8 +636,8 @@ _EXPR = _descriptor.Descriptor(
       name='type', full_name='Expr.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=701,
-  serialized_end=963,
+  serialized_start=728,
+  serialized_end=990,
 )
 
 
@@ -655,8 +667,8 @@ _EXPRSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=965,
-  serialized_end=996,
+  serialized_start=992,
+  serialized_end=1023,
 )
 
 
@@ -686,8 +698,8 @@ _RETSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=998,
-  serialized_end=1028,
+  serialized_start=1025,
+  serialized_end=1055,
 )
 
 
@@ -710,8 +722,8 @@ _BRKSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1030,
-  serialized_end=1039,
+  serialized_start=1057,
+  serialized_end=1066,
 )
 
 
@@ -734,8 +746,8 @@ _CONTSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1041,
-  serialized_end=1051,
+  serialized_start=1068,
+  serialized_end=1078,
 )
 
 
@@ -779,8 +791,8 @@ _CONDSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1053,
-  serialized_end=1146,
+  serialized_start=1080,
+  serialized_end=1173,
 )
 
 
@@ -817,8 +829,8 @@ _CONDLOOPSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1148,
-  serialized_end=1211,
+  serialized_start=1175,
+  serialized_end=1238,
 )
 
 
@@ -870,8 +882,8 @@ _VARDECLSTMT = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1214,
-  serialized_end=1372,
+  serialized_start=1241,
+  serialized_end=1399,
 )
 
 
@@ -946,8 +958,8 @@ _STMT = _descriptor.Descriptor(
       name='type', full_name='Stmt.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=1375,
-  serialized_end=1590,
+  serialized_start=1402,
+  serialized_end=1617,
 )
 
 
@@ -977,8 +989,8 @@ _BLOCK = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1592,
-  serialized_end=1621,
+  serialized_start=1619,
+  serialized_end=1648,
 )
 
 
@@ -1030,8 +1042,8 @@ _FUNCPARAM = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1624,
-  serialized_end=1789,
+  serialized_start=1651,
+  serialized_end=1816,
 )
 
 
@@ -1058,8 +1070,8 @@ _FUNC = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='params', full_name='Func.params', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
+      number=3, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -1105,8 +1117,8 @@ _FUNC = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1792,
-  serialized_end=2067,
+  serialized_start=1819,
+  serialized_end=2094,
 )
 
 
@@ -1150,8 +1162,8 @@ _EXTERNFUNC = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2069,
-  serialized_end=2160,
+  serialized_start=2096,
+  serialized_end=2187,
 )
 
 
@@ -1198,8 +1210,8 @@ _CLASS_MEMBER = _descriptor.Descriptor(
       name='type', full_name='Class.Member.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=2262,
-  serialized_end=2358,
+  serialized_start=2300,
+  serialized_end=2396,
 )
 
 _CLASS = _descriptor.Descriptor(
@@ -1225,7 +1237,7 @@ _CLASS = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='super_classes', full_name='Class.super_classes', index=2,
-      number=3, type=9, cpp_type=9, label=3,
+      number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -1249,8 +1261,8 @@ _CLASS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2163,
-  serialized_end=2358,
+  serialized_start=2190,
+  serialized_end=2396,
 )
 
 
@@ -1304,8 +1316,8 @@ _MODULE_MEMBER = _descriptor.Descriptor(
       name='type', full_name='Module.Member.type',
       index=0, containing_type=None, fields=[]),
   ],
-  serialized_start=2419,
-  serialized_end=2551,
+  serialized_start=2457,
+  serialized_end=2589,
 )
 
 _MODULE = _descriptor.Descriptor(
@@ -1341,8 +1353,8 @@ _MODULE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2361,
-  serialized_end=2551,
+  serialized_start=2399,
+  serialized_end=2589,
 )
 
 
@@ -1386,8 +1398,8 @@ _TYPESPEC = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2553,
-  serialized_end=2631,
+  serialized_start=2591,
+  serialized_end=2669,
 )
 
 _CONSTANTEXPR.oneofs_by_name['value'].fields.append(
@@ -1511,6 +1523,7 @@ _CLASS_MEMBER.fields_by_name['func'].containing_oneof = _CLASS_MEMBER.oneofs_by_
 _CLASS_MEMBER.oneofs_by_name['type'].fields.append(
   _CLASS_MEMBER.fields_by_name['var_decl'])
 _CLASS_MEMBER.fields_by_name['var_decl'].containing_oneof = _CLASS_MEMBER.oneofs_by_name['type']
+_CLASS.fields_by_name['super_classes'].message_type = _TYPESPEC
 _CLASS.fields_by_name['members'].message_type = _CLASS_MEMBER
 _MODULE_MEMBER.fields_by_name['cls'].message_type = _CLASS
 _MODULE_MEMBER.fields_by_name['func'].message_type = _FUNC

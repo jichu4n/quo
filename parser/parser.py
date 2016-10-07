@@ -206,13 +206,15 @@ class QuoParser(object):
 
   def p_var_list_one(self, p):
     '''var_list : var_mode var'''
-    p[0] = [VarDeclStmt(name=p[2].name, init_expr=p[2].init_expr, mode=p[1])]
+    p[0] = [VarDeclStmt()]
+    p[0][0].CopyFrom(p[2])
+    p[0][0].mode = p[1]
 
   def p_var_list(self, p):
     '''var_list : var_mode var COMMA var_list'''
-    p[0] = (
-        [VarDeclStmt(name=p[2].name, init_expr=p[2].init_expr, mode=p[1])] +
-        p[4])
+    p[0] = [VarDeclStmt()] + p[4]
+    p[0][0].CopyFrom(p[2])
+    p[0][0].mode = p[1]
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
@@ -223,14 +225,15 @@ class QuoParser(object):
 
   def p_var_decls_typed(self, p):
     '''var_decls : var_list type_spec SEMICOLON'''
-    p[0] = [
-        Stmt(var_decl=VarDeclStmt(
-            name=var_decl.name,
-            init_expr=var_decl.init_expr,
-            mode=var_decl.mode,
-            type_spec=p[2]))
-        for var_decl in p[1]
-    ]
+    p[0] = []
+    for var_decl in p[1]:
+      var_decl_stmt = VarDeclStmt(
+          name=var_decl.name,
+          mode=var_decl.mode,
+          type_spec=p[2])
+      if var_decl.HasField('init_expr'):
+        var_decl_stmt.init_expr.CopyFrom(var_decl.init_expr)
+      p[0].append(Stmt(var_decl=var_decl_stmt))
 
   def p_var_decls_list_empty(self, p):
     '''var_decls_list :'''
@@ -360,9 +363,11 @@ class QuoParser(object):
 
   def p_func_param(self, p):
     '''func_param : func_param_mode var func_param_type_spec'''
-    p[0] = FuncParam(name=p[2].name, mode=p[1], init_expr=p[2].init_expr)
+    p[0] = FuncParam(name=p[2].name, mode=p[1])
+    if p[2].HasField('init_expr'):
+      p[0].init_expr.CopyFrom(p[2].init_expr)
     if p[3] is not None:
-      p[0].type_spec = p[3]
+      p[0].type_spec.CopyFrom(p[3])
 
   def p_func_param_list_empty(self, p):
     '''func_param_list :'''
@@ -407,7 +412,7 @@ class QuoParser(object):
         cc=Func.DEFAULT,
         block=p[10])
     if p[8] is not None:
-      p[0].return_type_spec = p[8]
+      p[0].return_type_spec.CopyFrom(p[8])
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''
@@ -512,7 +517,7 @@ def create_parser(**kwargs):
 if __name__ == '__main__':
   import fileinput
 
-  parser = create_parser()
-  lexer = lexer.create_lexer()
-  ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
+  parse = create_parser()
+  lex = lexer.create_lexer()
+  ast = parse.parse('\n'.join(fileinput.input()), lexer=lex)
   print(ast)

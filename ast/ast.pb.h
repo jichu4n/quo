@@ -69,12 +69,13 @@ enum UnaryOpExpr_Op {
   UnaryOpExpr_Op_SUB = 2,
   UnaryOpExpr_Op_BORROW = 3,
   UnaryOpExpr_Op_MOVE = 4,
+  UnaryOpExpr_Op_NOT = 5,
   UnaryOpExpr_Op_UnaryOpExpr_Op_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
   UnaryOpExpr_Op_UnaryOpExpr_Op_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
 };
 bool UnaryOpExpr_Op_IsValid(int value);
 const UnaryOpExpr_Op UnaryOpExpr_Op_Op_MIN = UnaryOpExpr_Op_UNKNOWN;
-const UnaryOpExpr_Op UnaryOpExpr_Op_Op_MAX = UnaryOpExpr_Op_MOVE;
+const UnaryOpExpr_Op UnaryOpExpr_Op_Op_MAX = UnaryOpExpr_Op_NOT;
 const int UnaryOpExpr_Op_Op_ARRAYSIZE = UnaryOpExpr_Op_Op_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* UnaryOpExpr_Op_descriptor();
@@ -100,12 +101,14 @@ enum BinaryOpExpr_Op {
   BinaryOpExpr_Op_GE = 9,
   BinaryOpExpr_Op_LT = 10,
   BinaryOpExpr_Op_LE = 11,
+  BinaryOpExpr_Op_AND = 12,
+  BinaryOpExpr_Op_OR = 13,
   BinaryOpExpr_Op_BinaryOpExpr_Op_INT_MIN_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32min,
   BinaryOpExpr_Op_BinaryOpExpr_Op_INT_MAX_SENTINEL_DO_NOT_USE_ = ::google::protobuf::kint32max
 };
 bool BinaryOpExpr_Op_IsValid(int value);
 const BinaryOpExpr_Op BinaryOpExpr_Op_Op_MIN = BinaryOpExpr_Op_UNKNOWN;
-const BinaryOpExpr_Op BinaryOpExpr_Op_Op_MAX = BinaryOpExpr_Op_LE;
+const BinaryOpExpr_Op BinaryOpExpr_Op_Op_MAX = BinaryOpExpr_Op_OR;
 const int BinaryOpExpr_Op_Op_ARRAYSIZE = BinaryOpExpr_Op_Op_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* BinaryOpExpr_Op_descriptor();
@@ -808,6 +811,8 @@ class UnaryOpExpr : public ::google::protobuf::Message /* @@protoc_insertion_poi
     UnaryOpExpr_Op_BORROW;
   static const Op MOVE =
     UnaryOpExpr_Op_MOVE;
+  static const Op NOT =
+    UnaryOpExpr_Op_NOT;
   static inline bool Op_IsValid(int value) {
     return UnaryOpExpr_Op_IsValid(value);
   }
@@ -950,6 +955,10 @@ class BinaryOpExpr : public ::google::protobuf::Message /* @@protoc_insertion_po
     BinaryOpExpr_Op_LT;
   static const Op LE =
     BinaryOpExpr_Op_LE;
+  static const Op AND =
+    BinaryOpExpr_Op_AND;
+  static const Op OR =
+    BinaryOpExpr_Op_OR;
   static inline bool Op_IsValid(int value) {
     return BinaryOpExpr_Op_IsValid(value);
   }
@@ -2557,14 +2566,17 @@ class Func : public ::google::protobuf::Message /* @@protoc_insertion_point(clas
   const ::google::protobuf::RepeatedPtrField< ::std::string>& type_params() const;
   ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_type_params();
 
-  // optional .FuncParam params = 3;
-  bool has_params() const;
+  // repeated .FuncParam params = 3;
+  int params_size() const;
   void clear_params();
   static const int kParamsFieldNumber = 3;
-  const ::FuncParam& params() const;
-  ::FuncParam* mutable_params();
-  ::FuncParam* release_params();
-  void set_allocated_params(::FuncParam* params);
+  const ::FuncParam& params(int index) const;
+  ::FuncParam* mutable_params(int index);
+  ::FuncParam* add_params();
+  ::google::protobuf::RepeatedPtrField< ::FuncParam >*
+      mutable_params();
+  const ::google::protobuf::RepeatedPtrField< ::FuncParam >&
+      params() const;
 
   // optional .TypeSpec return_type_spec = 4;
   bool has_return_type_spec() const;
@@ -2601,8 +2613,8 @@ class Func : public ::google::protobuf::Message /* @@protoc_insertion_point(clas
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::RepeatedPtrField< ::std::string> type_params_;
+  ::google::protobuf::RepeatedPtrField< ::FuncParam > params_;
   ::google::protobuf::internal::ArenaStringPtr name_;
-  ::FuncParam* params_;
   ::TypeSpec* return_type_spec_;
   ::Block* block_;
   int return_mode_;
@@ -2954,21 +2966,17 @@ class Class : public ::google::protobuf::Message /* @@protoc_insertion_point(cla
   const ::google::protobuf::RepeatedPtrField< ::std::string>& type_params() const;
   ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_type_params();
 
-  // repeated string super_classes = 3;
+  // repeated .TypeSpec super_classes = 3;
   int super_classes_size() const;
   void clear_super_classes();
   static const int kSuperClassesFieldNumber = 3;
-  const ::std::string& super_classes(int index) const;
-  ::std::string* mutable_super_classes(int index);
-  void set_super_classes(int index, const ::std::string& value);
-  void set_super_classes(int index, const char* value);
-  void set_super_classes(int index, const char* value, size_t size);
-  ::std::string* add_super_classes();
-  void add_super_classes(const ::std::string& value);
-  void add_super_classes(const char* value);
-  void add_super_classes(const char* value, size_t size);
-  const ::google::protobuf::RepeatedPtrField< ::std::string>& super_classes() const;
-  ::google::protobuf::RepeatedPtrField< ::std::string>* mutable_super_classes();
+  const ::TypeSpec& super_classes(int index) const;
+  ::TypeSpec* mutable_super_classes(int index);
+  ::TypeSpec* add_super_classes();
+  ::google::protobuf::RepeatedPtrField< ::TypeSpec >*
+      mutable_super_classes();
+  const ::google::protobuf::RepeatedPtrField< ::TypeSpec >&
+      super_classes() const;
 
   // repeated .Class.Member members = 4;
   int members_size() const;
@@ -2987,7 +2995,7 @@ class Class : public ::google::protobuf::Message /* @@protoc_insertion_point(cla
 
   ::google::protobuf::internal::InternalMetadataWithArena _internal_metadata_;
   ::google::protobuf::RepeatedPtrField< ::std::string> type_params_;
-  ::google::protobuf::RepeatedPtrField< ::std::string> super_classes_;
+  ::google::protobuf::RepeatedPtrField< ::TypeSpec > super_classes_;
   ::google::protobuf::RepeatedPtrField< ::Class_Member > members_;
   ::google::protobuf::internal::ArenaStringPtr name_;
   mutable int _cached_size_;
@@ -5559,43 +5567,34 @@ Func::mutable_type_params() {
   return &type_params_;
 }
 
-// optional .FuncParam params = 3;
-inline bool Func::has_params() const {
-  return this != internal_default_instance() && params_ != NULL;
+// repeated .FuncParam params = 3;
+inline int Func::params_size() const {
+  return params_.size();
 }
 inline void Func::clear_params() {
-  if (GetArenaNoVirtual() == NULL && params_ != NULL) delete params_;
-  params_ = NULL;
+  params_.Clear();
 }
-inline const ::FuncParam& Func::params() const {
+inline const ::FuncParam& Func::params(int index) const {
   // @@protoc_insertion_point(field_get:Func.params)
-  return params_ != NULL ? *params_
-                         : *::FuncParam::internal_default_instance();
+  return params_.Get(index);
 }
-inline ::FuncParam* Func::mutable_params() {
-  
-  if (params_ == NULL) {
-    params_ = new ::FuncParam;
-  }
+inline ::FuncParam* Func::mutable_params(int index) {
   // @@protoc_insertion_point(field_mutable:Func.params)
+  return params_.Mutable(index);
+}
+inline ::FuncParam* Func::add_params() {
+  // @@protoc_insertion_point(field_add:Func.params)
+  return params_.Add();
+}
+inline ::google::protobuf::RepeatedPtrField< ::FuncParam >*
+Func::mutable_params() {
+  // @@protoc_insertion_point(field_mutable_list:Func.params)
+  return &params_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::FuncParam >&
+Func::params() const {
+  // @@protoc_insertion_point(field_list:Func.params)
   return params_;
-}
-inline ::FuncParam* Func::release_params() {
-  // @@protoc_insertion_point(field_release:Func.params)
-  
-  ::FuncParam* temp = params_;
-  params_ = NULL;
-  return temp;
-}
-inline void Func::set_allocated_params(::FuncParam* params) {
-  delete params_;
-  params_ = params;
-  if (params) {
-    
-  } else {
-    
-  }
-  // @@protoc_insertion_point(field_set_allocated:Func.params)
 }
 
 // optional .TypeSpec return_type_spec = 4;
@@ -6090,59 +6089,34 @@ Class::mutable_type_params() {
   return &type_params_;
 }
 
-// repeated string super_classes = 3;
+// repeated .TypeSpec super_classes = 3;
 inline int Class::super_classes_size() const {
   return super_classes_.size();
 }
 inline void Class::clear_super_classes() {
   super_classes_.Clear();
 }
-inline const ::std::string& Class::super_classes(int index) const {
+inline const ::TypeSpec& Class::super_classes(int index) const {
   // @@protoc_insertion_point(field_get:Class.super_classes)
   return super_classes_.Get(index);
 }
-inline ::std::string* Class::mutable_super_classes(int index) {
+inline ::TypeSpec* Class::mutable_super_classes(int index) {
   // @@protoc_insertion_point(field_mutable:Class.super_classes)
   return super_classes_.Mutable(index);
 }
-inline void Class::set_super_classes(int index, const ::std::string& value) {
-  // @@protoc_insertion_point(field_set:Class.super_classes)
-  super_classes_.Mutable(index)->assign(value);
-}
-inline void Class::set_super_classes(int index, const char* value) {
-  super_classes_.Mutable(index)->assign(value);
-  // @@protoc_insertion_point(field_set_char:Class.super_classes)
-}
-inline void Class::set_super_classes(int index, const char* value, size_t size) {
-  super_classes_.Mutable(index)->assign(
-    reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:Class.super_classes)
-}
-inline ::std::string* Class::add_super_classes() {
-  // @@protoc_insertion_point(field_add_mutable:Class.super_classes)
+inline ::TypeSpec* Class::add_super_classes() {
+  // @@protoc_insertion_point(field_add:Class.super_classes)
   return super_classes_.Add();
 }
-inline void Class::add_super_classes(const ::std::string& value) {
-  super_classes_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add:Class.super_classes)
-}
-inline void Class::add_super_classes(const char* value) {
-  super_classes_.Add()->assign(value);
-  // @@protoc_insertion_point(field_add_char:Class.super_classes)
-}
-inline void Class::add_super_classes(const char* value, size_t size) {
-  super_classes_.Add()->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_add_pointer:Class.super_classes)
-}
-inline const ::google::protobuf::RepeatedPtrField< ::std::string>&
-Class::super_classes() const {
-  // @@protoc_insertion_point(field_list:Class.super_classes)
-  return super_classes_;
-}
-inline ::google::protobuf::RepeatedPtrField< ::std::string>*
+inline ::google::protobuf::RepeatedPtrField< ::TypeSpec >*
 Class::mutable_super_classes() {
   // @@protoc_insertion_point(field_mutable_list:Class.super_classes)
   return &super_classes_;
+}
+inline const ::google::protobuf::RepeatedPtrField< ::TypeSpec >&
+Class::super_classes() const {
+  // @@protoc_insertion_point(field_list:Class.super_classes)
+  return super_classes_;
 }
 
 // repeated .Class.Member members = 4;
