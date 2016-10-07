@@ -23,7 +23,7 @@ set -ex
 cd "$(dirname $0)"
 
 # C++ libs and protoc compiler.
-CPP_ARCHIVE="$(mktemp --suffix=.tar.gz)"
+CPP_ARCHIVE="$(mktemp)"
 curl -L -o "$CPP_ARCHIVE" "$CPP_URL"
 CPP_ROOT="$PWD/cpp"
 mkdir -p cpp_src
@@ -31,7 +31,7 @@ cd cpp_src
 tar -xvz --strip-components=1 -f "$CPP_ARCHIVE"
 rm "$CPP_ARCHIVE"
 ./configure --prefix="$CPP_ROOT"
-make -j
+make -j4
 make install
 cd ..
 mv "$CPP_ROOT/bin/protoc" ./
