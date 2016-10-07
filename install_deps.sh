@@ -24,11 +24,13 @@ LLVM_URL='http://llvm.org/releases/3.9.0/llvm-3.9.0.src.tar.xz'
 set -ex
 cd "$(dirname $0)"
 prefix="$PWD/deps"
+src="$prefix/src"
+bin="$prefix/bin"
 
 # Protocol buffer compiler and C++ libs.
 function install_protobuf() {
-  protobuf_cpp_archive="$prefix/src/protobuf-cpp.tar.gz"
-  protobuf_cpp_src="$prefix/src/protobuf"
+  protobuf_cpp_archive="$src/protobuf-cpp.tar.gz"
+  protobuf_cpp_src="$src/protobuf"
   if [ ! -e "$protobuf_cpp_archive" ]; then
     curl -L -o "$protobuf_cpp_archive" "$PROTOBUF_CPP_URL"
   fi
@@ -48,8 +50,8 @@ function install_protobuf() {
 # CMake (required by LLVM).
 function install_cmake() {
   cd "$prefix"
-  cmake_archive="$prefix/src/cmake.tar.gz"
-  cmake_src="$prefix/src/cmake"
+  cmake_archive="$src/cmake.tar.gz"
+  cmake_src="$src/cmake"
   if [ ! -e "$cmake_archive" ]; then
     curl -L -o "$cmake_archive" "$CMAKE_URL"
   fi
@@ -68,9 +70,9 @@ function install_cmake() {
 # LLVM libs.
 function install_llvm() {
   cd "$prefix"
-  llvm_archive="$prefix/src/llvm.tar.xz"
-  llvm_src="$prefix/src/llvm"
-  llvm_build="$prefix/src/llvm_build"
+  llvm_archive="$src/llvm.tar.xz"
+  llvm_src="$src/llvm"
+  llvm_build="$src/llvm_build"
   if [ ! -e "$llvm_archive" ]; then
     curl -L -o "$llvm_archive" "$LLVM_URL"
   fi
@@ -82,7 +84,7 @@ function install_llvm() {
   fi
   mkdir -p "$llvm_build"
   cd "$llvm_build"
-  "$prefix/bin/cmake" \
+  "$bin/cmake" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$prefix" \
     "$llvm_src"
@@ -90,6 +92,7 @@ function install_llvm() {
   make install
 }
 
+mkdir -p "$src"
 time install_protobuf
 time install_cmake
 time install_llvm
