@@ -17,7 +17,7 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 
-PROTOC := $(abspath ${CURDIR}/../protobuf/protoc)
+PROTOC := $(abspath ${CURDIR}/../deps/bin/protoc)
 
 all_proto: ast_pb2.py ast.pb.cc
 
