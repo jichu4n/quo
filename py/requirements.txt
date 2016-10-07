@@ -1,8 +1,0 @@
-ply
-inflection
-pyyaml
-jinja2
-
-pylint
-nose
-yapf

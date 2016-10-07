@@ -1,0 +1,6 @@
+ply
+protobuf
+
+pylint
+nose
+yapf

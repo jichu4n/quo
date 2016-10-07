@@ -1,6 +1,7 @@
+#!/usr/bin/python3
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                             #
-#    Copyright (C) 2015 Chuan Ji <jichuan89@gmail.com>                        #
+#    Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          #
 #                                                                             #
 #    Licensed under the Apache License, Version 2.0 (the "License");          #
 #    you may not use this file except in compliance with the License.         #
@@ -22,27 +23,32 @@ from files supplied on the command line, or stdin if no files are specified.
 """
 
 import ply.yacc
-import quo_ast
-import quo_lexer
+from parser import lexer
+from ast.ast_pb2 import *
 
 
 class QuoParser(object):
   """Quo parser, implemented via PLY."""
 
-  tokens = quo_lexer.QuoLexer.tokens
+  tokens = lexer.QuoLexer.tokens
 
-  def p_primary_constant(self, p):
-    '''primary : STRING_CONSTANT
-               | INTEGER_CONSTANT
-               | BOOLEAN_CONSTANT
-    '''
-    p[0] = quo_ast.ConstantExpr(p[1])
+  def p_primary_constant_str(self, p):
+    '''primary : STRING_CONSTANT'''
+    p[0] = Expr(constant=ConstantExpr(stringValue=p[1]))
+
+  def p_primary_constant_int(self, p):
+    '''primary : INTEGER_CONSTANT'''
+    p[0] = Expr(constant=ConstantExpr(intValue=p[1]))
+
+  def p_primary_constant_bool(self, p):
+    '''primary : BOOLEAN_CONSTANT'''
+    p[0] = Expr(constant=ConstantExpr(boolValue=p[1]))
 
   def p_primary_var(self, p):
     '''primary : IDENTIFIER
                | THIS
     '''
-    p[0] = quo_ast.VarExpr(p[1])
+    p[0] = Expr(var=VarExpr(var=p[1]))
 
   def p_primary_paren(self, p):
     '''primary : L_PAREN expr R_PAREN'''
@@ -50,15 +56,15 @@ class QuoParser(object):
 
   def p_primary_member(self, p):
     '''primary : primary DOT IDENTIFIER'''
-    p[0] = quo_ast.MemberExpr(p[1], p[3])
+    p[0] = Expr(member=MemberExpr(expr=p[1], member=p[3]))
 
   def p_primary_index(self, p):
     '''primary : primary L_BRACKET expr R_BRACKET'''
-    p[0] = quo_ast.IndexExpr(p[1], p[3])
+    p[0] = Expr(index=IndexExpr(expr=p[1], index_expr=p[3]))
 
   def p_primary_call(self, p):
     '''primary : primary L_PAREN expr_list R_PAREN'''
-    p[0] = quo_ast.CallExpr(p[1], p[3])
+    p[0] = Expr(call=CallExpr(expr=p[1], arg_exprs=p[3]))
 
   def p_unary_arith_primary(self, p):
     '''unary_arith : primary'''
@@ -70,7 +76,13 @@ class QuoParser(object):
                    | BORROW unary_arith
                    | MOVE unary_arith
     '''
-    p[0] = quo_ast.UnaryOpExpr(p[1], p[2])
+    UNARY_OP_MAP = {
+        '+': UnaryOpExpr.ADD,
+        '-': UnaryOpExpr.SUB,
+        '&': UnaryOpExpr.BORROW,
+        '~': UnaryOpExpr.MOVE,
+    }
+    p[0] = Expr(unary_op=UnaryOpExpr(op=getattr(UnaryOpExpr, p[1]), expr=p[2]))
 
   def p_binary_arith_unary_arith(self, p):
     '''binary_arith : unary_arith'''
@@ -89,7 +101,8 @@ class QuoParser(object):
                     | binary_arith LT binary_arith
                     | binary_arith LE binary_arith
     '''
-    p[0] = quo_ast.BinaryOpExpr(p[2], p[1], p[3])
+    p[0] = Expr(binary_op=BinaryOpExpr(
+      op=getattr(BinaryOpExpr, p[2]), left_expr=p[1], right_expr=p[3]))
 
   def p_unary_bool_binary_arith(self, p):
     '''unary_bool : binary_arith'''
@@ -97,7 +110,7 @@ class QuoParser(object):
 
   def p_unary_bool(self, p):
     '''unary_bool : NOT unary_bool'''
-    p[0] = quo_ast.UnaryOpExpr(p[1], p[2])
+    p[0] = Expr(unary_op=UnaryOpExpr(op=UnaryOpExpr.NOT, expr=p[2]))
 
   def p_binary_bool_unary_bool(self, p):
     '''binary_bool : unary_bool'''
@@ -107,11 +120,12 @@ class QuoParser(object):
     '''binary_bool : binary_bool AND binary_bool
                    | binary_bool OR binary_bool
     '''
-    p[0] = quo_ast.BinaryOpExpr(p[2], p[1], p[3])
+    p[0] = Expr(binary_op=BinaryOpExpr(
+      op=getattr(BinaryOpExpr, op[2]), left_expr=p[1], right_expr=p[3]))
 
   def p_assign(self, p):
     '''assign : primary ASSIGN expr'''
-    p[0] = quo_ast.AssignExpr(p[1], p[3])
+    p[0] = Expr(assign=AssignExpr(dest_expr=p[1], value_expr=p[3]))
 
   def p_assign_op(self, p):
     '''assign : primary ADD_ASSIGN expr
@@ -121,8 +135,12 @@ class QuoParser(object):
     '''
     # TODO: This is not technically correct as it would re-evaluate the dest
     # expr, which may have side effects.
-    p[0] = quo_ast.AssignExpr(p[1], quo_ast.BinaryOpExpr(
-        p[2].split('_')[0], p[1], p[3]))
+    p[0] = Expr(assign=AssignExpr(
+      dest_expr=p[1],
+      value_expr=Expr(binary_op=BinaryOpExpr(
+        op=getattr(BinaryOpExpr, p[2].split('_')[0]),
+        left_expr=p[1],
+        right_expr=p[3]))))
 
   def p_expr(self, p):
     '''expr : binary_bool
@@ -144,11 +162,11 @@ class QuoParser(object):
 
   def p_type_spec_primary_name(self, p):
     '''type_spec_primary : IDENTIFIER'''
-    p[0] = quo_ast.TypeSpec(p[1], [])
+    p[0] = TypeSpec(name=p[1])
 
   def p_type_spec_primary_name_params(self, p):
     '''type_spec_primary : IDENTIFIER LT type_spec_list GT'''
-    p[0] = quo_ast.TypeSpec(p[1], p[3])
+    p[0] = TypeSpec(name=p[1], params=p[3])
 
   def p_type_spec_type_spec_primary(self, p):
     '''type_spec : type_spec_primary'''
@@ -156,7 +174,7 @@ class QuoParser(object):
 
   def p_type_spec_member(self, p):
     '''type_spec : type_spec DOT type_spec_primary'''
-    p[0] = quo_ast.MemberTypeSpec(p[1], p[3].name, p[3].params)
+    p[0] = TypeSpec(parent=p[1], name=p[3].name, params=p[3].params)
 
   def p_type_spec_list_empty(self, p):
     '''type_spec_list :'''
@@ -172,35 +190,47 @@ class QuoParser(object):
 
   def p_var_mode_own(self, p):
     '''var_mode :'''
-    p[0] = 'OWN'
+    p[0] = VarDeclStmt.OWN
 
   def p_var_mode_borrow(self, p):
     '''var_mode : BORROW'''
-    p[0] = 'BORROW'
+    p[0] = VarDeclStmt.BORROW
 
   def p_var(self, p):
     '''var : IDENTIFIER'''
-    p[0] = (p[1], None)
+    p[0] = VarDeclStmt(name=p[1])
 
   def p_var_init_expr(self, p):
     '''var : IDENTIFIER ASSIGN expr'''
-    p[0] = (p[1], p[3])
+    p[0] = VarDeclStmt(name=p[1], init_expr=p[3])
 
   def p_var_list_one(self, p):
     '''var_list : var_mode var'''
-    p[0] = [(p[2][0], p[2][1], p[1])]
+    p[0] = [VarDeclStmt(name=p[2].name, init_expr=p[2].init_expr, mode=p[1])]
 
   def p_var_list(self, p):
     '''var_list : var_mode var COMMA var_list'''
-    p[0] = [(p[2][0], p[2][1], p[1])] + p[4]
+    p[0] = (
+        [VarDeclStmt(name=p[2].name, init_expr=p[2].init_expr, mode=p[1])] +
+        p[4])
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
-    p[0] = [quo_ast.VarDeclStmt(var[0], None, var[2], var[1]) for var in p[1]]
+    p[0] = [
+        Stmt(var_decl=var_decl)
+        for var_decl in p[1]
+    ]
 
   def p_var_decls_typed(self, p):
     '''var_decls : var_list type_spec SEMICOLON'''
-    p[0] = [quo_ast.VarDeclStmt(var[0], p[2], var[2], var[1]) for var in p[1]]
+    p[0] = [
+        Stmt(var_decl=VarDeclStmt(
+            name=var_decl.name,
+            init_expr=var_decl.init_expr,
+            mode=var_decl.mode,
+            type_spec=p[2]))
+        for var_decl in p[1]
+    ]
 
   def p_var_decls_list_empty(self, p):
     '''var_decls_list :'''
@@ -220,39 +250,49 @@ class QuoParser(object):
 
   def p_expr_stmt(self, p):
     '''expr_stmt : expr SEMICOLON'''
-    p[0] = quo_ast.ExprStmt(p[1])
+    p[0] = Stmt(expr=ExprStmt(expr=p[1]))
 
   def p_return_stmt(self, p):
+    '''return_stmt : RETURN SEMICOLON'''
+    p[0] = Stmt(ret=RetStmt())
+
+  def p_return_stmt_with_value(self, p):
     '''return_stmt : RETURN expr SEMICOLON'''
-    p[0] = quo_ast.ReturnStmt(p[2])
+    p[0] = Stmt(ret=RetStmt(expr=p[2]))
 
   def p_break_stmt(self, p):
     '''break_stmt : BREAK SEMICOLON'''
-    p[0] = quo_ast.BreakStmt()
+    p[0] = Stmt(brk=BrkStmt())
 
   def p_continue_stmt(self, p):
     '''continue_stmt : CONTINUE SEMICOLON'''
-    p[0] = quo_ast.ContinueStmt()
+    p[0] = Stmt(cont=ContStmt())
 
   def p_cond_stmt_if(self, p):
     '''cond_stmt_if : IF expr L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.CondStmt(p[2], p[4], [])
+    p[0] = CondStmt(cond_expr=p[2], true_block=p[4])
 
   def p_cond_stmt_cond_stmt_if(self, p):
     '''cond_stmt : cond_stmt_if'''
-    p[0] = p[1]
+    p[0] = Stmt(cond=p[1])
 
   def p_cond_stmt_if_else_if(self, p):
     '''cond_stmt : cond_stmt_if ELSE cond_stmt'''
-    p[0] = quo_ast.CondStmt(p[1].cond_expr, p[1].true_stmts, [p[3]])
+    p[0] = Stmt(cond=CondStmt(
+        cond_expr=p[1].cond_expr,
+        true_block=p[1].true_block,
+        false_block=Block(stmts=[p[3]])))
 
   def p_cond_stmt_if_else(self, p):
     '''cond_stmt : cond_stmt_if ELSE L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.CondStmt(p[1].cond_expr, p[1].true_stmts, p[4])
+    p[0] = Stmt(cond=CondStmt(
+        cond_expr=p[1].cond_expr,
+        true_block=p[1].true_block,
+        false_block=p[4]))
 
   def p_cond_loop_stmt(self, p):
     '''cond_loop_stmt : WHILE expr L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.CondLoopStmt(p[2], p[4])
+    p[0] = Stmt(cond_loop=CondLoopStmt(cond_expr=p[2], block=p[4]))
 
   def p_stmt(self, p):
     '''stmt : expr_stmt
@@ -266,15 +306,15 @@ class QuoParser(object):
 
   def p_stmts_empty(self, p):
     '''stmts :'''
-    p[0] = []
+    p[0] = Block()
 
   def p_stmts_var_decl_stmts(self, p):
     '''stmts : var_decl_stmts stmts'''
-    p[0] = p[1] + p[2]
+    p[0] = Block(stmts=(p[1] + list(p[2].stmts)))
 
   def p_stmts(self, p):
     '''stmts : stmt stmts'''
-    p[0] = [p[1]] + p[2]
+    p[0] = Block(stmts=([p[1]] + list(p[2].stmts)))
 
   def p_type_param(self, p):
     '''type_param : IDENTIFIER'''
@@ -302,13 +342,13 @@ class QuoParser(object):
 
   def p_func_param_mode_empty(self, p):
     '''func_param_mode :'''
-    p[0] = 'COPY'
+    p[0] = FuncParam.COPY
 
   def p_func_param_mode(self, p):
     '''func_param_mode : BORROW
                        | MOVE
     '''
-    p[0] = p[1]
+    p[0] = getattr(FuncParam, p[1])
 
   def p_func_param_type_spec_empty(self, p):
     '''func_param_type_spec :'''
@@ -320,7 +360,9 @@ class QuoParser(object):
 
   def p_func_param(self, p):
     '''func_param : func_param_mode var func_param_type_spec'''
-    p[0] = quo_ast.FuncParam(p[2][0], p[1], p[3], p[2][1])
+    p[0] = FuncParam(name=p[2].name, mode=p[1], init_expr=p[2].init_expr)
+    if p[3] is not None:
+      p[0].type_spec = p[3]
 
   def p_func_param_list_empty(self, p):
     '''func_param_list :'''
@@ -344,20 +386,28 @@ class QuoParser(object):
 
   def p_return_mode_empty(self, p):
     '''return_mode :'''
-    p[0] = 'COPY'
+    p[0] = Func.COPY
 
   def p_return_mode(self, p):
     '''return_mode : BORROW
                    | MOVE
     '''
-    p[0] = p[1]
+    p[0] = getattr(Func, p[1])
 
   def p_func(self, p):
     '''func : FUNCTION IDENTIFIER type_params \
               L_PAREN func_param_list R_PAREN \
               return_mode return_type_spec \
               L_BRACE stmts R_BRACE'''
-    p[0] = quo_ast.Func(p[2], p[3], p[5], p[8], p[7], 'DEFAULT', p[10])
+    p[0] = Func(
+        name=p[2],
+        type_params=p[3],
+        params=p[5],
+        return_mode=p[7],
+        cc=Func.DEFAULT,
+        block=p[10])
+    if p[8] is not None:
+      p[0].return_type_spec = p[8]
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''
@@ -373,38 +423,48 @@ class QuoParser(object):
 
   def p_class_members_var_decl_stmts(self, p):
     '''class_members : var_decl_stmts class_members'''
-    p[0] = p[1] + p[2]
+    p[0] = [
+        Class.Member(var_decl=stmt.var_decl)
+        for stmt in p[1]
+    ] + p[2]
 
-  def p_class_members_func_class(self, p):
-    '''class_members : func class_members
-                     | class class_members
-    '''
-    p[0] = [p[1]] + p[2]
+  def p_class_members_func(self, p):
+    '''class_members : func class_members'''
+    p[0] = [Class.Member(func=p[1])] + p[2]
+
+  def p_class_members_class(self, p):
+    '''class_members : class class_members'''
+    p[0] = [Class.Member(cls=p[1])] + p[2]
 
   def p_class(self, p):
     '''class : CLASS IDENTIFIER type_params super_classes \
                L_BRACE class_members R_BRACE
     '''
-    p[0] = quo_ast.Class(p[2], p[3], p[4], p[6])
+    p[0] = Class(
+        name=p[2],
+        type_params=p[3],
+        super_classes=p[4],
+        members=p[6])
 
   def p_extern_func(self, p):
     '''extern_func : EXTERN FUNCTION IDENTIFIER \
                      L_PAREN func_param_list R_PAREN \
                      return_type_spec SEMICOLON
     '''
-    p[0] = quo_ast.ExternFunc(p[3], p[5], p[7])
+    p[0] = ExternFunc(name=p[3], params=p[5], return_type_spec=p[7])
 
   def p_func_cc_empty(self, p):
     '''func_cc :'''
-    p[0] = 'DEFAULT'
+    p[0] = Func.DEFAULT
 
   def p_func_cc_c(self, p):
     '''func_cc : EXPORT'''
-    p[0] = 'C'
+    p[0] = Func.C
 
   def p_module_func(self, p):
     '''module_func : func_cc func'''
-    p[0] = p[2]
+    p[0] = Func()
+    p[0].CopyFrom(p[2])
     p[0].cc = p[1]
 
   def p_module_members_empty(self, p):
@@ -413,18 +473,26 @@ class QuoParser(object):
 
   def p_module_members_var_decl_stmts(self, p):
     '''module_members : var_decl_stmts module_members'''
-    p[0] = p[1] + p[2]
+    p[0] = [
+        Module.Member(var_decl=stmt.var_decl)
+        for stmt in p[1]
+    ] + p[2]
 
-  def p_module_members_func_class(self, p):
-    '''module_members : module_func module_members
-                      | extern_func module_members
-                      | class module_members
-    '''
-    p[0] = [p[1]] + p[2]
+  def p_module_members_func(self, p):
+    '''module_members : module_func module_members'''
+    p[0] = [Module.Member(func=p[1])] + p[2]
+
+  def p_module_members_extern_func(self, p):
+    '''module_members : extern_func module_members'''
+    p[0] = [Module.Member(extern_func=p[1])] + p[2]
+
+  def p_module_members_class(self, p):
+    '''module_members : class module_members'''
+    p[0] = [Module.Member(cls=p[1])] + p[2]
 
   def p_module(self, p):
     '''module : module_members'''
-    p[0] = quo_ast.Module(p[1])
+    p[0] = Module(members=p[1])
 
   # Operator precedence.
   precedence = (
@@ -443,10 +511,8 @@ def create_parser(**kwargs):
 
 if __name__ == '__main__':
   import fileinput
-  import yaml
 
   parser = create_parser()
-  lexer = quo_lexer.create_lexer()
+  lexer = lexer.create_lexer()
   ast = parser.parse('\n'.join(fileinput.input()), lexer=lexer)
-  serializer_visitor = quo_ast.SerializerVisitor()
-  print(yaml.dump(ast.accept(serializer_visitor)))
+  print(ast)

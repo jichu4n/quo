@@ -59,6 +59,7 @@ message UnaryOpExpr {
     SUB = 2;
     BORROW = 3;
     MOVE = 4;
+    NOT = 5;
   }
 
   Op op = 1;
@@ -81,6 +82,8 @@ message BinaryOpExpr {
     GE = 9;
     LT = 10;
     LE = 11;
+    AND = 12;
+    OR = 13;
   }
 
   Op op = 1;
@@ -216,7 +219,7 @@ message ExternFunc {
 message Class {
   string name = 1;
   repeated string type_params = 2;
-  repeated string super_classes = 3;
+  repeated TypeSpec super_classes = 3;
   message Member {
     oneof type {
       Class cls = 1;

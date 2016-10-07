@@ -19,16 +19,16 @@
 # pylint: disable=missing-docstring
 
 import unittest
-import quo_lexer
+from parser import lexer
 
 
 class LexerTest(unittest.TestCase):
   def assert_tokens_match(self, input_str, expected_tokens):
-    lexer = quo_lexer.create_lexer()
-    lexer.input(input_str)
+    lex = lexer.create_lexer()
+    lex.input(input_str)
     actual_tokens = []
     while True:
-      token = lexer.token()
+      token = lex.token()
       if token is None:
         break
       actual_tokens.append(token)
@@ -95,7 +95,7 @@ class LexerTest(unittest.TestCase):
     ])
 
   def test_unknown_char(self):
-    with self.assertRaises(quo_lexer.UnknownCharacterError):
+    with self.assertRaises(lexer.UnknownCharacterError):
       self.assert_tokens_match('你好', [])
 
   def test_sample_program_1(self):
