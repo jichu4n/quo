@@ -52,44 +52,44 @@ class QuoParserTest(unittest.TestCase):
         '''a[b.foo[0]['hello']].bar''',
         'expr',
         Expr(member=MemberExpr(
-            expr=Expr(index=IndexExpr(
-                expr=Expr(var=VarExpr(var='a')),
+            parent_expr=Expr(index=IndexExpr(
+                array_expr=Expr(var=VarExpr(name='a')),
                 index_expr=Expr(index=IndexExpr(
-                    expr=Expr(index=IndexExpr(
-                        expr=Expr(member=MemberExpr(
-                            expr=Expr(var=VarExpr(var='b')),
-                            member='foo')),
+                    array_expr=Expr(index=IndexExpr(
+                        array_expr=Expr(member=MemberExpr(
+                            parent_expr=Expr(var=VarExpr(name='b')),
+                            member_name='foo')),
                         index_expr=Expr(constant=ConstantExpr(intValue=0)))),
                     index_expr=Expr(
-                        constant=ConstantExpr(stringValue='hello')))))),
-            member='bar')))
+                        constant=ConstantExpr(strValue='hello')))))),
+            member_name='bar')))
     self.assert_ast_match(
         '(((a)()(c,)(d()))(e.f()[1],g,h[i].j(),))',
         'expr',
         Expr(call=CallExpr(
-            expr=Expr(call=CallExpr(
-                expr=Expr(call=CallExpr(
-                    expr=Expr(call=CallExpr(
-                        expr=Expr(var=VarExpr(var='a')))),
-                    arg_exprs=[Expr(var=VarExpr(var='c'))])),
+            func_expr=Expr(call=CallExpr(
+                func_expr=Expr(call=CallExpr(
+                    func_expr=Expr(call=CallExpr(
+                        func_expr=Expr(var=VarExpr(name='a')))),
+                    arg_exprs=[Expr(var=VarExpr(name='c'))])),
                 arg_exprs=[
                     Expr(call=CallExpr(
-                        expr=Expr(var=VarExpr(var='d')))),
+                        func_expr=Expr(var=VarExpr(name='d')))),
                 ])),
             arg_exprs=[
                 Expr(index=IndexExpr(
-                    expr=Expr(call=CallExpr(
-                        expr=Expr(member=MemberExpr(
-                            expr=Expr(var=VarExpr(var='e')),
-                            member='f')))),
+                    array_expr=Expr(call=CallExpr(
+                        func_expr=Expr(member=MemberExpr(
+                            parent_expr=Expr(var=VarExpr(name='e')),
+                            member_name='f')))),
                     index_expr=Expr(constant=ConstantExpr(intValue=1)))),
-                Expr(var=VarExpr(var='g')),
+                Expr(var=VarExpr(name='g')),
                 Expr(call=CallExpr(
-                    expr=Expr(member=MemberExpr(
-                        expr=Expr(index=IndexExpr(
-                            expr=Expr(var=VarExpr(var='h')),
-                            index_expr=Expr(var=VarExpr(var='i')))),
-                        member='j')))),
+                    func_expr=Expr(member=MemberExpr(
+                        parent_expr=Expr(index=IndexExpr(
+                            array_expr=Expr(var=VarExpr(name='h')),
+                            index_expr=Expr(var=VarExpr(name='i')))),
+                        member_name='j')))),
             ])))
 
   def test_binary_arith(self):
@@ -102,23 +102,23 @@ class QuoParserTest(unittest.TestCase):
                 op=BinaryOpExpr.SUB,
                 left_expr=Expr(binary_op=BinaryOpExpr(
                     op=BinaryOpExpr.ADD,
-                    left_expr=Expr(var=VarExpr(var='a')),
+                    left_expr=Expr(var=VarExpr(name='a')),
                     right_expr=Expr(binary_op=BinaryOpExpr(
                         op=BinaryOpExpr.MUL,
-                        left_expr=Expr(var=VarExpr(var='b')),
-                        right_expr=Expr(var=VarExpr(var='c')))))),
-                right_expr=Expr(var=VarExpr(var='d')))),
+                        left_expr=Expr(var=VarExpr(name='b')),
+                        right_expr=Expr(var=VarExpr(name='c')))))),
+                right_expr=Expr(var=VarExpr(name='d')))),
             right_expr=Expr(binary_op=BinaryOpExpr(
                 op=BinaryOpExpr.SUB,
-                left_expr=Expr(var=VarExpr(var='e')),
+                left_expr=Expr(var=VarExpr(name='e')),
                 right_expr=Expr(binary_op=BinaryOpExpr(
                     op=BinaryOpExpr.MOD,
                     left_expr=Expr(binary_op=BinaryOpExpr(
                         op=BinaryOpExpr.DIV,
                         left_expr=Expr(unary_op=UnaryOpExpr(
                             op=UnaryOpExpr.SUB,
-                            expr=Expr(var=VarExpr(var='f')))),
-                        right_expr=Expr(var=VarExpr(var='g')))),
+                            expr=Expr(var=VarExpr(name='f')))),
+                        right_expr=Expr(var=VarExpr(name='g')))),
                     right_expr=Expr(unary_op=UnaryOpExpr(
                         op=UnaryOpExpr.MOVE,
                         expr=Expr(unary_op=UnaryOpExpr(
@@ -127,7 +127,7 @@ class QuoParserTest(unittest.TestCase):
                                 op=UnaryOpExpr.ADD,
                                 expr=Expr(unary_op=UnaryOpExpr(
                                     op=UnaryOpExpr.SUB,
-                                    expr=Expr(var=VarExpr(var='h'))))))))))))))
+                                    expr=Expr(var=VarExpr(name='h'))))))))))))))
         )))
 
   def test_binary_bool(self):
@@ -140,16 +140,16 @@ class QuoParserTest(unittest.TestCase):
                 op=BinaryOpExpr.OR,
                 left_expr=Expr(binary_op=BinaryOpExpr(
                     op=BinaryOpExpr.GT,
-                    left_expr=Expr(var=VarExpr(var='a')),
-                    right_expr=Expr(var=VarExpr(var='b')))),
+                    left_expr=Expr(var=VarExpr(name='a')),
+                    right_expr=Expr(var=VarExpr(name='b')))),
                 right_expr=Expr(binary_op=BinaryOpExpr(
                     op=BinaryOpExpr.AND,
                     left_expr=Expr(unary_op=UnaryOpExpr(
                         op=UnaryOpExpr.NOT,
                         expr=Expr(binary_op=BinaryOpExpr(
                             op=BinaryOpExpr.LE,
-                            left_expr=Expr(var=VarExpr(var='c')),
-                            right_expr=Expr(var=VarExpr(var='d')))))),
+                            left_expr=Expr(var=VarExpr(name='c')),
+                            right_expr=Expr(var=VarExpr(name='d')))))),
                     right_expr=Expr(unary_op=UnaryOpExpr(
                         op=UnaryOpExpr.NOT,
                         expr=Expr(constant=ConstantExpr(boolValue=False)))))))),
@@ -160,18 +160,18 @@ class QuoParserTest(unittest.TestCase):
         'a += b = c -= d',
         'expr',
         Expr(assign=AssignExpr(
-            dest_expr=Expr(var=VarExpr(var='a')),
+            dest_expr=Expr(var=VarExpr(name='a')),
             value_expr=Expr(binary_op=BinaryOpExpr(
                 op=BinaryOpExpr.ADD,
-                left_expr=Expr(var=VarExpr(var='a')),
+                left_expr=Expr(var=VarExpr(name='a')),
                 right_expr=Expr(assign=AssignExpr(
-                    dest_expr=Expr(var=VarExpr(var='b')),
+                    dest_expr=Expr(var=VarExpr(name='b')),
                     value_expr=Expr(assign=AssignExpr(
-                        dest_expr=Expr(var=VarExpr(var='c')),
+                        dest_expr=Expr(var=VarExpr(name='c')),
                         value_expr=Expr(binary_op=BinaryOpExpr(
                             op=BinaryOpExpr.SUB,
-                            left_expr=Expr(var=VarExpr(var='c')),
-                            right_expr=Expr(var=VarExpr(var='d')))))))))))))
+                            left_expr=Expr(var=VarExpr(name='c')),
+                            right_expr=Expr(var=VarExpr(name='d')))))))))))))
 
   def test_cond_stmt(self):
     self.assert_ast_match('''
@@ -181,8 +181,8 @@ class QuoParserTest(unittest.TestCase):
     Stmt(cond=CondStmt(
         cond_expr=Expr(binary_op=BinaryOpExpr(
             op=BinaryOpExpr.NE,
-            left_expr=Expr(var=VarExpr(var='a')),
-            right_expr=Expr(var=VarExpr(var='b')))),
+            left_expr=Expr(var=VarExpr(name='a')),
+            right_expr=Expr(var=VarExpr(name='b')))),
         true_block=Block(stmts=[
             Stmt(cond=CondStmt(
                 cond_expr=Expr(constant=ConstantExpr(intValue=3)),
@@ -194,10 +194,10 @@ class QuoParserTest(unittest.TestCase):
         false_block=Block(stmts=[Stmt(cond=CondStmt(
             cond_expr=Expr(constant=ConstantExpr(boolValue=True)),
             true_block=Block(stmts=[
-                Stmt(expr=ExprStmt(expr=Expr(var=VarExpr(var='hello')))),
+                Stmt(expr=ExprStmt(expr=Expr(var=VarExpr(name='hello')))),
             ]),
             false_block=Block(stmts=[
-                Stmt(expr=ExprStmt(expr=Expr(var=VarExpr(var='bar')))),
+                Stmt(expr=ExprStmt(expr=Expr(var=VarExpr(name='bar')))),
             ])))]))))
 
   def test_type_spec(self):
@@ -266,7 +266,7 @@ class QuoParserTest(unittest.TestCase):
             name='e',
             type_spec=TypeSpec(name='String'),
             mode=VarDeclStmt.OWN,
-            init_expr=Expr(constant=ConstantExpr(stringValue='')))),
+            init_expr=Expr(constant=ConstantExpr(strValue='')))),
         Stmt(var_decl=VarDeclStmt(
             name='f',
             mode=VarDeclStmt.OWN)),
@@ -299,7 +299,7 @@ class QuoParserTest(unittest.TestCase):
     }
     ''',
     'func',
-    Func(
+    FuncDef(
         name='foo',
         params=[
             FuncParam(name='a', mode=FuncParam.COPY),
@@ -317,8 +317,8 @@ class QuoParserTest(unittest.TestCase):
                 type_spec=TypeSpec(name='Int'),
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
         ],
-        return_mode=Func.COPY,
-        cc=Func.DEFAULT,
+        return_mode=FuncDef.COPY,
+        cc=FuncDef.DEFAULT,
         block=Block(stmts=[
             Stmt(ret=RetStmt(
                 expr=Expr(binary_op=BinaryOpExpr(
@@ -327,136 +327,78 @@ class QuoParserTest(unittest.TestCase):
                         op=BinaryOpExpr.ADD,
                         left_expr=Expr(binary_op=BinaryOpExpr(
                             op=BinaryOpExpr.ADD,
-                            left_expr=Expr(var=VarExpr(var='a')),
-                            right_expr=Expr(var=VarExpr(var='b')))),
-                        right_expr=Expr(var=VarExpr(var='c')))),
-                    right_expr=Expr(var=VarExpr(var='d')))))),
+                            left_expr=Expr(var=VarExpr(name='a')),
+                            right_expr=Expr(var=VarExpr(name='b')))),
+                        right_expr=Expr(var=VarExpr(name='c')))),
+                    right_expr=Expr(var=VarExpr(name='d')))))),
         ])))
     self.assert_ast_match('''
     function Foo<A, B,>() &Array<Int> {}
     ''',
     'func',
-    Func(
+    FuncDef(
         name='Foo',
         type_params=['A', 'B'],
         return_type_spec=TypeSpec(
             name='Array',
             params=[TypeSpec(name='Int')]),
-        return_mode=Func.BORROW,
-        cc=Func.DEFAULT,
+        return_mode=FuncDef.BORROW,
+        cc=FuncDef.DEFAULT,
         block=Block()))
 
-#  def test_class(self):
-#    self.assert_ast_match('class A {}', 'class', {
-#        'type': 'Class',
-#        'name': 'A',
-#        'type_params': [],
-#        'super_classes': [],
-#        'members': [],
-#    })
-#    self.assert_ast_match('class A<> extends B<T, Int>, C {}', 'class', {
-#        'type': 'Class',
-#        'name': 'A',
-#        'type_params': [],
-#        'super_classes': [
-#            {
-#                'type': 'TypeSpec',
-#                'name': 'B',
-#                'params': [
-#                    {
-#                        'type': 'TypeSpec',
-#                        'name': 'T',
-#                        'params': [],
-#                    },
-#                    {
-#                        'type': 'TypeSpec',
-#                        'name': 'Int',
-#                        'params': [],
-#                    },
-#                ],
-#            },
-#            {
-#                'type': 'TypeSpec',
-#                'name': 'C',
-#                'params': [],
-#            },
-#        ],
-#        'members': [],
-#    })
-#    self.assert_ast_match('''
-#    class MyClass<T> extends Array<T> {
-#      var a;
-#      function f() Int { return 42; }
-#      var &b = &foo, c Int;
-#    }''', 'class', {
-#        'type': 'Class',
-#        'name': 'MyClass',
-#        'type_params': ['T'],
-#        'super_classes': [{
-#            'type': 'TypeSpec',
-#            'name': 'Array',
-#            'params': [{
-#                'type': 'TypeSpec',
-#                'name': 'T',
-#                'params': [],
-#            }],
-#        }],
-#        'members': [
-#            {
-#                'type': 'VarDeclStmt',
-#                'name': 'a',
-#                'type_spec': None,
-#                'mode': 'OWN',
-#                'init_expr': None,
-#            },
-#            {
-#                'type': 'Func',
-#                'name': 'f',
-#                'type_params': [],
-#                'params': [],
-#                'return_type_spec': {
-#                    'type': 'TypeSpec',
-#                    'name': 'Int',
-#                    'params': [],
-#                },
-#                'return_mode': 'COPY',
-#                'cc': 'DEFAULT',
-#                'stmts': [{
-#                    'type': 'ReturnStmt',
-#                    'expr': {
-#                        'type': 'ConstantExpr',
-#                        'value': 42,
-#                    },
-#                }],
-#            },
-#            {
-#                'type': 'VarDeclStmt',
-#                'name': 'b',
-#                'type_spec': {
-#                    'type': 'TypeSpec',
-#                    'name': 'Int',
-#                    'params': [],
-#                },
-#                'mode': 'BORROW',
-#                'init_expr': {
-#                    'type': 'UnaryOpExpr',
-#                    'op': 'BORROW',
-#                    'expr': {
-#                        'type': 'VarExpr',
-#                        'var': 'foo',
-#                    },
-#                },
-#            },
-#            {
-#                'type': 'VarDeclStmt',
-#                'name': 'c',
-#                'type_spec': {
-#                    'type': 'TypeSpec',
-#                    'name': 'Int',
-#                    'params': [],
-#                },
-#                'mode': 'OWN',
-#                'init_expr': None,
-#            },
-#        ],
-#    })
+  def test_class(self):
+    self.assert_ast_match(
+        'class A {}',
+        'class',
+        ClassDef(name='A'))
+    self.assert_ast_match(
+        'class A<> extends B<T, Int>, C {}',
+        'class',
+        ClassDef(
+            name='A',
+            super_classes=[
+                TypeSpec(
+                    name='B',
+                    params=[
+                        TypeSpec(name='T'),
+                        TypeSpec(name='Int')
+                    ]),
+                TypeSpec(name='C'),
+            ]))
+    self.assert_ast_match('''
+    class MyClass<T> extends Array<T> {
+      var a;
+      function f() Int { return 42; }
+      var &b = &foo, c Int;
+    }''',
+    'class',
+    ClassDef(
+        name='MyClass',
+        type_params=['T'],
+        super_classes=[TypeSpec(
+            name='Array',
+            params=[TypeSpec(name='T')])],
+        members=[
+            ClassDef.Member(var_decl=VarDeclStmt(
+                name='a',
+                mode=VarDeclStmt.OWN)),
+            ClassDef.Member(func_def=FuncDef(
+                name='f',
+                return_type_spec=TypeSpec(name='Int'),
+                return_mode=FuncDef.COPY,
+                cc=FuncDef.DEFAULT,
+                block=Block(stmts=[Stmt(ret=RetStmt(
+                    expr=Expr(constant=ConstantExpr(intValue=42))))]))),
+            ClassDef.Member(var_decl=VarDeclStmt(
+                name='b',
+                type_spec=TypeSpec(name='Int'),
+                mode=VarDeclStmt.BORROW,
+                init_expr=Expr(unary_op=UnaryOpExpr(
+                    op=UnaryOpExpr.BORROW,
+                    expr=Expr(var=VarExpr(name='foo')))))),
+            ClassDef.Member(var_decl=VarDeclStmt(
+                name='c',
+                type_spec=TypeSpec(name='Int'),
+                mode=VarDeclStmt.OWN)),
+        ]))
+

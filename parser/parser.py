@@ -38,7 +38,7 @@ class QuoParser(object):
 
   def p_primary_constant_str(self, p):
     '''primary : STRING_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(stringValue=p[1]))
+    p[0] = Expr(constant=ConstantExpr(strValue=p[1]))
 
   def p_primary_constant_int(self, p):
     '''primary : INTEGER_CONSTANT'''
@@ -52,7 +52,7 @@ class QuoParser(object):
     '''primary : IDENTIFIER
                | THIS
     '''
-    p[0] = Expr(var=VarExpr(var=p[1]))
+    p[0] = Expr(var=VarExpr(name=p[1]))
 
   def p_primary_paren(self, p):
     '''primary : L_PAREN expr R_PAREN'''
@@ -60,15 +60,15 @@ class QuoParser(object):
 
   def p_primary_member(self, p):
     '''primary : primary DOT IDENTIFIER'''
-    p[0] = Expr(member=MemberExpr(expr=p[1], member=p[3]))
+    p[0] = Expr(member=MemberExpr(parent_expr=p[1], member_name=p[3]))
 
   def p_primary_index(self, p):
     '''primary : primary L_BRACKET expr R_BRACKET'''
-    p[0] = Expr(index=IndexExpr(expr=p[1], index_expr=p[3]))
+    p[0] = Expr(index=IndexExpr(array_expr=p[1], index_expr=p[3]))
 
   def p_primary_call(self, p):
     '''primary : primary L_PAREN expr_list R_PAREN'''
-    p[0] = Expr(call=CallExpr(expr=p[1], arg_exprs=p[3]))
+    p[0] = Expr(call=CallExpr(func_expr=p[1], arg_exprs=p[3]))
 
   def p_unary_arith_primary(self, p):
     '''unary_arith : primary'''
@@ -397,24 +397,24 @@ class QuoParser(object):
 
   def p_return_mode_empty(self, p):
     '''return_mode :'''
-    p[0] = Func.COPY
+    p[0] = FuncDef.COPY
 
   def p_return_mode(self, p):
     '''return_mode : BORROW
                    | MOVE
     '''
-    p[0] = getattr(Func, p[1])
+    p[0] = getattr(FuncDef, p[1])
 
   def p_func(self, p):
     '''func : FUNCTION IDENTIFIER type_params \
               L_PAREN func_param_list R_PAREN \
               return_mode return_type_spec \
               L_BRACE stmts R_BRACE'''
-    p[0] = Func(
+    p[0] = FuncDef(
         name=p[2],
         params=p[5],
         return_mode=p[7],
-        cc=Func.DEFAULT,
+        cc=FuncDef.DEFAULT,
         block=p[10])
     if p[8] is not None:
       p[0].return_type_spec.CopyFrom(p[8])
@@ -436,23 +436,23 @@ class QuoParser(object):
   def p_class_members_var_decl_stmts(self, p):
     '''class_members : var_decl_stmts class_members'''
     p[0] = [
-        Class.Member(var_decl=stmt.var_decl)
+        ClassDef.Member(var_decl=stmt.var_decl)
         for stmt in p[1]
     ] + p[2]
 
   def p_class_members_func(self, p):
     '''class_members : func class_members'''
-    p[0] = [Class.Member(func=p[1])] + p[2]
+    p[0] = [ClassDef.Member(func_def=p[1])] + p[2]
 
   def p_class_members_class(self, p):
     '''class_members : class class_members'''
-    p[0] = [Class.Member(cls=p[1])] + p[2]
+    p[0] = [ClassDef.Member(class_def=p[1])] + p[2]
 
   def p_class(self, p):
     '''class : CLASS IDENTIFIER type_params super_classes \
                L_BRACE class_members R_BRACE
     '''
-    p[0] = Class(
+    p[0] = ClassDef(
         name=p[2],
         type_params=p[3],
         super_classes=p[4],
@@ -467,15 +467,15 @@ class QuoParser(object):
 
   def p_func_cc_empty(self, p):
     '''func_cc :'''
-    p[0] = Func.DEFAULT
+    p[0] = FuncDef.DEFAULT
 
   def p_func_cc_c(self, p):
     '''func_cc : EXPORT'''
-    p[0] = Func.C
+    p[0] = FuncDef.C
 
   def p_module_func(self, p):
     '''module_func : func_cc func'''
-    p[0] = Func()
+    p[0] = FuncDef()
     p[0].CopyFrom(p[2])
     p[0].cc = p[1]
 
@@ -492,7 +492,7 @@ class QuoParser(object):
 
   def p_module_members_func(self, p):
     '''module_members : module_func module_members'''
-    p[0] = [Module.Member(func=p[1])] + p[2]
+    p[0] = [Module.Member(func_def=p[1])] + p[2]
 
   def p_module_members_extern_func(self, p):
     '''module_members : extern_func module_members'''
@@ -500,7 +500,7 @@ class QuoParser(object):
 
   def p_module_members_class(self, p):
     '''module_members : class module_members'''
-    p[0] = [Module.Member(cls=p[1])] + p[2]
+    p[0] = [Module.Member(class_def=p[1])] + p[2]
 
   def p_module(self, p):
     '''module : module_members'''

@@ -21,7 +21,7 @@ syntax = "proto3";
 // A constant expression.
 message ConstantExpr {
   oneof value {
-    string stringValue = 1;
+    string strValue = 1;
     int64 intValue = 2;
     bool boolValue = 3;
   }
@@ -29,24 +29,24 @@ message ConstantExpr {
 
 // A variable reference.
 message VarExpr {
-  string var = 1;
+  string name = 1;
 }
 
 // A member reference.
 message MemberExpr {
-  Expr expr = 1;
-  string member = 2;
+  Expr parent_expr = 1;
+  string member_name = 2;
 }
 
 // An index expression.
 message IndexExpr {
-  Expr expr = 1;
+  Expr array_expr = 1;
   Expr index_expr = 2;
 }
 
 // A function call expression.
 message CallExpr {
-  Expr expr = 1;
+  Expr func_expr = 1;
   repeated Expr arg_exprs = 2;
 }
 
@@ -188,7 +188,7 @@ message FuncParam {
 }
 
 // A function definition.
-message Func {
+message FuncDef {
   enum ReturnMode {
     UNKNOWN = 0;
     COPY = 1;
@@ -216,14 +216,14 @@ message ExternFunc {
 }
 
 // A class definition.
-message Class {
+message ClassDef {
   string name = 1;
   repeated string type_params = 2;
   repeated TypeSpec super_classes = 3;
   message Member {
     oneof type {
-      Class cls = 1;
-      Func func = 2;
+      ClassDef class_def = 1;
+      FuncDef func_def = 2;
       VarDeclStmt var_decl = 3;
     }
   }
@@ -231,12 +231,12 @@ message Class {
 }
 
 // A module definition.
-message Module {
+message ModuleDef {
   string name = 1;
   message Member {
     oneof type {
-      Class cls = 1;
-      Func func = 2;
+      ClassDef class_def = 1;
+      FuncDef func_def = 2;
       VarDeclStmt var_decl = 3;
       ExternFunc extern_func = 4;
     }
