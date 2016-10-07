@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                             #
 #    Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          #
@@ -18,8 +18,12 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 """Quo parser.
 
-For debugging, run this module to print out an AST for Quo modules. It Will read
+For debugging, run this module to print out an AST for Quo modules. It will read
 from files supplied on the command line, or stdin if no files are specified.
+
+Example:
+
+  python3 -m parser.parser /path/to/file.quo
 """
 
 import ply.yacc
