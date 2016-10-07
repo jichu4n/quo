@@ -125,7 +125,7 @@ class QuoParser(object):
                    | binary_bool OR binary_bool
     '''
     p[0] = Expr(binary_op=BinaryOpExpr(
-      op=getattr(BinaryOpExpr, op[2]), left_expr=p[1], right_expr=p[3]))
+      op=getattr(BinaryOpExpr, p[2]), left_expr=p[1], right_expr=p[3]))
 
   def p_assign(self, p):
     '''assign : primary ASSIGN expr'''
@@ -178,7 +178,9 @@ class QuoParser(object):
 
   def p_type_spec_member(self, p):
     '''type_spec : type_spec DOT type_spec_primary'''
-    p[0] = TypeSpec(parent=p[1], name=p[3].name, params=p[3].params)
+    p[0] = TypeSpec()
+    p[0].CopyFrom(p[3])
+    p[0].parent.CopyFrom(p[1])
 
   def p_type_spec_list_empty(self, p):
     '''type_spec_list :'''
@@ -410,13 +412,14 @@ class QuoParser(object):
               L_BRACE stmts R_BRACE'''
     p[0] = Func(
         name=p[2],
-        type_params=p[3],
         params=p[5],
         return_mode=p[7],
         cc=Func.DEFAULT,
         block=p[10])
     if p[8] is not None:
       p[0].return_type_spec.CopyFrom(p[8])
+    if p[3]:
+      p[0].type_params.extend(p[3])
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''
