@@ -1,0 +1,250 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *                                                                           *
+ *  Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          *
+ *                                                                           *
+ *  Licensed under the Apache License, Version 2.0 (the "License");          *
+ *  you may not use this file except in compliance with the License.         *
+ *  You may obtain a copy of the License at                                  *
+ *                                                                           *
+ *   http://www.apache.org/licenses/LICENSE-2.0                              *
+ *                                                                           *
+ *  Unless required by applicable law or agreed to in writing, software      *
+ *  distributed under the License is distributed on an "AS IS" BASIS,        *
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. *
+ *  See the License for the specific language governing permissions and      *
+ *  limitations under the License.                                           *
+ *                                                                           *
+ * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+syntax = "proto3";
+
+// A constant expression.
+message ConstantExpr {
+  oneof value {
+    string stringValue = 1;
+    int64 intValue = 2;
+    bool boolValue = 3;
+  }
+}
+
+// A variable reference.
+message VarExpr {
+  string var = 1;
+}
+
+// A member reference.
+message MemberExpr {
+  Expr expr = 1;
+  string member = 2;
+}
+
+// An index expression.
+message IndexExpr {
+  Expr expr = 1;
+  Expr index_expr = 2;
+}
+
+// A function call expression.
+message CallExpr {
+  Expr expr = 1;
+  repeated Expr arg_exprs = 2;
+}
+
+// A unary operation.
+message UnaryOpExpr {
+  // Unary operators.
+  enum Op {
+    UNKNOWN = 0;
+    ADD = 1;
+    SUB = 2;
+    BORROW = 3;
+    MOVE = 4;
+  }
+
+  Op op = 1;
+  Expr expr = 2;
+}
+
+// A binary operation.
+message BinaryOpExpr {
+  // Binary operators.
+  enum Op {
+    UNKNOWN = 0;
+    ADD = 1;
+    SUB = 2;
+    MUL = 3;
+    DIV = 4;
+    MOD = 5;
+    EQ = 6;
+    NE = 7;
+    GT = 8;
+    GE = 9;
+    LT = 10;
+    LE = 11;
+  }
+
+  Op op = 1;
+  Expr left_expr = 2;
+  Expr right_expr = 3;
+}
+
+// Variable assignment.
+message AssignExpr {
+  Expr dest_expr = 1;
+  Expr value_expr = 2;
+}
+
+// Any expression.
+message Expr {
+  oneof type {
+    ConstantExpr constant = 1;
+    VarExpr var = 2;
+    MemberExpr member = 3;
+    IndexExpr index = 4;
+    CallExpr call = 5;
+    UnaryOpExpr unary_op = 6;
+    BinaryOpExpr binary_op = 7;
+    AssignExpr assign = 8;
+  }
+}
+
+// Expression statement.
+message ExprStmt {
+  Expr expr = 1;
+}
+
+// Return statement.
+message RetStmt {
+  Expr expr = 1;
+}
+
+// Break statement.
+message BrkStmt {
+}
+
+// Continue statement.
+message ContStmt {
+}
+
+// if-else statement.
+message CondStmt {
+  Expr cond_expr = 1;
+  Block true_block = 2;
+  Block false_block = 3;
+}
+
+// Conditional loop statement.
+message CondLoopStmt {
+  Expr cond_expr = 1;
+  Block block = 2;
+}
+
+// Variable declaration statement.
+message VarDeclStmt {
+  enum Mode {
+    UNKNOWN = 0;
+    OWN = 1;
+    BORROW = 2;
+  }
+  string name = 1;
+  TypeSpec type_spec = 2;
+  Mode mode = 3;
+  Expr init_expr = 4;
+}
+
+// Any statement.
+message Stmt {
+  oneof type {
+    ExprStmt expr = 1;
+    RetStmt ret = 2;
+    BrkStmt brk = 3;
+    ContStmt cont = 4;
+    CondStmt cond = 5;
+    CondLoopStmt cond_loop = 6;
+    VarDeclStmt var_decl = 7;
+  }
+}
+
+// A code block.
+message Block {
+  repeated Stmt stmts = 1;
+}
+
+// A formal function parameter.
+message FuncParam {
+  enum Mode {
+    UNKNOWN = 0;
+    COPY = 1;
+    BORROW = 2;
+    MOVE = 3;
+  }
+  string name = 1;
+  Mode mode = 2;
+  TypeSpec type_spec = 3;
+  Expr init_expr = 4;
+}
+
+// A function definition.
+message Func {
+  enum ReturnMode {
+    UNKNOWN = 0;
+    COPY = 1;
+    BORROW = 2;
+    MOVE = 3;
+  }
+  enum CC {
+    DEFAULT = 0;
+    C = 1;
+  }
+  string name = 1;
+  repeated string type_params = 2;
+  FuncParam params = 3;
+  TypeSpec return_type_spec = 4;
+  ReturnMode return_mode = 5;
+  CC cc = 6;
+  Block block = 7;
+}
+
+// An external (C/C++) function declaration.
+message ExternFunc {
+  string name = 1;
+  repeated FuncParam params = 2;
+  TypeSpec return_type_spec = 3;
+}
+
+// A class definition.
+message Class {
+  string name = 1;
+  repeated string type_params = 2;
+  repeated string super_classes = 3;
+  message Member {
+    oneof type {
+      Class cls = 1;
+      Func func = 2;
+      VarDeclStmt var_decl = 3;
+    }
+  }
+  repeated Member members = 4;
+}
+
+// A module definition.
+message Module {
+  string name = 1;
+  message Member {
+    oneof type {
+      Class cls = 1;
+      Func func = 2;
+      VarDeclStmt var_decl = 3;
+      ExternFunc extern_func = 4;
+    }
+  }
+  repeated Member members = 2;
+}
+
+// Type specification.
+message TypeSpec {
+  string name = 1;
+  repeated TypeSpec params = 2;
+  TypeSpec parent = 3;
+}
+
