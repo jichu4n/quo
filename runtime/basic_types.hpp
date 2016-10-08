@@ -16,14 +16,30 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef STRING_HPP_
-#define STRING_HPP_
+#ifndef BASIC_TYPES_HPP_
+#define BASIC_TYPES_HPP_
 
-#include "array.hpp"
+#include <cstdint>
 
-struct QString : public QArray<const char> {
+struct QClassDescriptor;
+
+// Base class for Quo objects.
+struct QObject {
+  QClassDescriptor* descriptor;
 };
 
+// A 32-bit integer.
+struct QInt32 : public QObject {
+  int32_t value;
+};
+typedef QInt32 QInt;
 
-#endif  // STRING_HPP_
+// A string.
+struct QString : public QObject {
+  // The size (in bytes) of the string.
+  int32_t size;
+  char* value;
+};
+
+#endif  // BASIC_TYPES_HPP_
 
