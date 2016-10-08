@@ -1,3 +1,4 @@
+#!/bin/bash
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                             #
 #    Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          #
@@ -16,31 +17,14 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-# Same CMake version requirement as LLVM 3.9.
-cmake_minimum_required(VERSION 3.4.3)
+set -ex
+cd "$(dirname $0)"
+prefix="$PWD/deps"
+cmake="$prefix/bin/cmake"
+build="$PWD/build"
 
-# Project info.
-project(quo CXX)
-set(quo_VERSION_MAJOR 0)
-set(quo_VERSION_MINOR 1)
-configure_file(
-  "${PROJECT_SOURCE_DIR}/config.h.in"
-  "${PROJECT_BINARY_DIR}/config.h"
-)
-
-
-# Use dependencies in the "deps" directory.
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/deps")
-
-# Configure protocol buffers.
-include(FindProtobuf)
-find_package(Protobuf REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIRS})
-link_libraries(${Protobuf_LIBRARIES})
-
-# AST.
-add_subdirectory("ast")
-
-# Create __init__.py in build directory.
-file(WRITE "${PROJECT_BINARY_DIR}/__init__.py")
+mkdir -p "$build"
+cd "$build"
+"$cmake" ../
+"$cmake" --build .
 

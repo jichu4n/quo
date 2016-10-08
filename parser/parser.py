@@ -28,7 +28,7 @@ Example:
 
 import ply.yacc
 from parser import lexer
-from ast.ast_pb2 import *
+from build.ast.ast_pb2 import *
 
 
 class QuoParser(object):
@@ -486,25 +486,25 @@ class QuoParser(object):
   def p_module_members_var_decl_stmts(self, p):
     '''module_members : var_decl_stmts module_members'''
     p[0] = [
-        Module.Member(var_decl=stmt.var_decl)
+        ModuleDef.Member(var_decl=stmt.var_decl)
         for stmt in p[1]
     ] + p[2]
 
   def p_module_members_func(self, p):
     '''module_members : module_func module_members'''
-    p[0] = [Module.Member(func_def=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(func_def=p[1])] + p[2]
 
   def p_module_members_extern_func(self, p):
     '''module_members : extern_func module_members'''
-    p[0] = [Module.Member(extern_func=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(extern_func=p[1])] + p[2]
 
   def p_module_members_class(self, p):
     '''module_members : class module_members'''
-    p[0] = [Module.Member(class_def=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(class_def=p[1])] + p[2]
 
   def p_module(self, p):
     '''module : module_members'''
-    p[0] = Module(members=p[1])
+    p[0] = ModuleDef(members=p[1])
 
   # Operator precedence.
   precedence = (

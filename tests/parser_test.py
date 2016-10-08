@@ -20,7 +20,7 @@
 
 import unittest
 from google.protobuf import json_format
-from ast.ast_pb2 import *
+from build.ast.ast_pb2 import *
 from parser import parser
 
 
