@@ -16,14 +16,28 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+# Same CMake version requirement as LLVM 3.9.
+cmake_minimum_required(VERSION 3.4.3)
 
-PROTOC := $(abspath ${CURDIR}/../deps/bin/protoc)
+# Project info.
+project(quo CXX)
+set(quo_VERSION_MAJOR 0)
+set(quo_VERSION_MINOR 1)
+configure_file(
+  "${PROJECT_SOURCE_DIR}/config.h.in"
+  "${PROJECT_BINARY_DIR}/config.h"
+)
 
-all_proto: ast_pb2.py ast.pb.cc
+# Use dependencies in the "deps" directory.
+set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/deps")
 
-ast_pb2.py: ast.proto
-	${PROTOC} --python_out="${CURDIR}" "$^"
+# Configure protocol buffers.
+include(FindProtobuf)
+find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+link_libraries(${Protobuf_LIBRARIES})
 
-ast.pb.cc ast.pb.h: ast.proto
-	${PROTOC} --cpp_out="${CURDIR}" "$^"
+# AST.
+include_directories("${PROJECT_SOURCE_DIR}/ast")
+add_subdirectory("ast")
 
