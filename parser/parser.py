@@ -68,7 +68,7 @@ class QuoParser(object):
 
   def p_primary_call(self, p):
     '''primary : primary L_PAREN expr_list R_PAREN'''
-    p[0] = Expr(call=CallExpr(func_expr=p[1], arg_exprs=p[3]))
+    p[0] = Expr(call=CallExpr(fn_expr=p[1], arg_exprs=p[3]))
 
   def p_unary_arith_primary(self, p):
     '''unary_arith : primary'''
@@ -349,42 +349,42 @@ class QuoParser(object):
     '''type_params : LT type_param_list GT'''
     p[0] = p[2]
 
-  def p_func_param_mode_empty(self, p):
-    '''func_param_mode :'''
-    p[0] = FuncParam.COPY
+  def p_fn_param_mode_empty(self, p):
+    '''fn_param_mode :'''
+    p[0] = FnParam.COPY
 
-  def p_func_param_mode(self, p):
-    '''func_param_mode : BORROW
+  def p_fn_param_mode(self, p):
+    '''fn_param_mode : BORROW
                        | MOVE
     '''
-    p[0] = getattr(FuncParam, p[1])
+    p[0] = getattr(FnParam, p[1])
 
-  def p_func_param_type_spec_empty(self, p):
-    '''func_param_type_spec :'''
+  def p_fn_param_type_spec_empty(self, p):
+    '''fn_param_type_spec :'''
     p[0] = None
 
-  def p_func_param_type_spec(self, p):
-    '''func_param_type_spec : type_spec'''
+  def p_fn_param_type_spec(self, p):
+    '''fn_param_type_spec : type_spec'''
     p[0] = p[1]
 
-  def p_func_param(self, p):
-    '''func_param : func_param_mode var func_param_type_spec'''
-    p[0] = FuncParam(name=p[2].name, mode=p[1])
+  def p_fn_param(self, p):
+    '''fn_param : fn_param_mode var fn_param_type_spec'''
+    p[0] = FnParam(name=p[2].name, mode=p[1])
     if p[2].HasField('init_expr'):
       p[0].init_expr.CopyFrom(p[2].init_expr)
     if p[3] is not None:
       p[0].type_spec.CopyFrom(p[3])
 
-  def p_func_param_list_empty(self, p):
-    '''func_param_list :'''
+  def p_fn_param_list_empty(self, p):
+    '''fn_param_list :'''
     p[0] = []
 
-  def p_func_param_list_one(self, p):
-    '''func_param_list : func_param'''
+  def p_fn_param_list_one(self, p):
+    '''fn_param_list : fn_param'''
     p[0] = [p[1]]
 
-  def p_func_param_list(self, p):
-    '''func_param_list : func_param COMMA func_param_list'''
+  def p_fn_param_list(self, p):
+    '''fn_param_list : fn_param COMMA fn_param_list'''
     p[0] = [p[1]] + p[3]
 
   def p_return_type_spec_empty(self, p):
@@ -397,24 +397,24 @@ class QuoParser(object):
 
   def p_return_mode_empty(self, p):
     '''return_mode :'''
-    p[0] = FuncDef.COPY
+    p[0] = FnDef.COPY
 
   def p_return_mode(self, p):
     '''return_mode : BORROW
                    | MOVE
     '''
-    p[0] = getattr(FuncDef, p[1])
+    p[0] = getattr(FnDef, p[1])
 
   def p_func(self, p):
     '''func : FUNCTION IDENTIFIER type_params \
-              L_PAREN func_param_list R_PAREN \
+              L_PAREN fn_param_list R_PAREN \
               return_mode return_type_spec \
               L_BRACE stmts R_BRACE'''
-    p[0] = FuncDef(
+    p[0] = FnDef(
         name=p[2],
         params=p[5],
         return_mode=p[7],
-        cc=FuncDef.DEFAULT,
+        cc=FnDef.DEFAULT,
         block=p[10])
     if p[8] is not None:
       p[0].return_type_spec.CopyFrom(p[8])
@@ -442,7 +442,7 @@ class QuoParser(object):
 
   def p_class_members_func(self, p):
     '''class_members : func class_members'''
-    p[0] = [ClassDef.Member(func_def=p[1])] + p[2]
+    p[0] = [ClassDef.Member(fn_def=p[1])] + p[2]
 
   def p_class_members_class(self, p):
     '''class_members : class class_members'''
@@ -458,24 +458,24 @@ class QuoParser(object):
         super_classes=p[4],
         members=p[6])
 
-  def p_extern_func(self, p):
-    '''extern_func : EXTERN FUNCTION IDENTIFIER \
-                     L_PAREN func_param_list R_PAREN \
-                     return_type_spec SEMICOLON
+  def p_extern_fn(self, p):
+    '''extern_fn : EXTERN FUNCTION IDENTIFIER \
+                   L_PAREN fn_param_list R_PAREN \
+                   return_type_spec SEMICOLON
     '''
-    p[0] = ExternFunc(name=p[3], params=p[5], return_type_spec=p[7])
+    p[0] = ExternFn(name=p[3], params=p[5], return_type_spec=p[7])
 
   def p_func_cc_empty(self, p):
     '''func_cc :'''
-    p[0] = FuncDef.DEFAULT
+    p[0] = FnDef.DEFAULT
 
   def p_func_cc_c(self, p):
     '''func_cc : EXPORT'''
-    p[0] = FuncDef.C
+    p[0] = FnDef.C
 
   def p_module_func(self, p):
     '''module_func : func_cc func'''
-    p[0] = FuncDef()
+    p[0] = FnDef()
     p[0].CopyFrom(p[2])
     p[0].cc = p[1]
 
@@ -492,11 +492,11 @@ class QuoParser(object):
 
   def p_module_members_func(self, p):
     '''module_members : module_func module_members'''
-    p[0] = [ModuleDef.Member(func_def=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(fn_def=p[1])] + p[2]
 
-  def p_module_members_extern_func(self, p):
-    '''module_members : extern_func module_members'''
-    p[0] = [ModuleDef.Member(extern_func=p[1])] + p[2]
+  def p_module_members_extern_fn(self, p):
+    '''module_members : extern_fn module_members'''
+    p[0] = [ModuleDef.Member(extern_fn=p[1])] + p[2]
 
   def p_module_members_class(self, p):
     '''module_members : class module_members'''

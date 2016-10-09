@@ -37,7 +37,7 @@ class IRGenerator {
  protected:
   void ProcessModuleMember(
       ::llvm::Module* module, const ModuleDef::Member& member);
-  void ProcessModuleFuncDef(::llvm::Module* module, const FuncDef& func_def);
+  void ProcessModuleFnDef(::llvm::Module* module, const FnDef& fn_def);
 
   ::llvm::Type* LookupType(const TypeSpec& type_spec);
 
@@ -48,6 +48,7 @@ class IRGenerator {
   struct {
     ::llvm::StructType* object_ty;
     ::llvm::StructType* int32_ty;
+    ::llvm::StructType* bool_ty;
     ::llvm::StructType* string_ty;
   } builtin_types_;
   ::std::unordered_map<::std::string, ::llvm::Type*> builtin_types_map_;

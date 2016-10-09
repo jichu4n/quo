@@ -67,25 +67,25 @@ class QuoParserTest(unittest.TestCase):
         '(((a)()(c,)(d()))(e.f()[1],g,h[i].j(),))',
         'expr',
         Expr(call=CallExpr(
-            func_expr=Expr(call=CallExpr(
-                func_expr=Expr(call=CallExpr(
-                    func_expr=Expr(call=CallExpr(
-                        func_expr=Expr(var=VarExpr(name='a')))),
+            fn_expr=Expr(call=CallExpr(
+                fn_expr=Expr(call=CallExpr(
+                    fn_expr=Expr(call=CallExpr(
+                        fn_expr=Expr(var=VarExpr(name='a')))),
                     arg_exprs=[Expr(var=VarExpr(name='c'))])),
                 arg_exprs=[
                     Expr(call=CallExpr(
-                        func_expr=Expr(var=VarExpr(name='d')))),
+                        fn_expr=Expr(var=VarExpr(name='d')))),
                 ])),
             arg_exprs=[
                 Expr(index=IndexExpr(
                     array_expr=Expr(call=CallExpr(
-                        func_expr=Expr(member=MemberExpr(
+                        fn_expr=Expr(member=MemberExpr(
                             parent_expr=Expr(var=VarExpr(name='e')),
                             member_name='f')))),
                     index_expr=Expr(constant=ConstantExpr(intValue=1)))),
                 Expr(var=VarExpr(name='g')),
                 Expr(call=CallExpr(
-                    func_expr=Expr(member=MemberExpr(
+                    fn_expr=Expr(member=MemberExpr(
                         parent_expr=Expr(index=IndexExpr(
                             array_expr=Expr(var=VarExpr(name='h')),
                             index_expr=Expr(var=VarExpr(name='i')))),
@@ -299,26 +299,26 @@ class QuoParserTest(unittest.TestCase):
     }
     ''',
     'func',
-    FuncDef(
+    FnDef(
         name='foo',
         params=[
-            FuncParam(name='a', mode=FuncParam.COPY),
-            FuncParam(
+            FnParam(name='a', mode=FnParam.COPY),
+            FnParam(
                 name='b',
-                mode=FuncParam.BORROW,
+                mode=FnParam.BORROW,
                 type_spec=TypeSpec(name='Int')),
-            FuncParam(
+            FnParam(
                 name='c',
-                mode=FuncParam.MOVE,
+                mode=FnParam.MOVE,
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
-            FuncParam(
+            FnParam(
                 name='d',
-                mode=FuncParam.COPY,
+                mode=FnParam.COPY,
                 type_spec=TypeSpec(name='Int'),
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
         ],
-        return_mode=FuncDef.COPY,
-        cc=FuncDef.DEFAULT,
+        return_mode=FnDef.COPY,
+        cc=FnDef.DEFAULT,
         block=Block(stmts=[
             Stmt(ret=RetStmt(
                 expr=Expr(binary_op=BinaryOpExpr(
@@ -336,14 +336,14 @@ class QuoParserTest(unittest.TestCase):
     function Foo<A, B,>() &Array<Int> {}
     ''',
     'func',
-    FuncDef(
+    FnDef(
         name='Foo',
         type_params=['A', 'B'],
         return_type_spec=TypeSpec(
             name='Array',
             params=[TypeSpec(name='Int')]),
-        return_mode=FuncDef.BORROW,
-        cc=FuncDef.DEFAULT,
+        return_mode=FnDef.BORROW,
+        cc=FnDef.DEFAULT,
         block=Block()))
 
   def test_class(self):
@@ -382,11 +382,11 @@ class QuoParserTest(unittest.TestCase):
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='a',
                 mode=VarDeclStmt.OWN)),
-            ClassDef.Member(func_def=FuncDef(
+            ClassDef.Member(fn_def=FnDef(
                 name='f',
                 return_type_spec=TypeSpec(name='Int'),
-                return_mode=FuncDef.COPY,
-                cc=FuncDef.DEFAULT,
+                return_mode=FnDef.COPY,
+                cc=FnDef.DEFAULT,
                 block=Block(stmts=[Stmt(ret=RetStmt(
                     expr=Expr(constant=ConstantExpr(intValue=42))))]))),
             ClassDef.Member(var_decl=VarDeclStmt(

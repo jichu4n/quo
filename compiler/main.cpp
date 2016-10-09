@@ -21,21 +21,20 @@
 #include <memory>
 #include <string>
 #include <glog/logging.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/text_format.h>
 #include <llvm/Support/raw_ostream.h>
 #include "compiler/ir_generator.hpp"
 
 using ::std::cin;
-using ::std::istreambuf_iterator;
-using ::std::string;
 using ::std::unique_ptr;
+using ::google::protobuf::io::IstreamInputStream;
 using namespace ::quo;
 
 int main(int argc, char* argv[]) {
-  istreambuf_iterator<char> cin_begin(cin);
-  string module_text(cin_begin, istreambuf_iterator<char>());
+  IstreamInputStream input_stream(&cin);
   ModuleDef module_def;
-  ::google::protobuf::TextFormat::ParseFromString(module_text, &module_def);
+  CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
   // LOG(INFO) << module_def.DebugString();
 
   IRGenerator ir_generator;
@@ -43,9 +42,10 @@ int main(int argc, char* argv[]) {
 
   module->print(
       ::llvm::outs(),
-      nullptr /* AssemblyAnnotationWriter */,
-      false /* ShouldPreserveUseListOrder */,
-      true /* IsForDebug */);
+      nullptr, // AssemblyAnnotationWriter
+      false,  // ShouldPreserveUseListOrder
+      true);  // IsForDebug
 
   return 0;
 }
+

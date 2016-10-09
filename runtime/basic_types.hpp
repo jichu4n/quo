@@ -34,6 +34,11 @@ struct QInt32 : public QObject {
 };
 typedef QInt32 QInt;
 
+// A 32-bit integer.
+struct QBool : public QObject {
+  int8_t value;
+};
+
 // A string.
 struct QString : public QObject {
   // The size (in bytes) of the string.

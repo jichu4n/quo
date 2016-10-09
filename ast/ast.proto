@@ -48,7 +48,7 @@ message IndexExpr {
 
 // A function call expression.
 message CallExpr {
-  Expr func_expr = 1;
+  Expr fn_expr = 1;
   repeated Expr arg_exprs = 2;
 }
 
@@ -176,7 +176,7 @@ message Block {
 }
 
 // A formal function parameter.
-message FuncParam {
+message FnParam {
   enum Mode {
     UNKNOWN = 0;
     COPY = 1;
@@ -190,7 +190,7 @@ message FuncParam {
 }
 
 // A function definition.
-message FuncDef {
+message FnDef {
   enum ReturnMode {
     UNKNOWN = 0;
     COPY = 1;
@@ -203,7 +203,7 @@ message FuncDef {
   }
   string name = 1;
   repeated string type_params = 2;
-  repeated FuncParam params = 3;
+  repeated FnParam params = 3;
   TypeSpec return_type_spec = 4;
   ReturnMode return_mode = 5;
   CC cc = 6;
@@ -211,9 +211,9 @@ message FuncDef {
 }
 
 // An external (C/C++) function declaration.
-message ExternFunc {
+message ExternFn {
   string name = 1;
-  repeated FuncParam params = 2;
+  repeated FnParam params = 2;
   TypeSpec return_type_spec = 3;
 }
 
@@ -225,7 +225,7 @@ message ClassDef {
   message Member {
     oneof type {
       ClassDef class_def = 1;
-      FuncDef func_def = 2;
+      FnDef fn_def = 2;
       VarDeclStmt var_decl = 3;
     }
   }
@@ -238,9 +238,9 @@ message ModuleDef {
   message Member {
     oneof type {
       ClassDef class_def = 1;
-      FuncDef func_def = 2;
+      FnDef fn_def = 2;
       VarDeclStmt var_decl = 3;
-      ExternFunc extern_func = 4;
+      ExternFn extern_fn = 4;
     }
   }
   repeated Member members = 2;

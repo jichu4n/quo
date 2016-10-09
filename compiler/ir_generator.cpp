@@ -46,22 +46,22 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
 void IRGenerator::ProcessModuleMember(
     ::llvm::Module* module, const ModuleDef::Member& member) {
   switch (member.type_case()) {
-    case ModuleDef::Member::kFuncDef:
-      ProcessModuleFuncDef(module, member.func_def());
+    case ModuleDef::Member::kFnDef:
+      ProcessModuleFnDef(module, member.fn_def());
       break;
     default:
       LOG(FATAL) << "Unsupported module member type: " << member.type_case();
   }
 }
 
-void IRGenerator::ProcessModuleFuncDef(
-    ::llvm::Module* module, const FuncDef& fn_def) {
+void IRGenerator::ProcessModuleFnDef(
+    ::llvm::Module* module, const FnDef& fn_def) {
   vector<::llvm::Type*> param_tys(fn_def.params_size());
   transform(
       fn_def.params().begin(),
       fn_def.params().end(),
       param_tys.begin(),
-      [this](const FuncParam& param) {
+      [this](const FnParam& param) {
         return LookupType(param.type_spec());
       });
   ::llvm::FunctionType* fn_ty = ::llvm::FunctionType::get(
@@ -97,7 +97,7 @@ void IRGenerator::SetupBuiltinTypes() {
   TypeSpec object_type_spec;
   object_type_spec.set_name("Object");
   ::llvm::Type* const object_fields[] = {
-    ::llvm::PointerType::getUnqual(::llvm::Type::getInt8Ty(ctx_)),
+    ::llvm::Type::getInt8PtrTy(ctx_),
   };
   builtin_types_.object_ty = ::llvm::StructType::create(
       ctx_, object_fields, object_type_spec.name());
@@ -107,20 +107,33 @@ void IRGenerator::SetupBuiltinTypes() {
   TypeSpec int32_type_spec;
   int32_type_spec.set_name("Int32");
   ::llvm::Type* const int32_fields[] = {
-    ::llvm::PointerType::getUnqual(::llvm::Type::getInt8Ty(ctx_)),
+    ::llvm::Type::getInt8PtrTy(ctx_),
     ::llvm::Type::getInt32Ty(ctx_),
   };
   builtin_types_.int32_ty = ::llvm::StructType::create(
       ctx_, int32_fields, int32_type_spec.name());
+  builtin_types_map_.insert(
+      {int32_type_spec.SerializeAsString(), builtin_types_.int32_ty});
   TypeSpec int_type_spec;
   int_type_spec.set_name("Int");
   builtin_types_map_.insert(
       {int_type_spec.SerializeAsString(), builtin_types_.int32_ty});
 
+  TypeSpec bool_type_spec;
+  bool_type_spec.set_name("Bool");
+  ::llvm::Type* const bool_fields[] = {
+    ::llvm::PointerType::getInt8PtrTy(ctx_),
+    ::llvm::Type::getInt8Ty(ctx_),
+  };
+  builtin_types_.bool_ty = ::llvm::StructType::create(
+      ctx_, bool_fields, bool_type_spec.name());
+  builtin_types_map_.insert(
+      {bool_type_spec.SerializeAsString(), builtin_types_.bool_ty});
+
   TypeSpec string_type_spec;
   int32_type_spec.set_name("String");
   ::llvm::Type* const string_fields[] = {
-    ::llvm::PointerType::getUnqual(::llvm::Type::getInt8Ty(ctx_)),
+    ::llvm::Type::getInt8PtrTy(ctx_),
     ::llvm::Type::getInt32Ty(ctx_),
     ::llvm::Type::getInt8PtrTy(ctx_),
   };
