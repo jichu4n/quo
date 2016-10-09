@@ -28,19 +28,32 @@ configure_file(
   "${PROJECT_BINARY_DIR}/config.h"
 )
 
-
 # Use dependencies in the "deps" directory.
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/deps")
-
-# Configure protocol buffers.
-include(FindProtobuf)
-find_package(Protobuf REQUIRED)
-include_directories(${Protobuf_INCLUDE_DIRS})
-link_libraries(${Protobuf_LIBRARIES})
-
-# AST.
-add_subdirectory("ast")
+list(INSERT CMAKE_PREFIX_PATH 0 "${PROJECT_SOURCE_DIR}/deps")
+# Use CMake libs in the "deps" directory.
+list(INSERT CMAKE_MODULE_PATH 0, "${PROJECT_SOURCE_DIR}/deps/lib/cmake")
 
 # Create __init__.py in build directory.
 file(WRITE "${PROJECT_BINARY_DIR}/__init__.py")
+
+# Set global compilation flags.
+include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
+link_directories("${PROJECT_SOURCE_DIR}/deps/lib")
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_EXE_LINKER_FLAGS "-static")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
+
+# Configure protocol buffer compiler and libs.
+include(FindProtobuf)
+find_package(Protobuf REQUIRED)
+include_directories(${Protobuf_INCLUDE_DIRS})
+# For some reason, this always yields shared libraries:
+# link_libraries(${Protobuf_LIBRARIES})
+link_libraries("protobuf")
+
+
+# Sub-directories.
+add_subdirectory("ast")
+add_subdirectory("compiler")
 

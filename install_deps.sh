@@ -131,11 +131,11 @@ function install_llvm() {
 
 mkdir -p "$src"
 if [ "$#" -eq 0 ]; then
-  components="protobuf glog cmake llvm"
+  components=(protobuf glog cmake llvm)
 else
-  components="$@"
+  components=$@
 fi
-for component in "$components"; do
+for component in ${components[@]}; do
   echo '-----------------------------------------------------------------------'
   echo " Installing $component"
   echo '-----------------------------------------------------------------------'

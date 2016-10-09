@@ -18,6 +18,8 @@
 
 syntax = "proto3";
 
+package quo.ast;
+
 // A constant expression.
 message ConstantExpr {
   oneof value {

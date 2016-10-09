@@ -1,6 +1,6 @@
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                             #
-#    Copyright (C) 2015 Chuan Ji <jichuan89@gmail.com>                        #
+#    Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          #
 #                                                                             #
 #    Licensed under the Apache License, Version 2.0 (the "License");          #
 #    you may not use this file except in compliance with the License.         #
@@ -16,46 +16,12 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+find_package(LLVM REQUIRED CONFIG)
 
-import os
-import subprocess
-import distutils.spawn
-
-PWD = os.path.dirname(os.path.abspath(__file__))
-EXTRA_FLAGS = [
-    '-I%s' % os.path.join(PWD, 'deps', 'include'),
-    '-I%s' % os.path.join(PWD, 'build'),
-]
-
-
-def GetLLVMConfig():
-  LLVM_CONFIG_BINARY = [
-      'llvm-config',
-      'llvm-config-3.9',
-      'llvm-config-3.8',
-      'llvm-config-3.7',
-  ]
-  if 'LLVM_CONFIG' in os.environ:
-    return os.environ['LLVM_CONFIG']
-  for binary in LLVM_CONFIG_BINARY:
-    binary_path = distutils.spawn.find_executable(binary)
-    if binary_path is not None:
-      return binary_path
-  raise IOError(
-      'Cannot find llvm-config binary among the following candidates:\n'
-      '%s\n'
-      'Please install LLVM or provide a LLVM_CONFIG environment variable.' % (
-          '\n'.join(LLVM_CONFIG_BINARY)))
-
-
-LLVM_CONFIG = GetLLVMConfig()
-LLVM_CXXFLAGS = subprocess.check_output([LLVM_CONFIG, '--cxxflags']).split()
-FLAGS = LLVM_CXXFLAGS + EXTRA_FLAGS
-
-
-def FlagsForFile( filename, **kwargs ):
-  return {
-    'flags': FLAGS,
-    'do_cache': True
-  }
+add_executable(
+  quoc
+  main.cpp
+  ir_generator.cpp)
+target_link_libraries(quoc ast)
+llvm_config(quoc core)
 

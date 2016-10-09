@@ -1,7 +1,7 @@
 #!/bin/bash
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                             #
-#    Copyright (C) 2015 Chuan Ji <jichuan89@gmail.com>                        #
+#    Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          #
 #                                                                             #
 #    Licensed under the Apache License, Version 2.0 (the "License");          #
 #    you may not use this file except in compliance with the License.         #
@@ -17,7 +17,15 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-cpplint \
-    --repository=$(dirname $0) \
-    $(dirname $0)/*.{hpp,cpp}
+CPP_SRC_DIRS=(compiler runtime)
+
+set -ex
+
+cd $(dirname $0)
+for src_dir in ${CPP_SRC_DIRS[@]}; do
+  cpplint \
+      --repository=$src_dir \
+      --recursive \
+      $src_dir
+done
 
