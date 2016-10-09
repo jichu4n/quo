@@ -19,23 +19,40 @@
 #ifndef IR_GENERATOR_HPP_
 #define IR_GENERATOR_HPP_
 
-#include "llvm/LinkAllIR.h"
-#include "ast/ast.pb.h"
 #include <memory>
 #include <string>
+#include <unordered_map>
+#include "llvm/LinkAllIR.h"
+#include "ast/ast.pb.h"
 
 namespace quo {
 
 // Implements AST to IR generation.
 class IRGenerator {
  public:
-  ::std::unique_ptr<::llvm::Module> run(const ast::ModuleDef& module_def);
+  IRGenerator();
 
+  ::std::unique_ptr<::llvm::Module> ProcessModule(const ModuleDef& module_def);
+
+ protected:
+  void ProcessModuleMember(
+      ::llvm::Module* module, const ModuleDef::Member& member);
+  void ProcessModuleFuncDef(::llvm::Module* module, const FuncDef& func_def);
+
+  ::llvm::Type* LookupType(const TypeSpec& type_spec);
 
  private:
-  ::llvm::LLVMContext ctx;
+  void SetupBuiltinTypes();
+
+  ::llvm::LLVMContext ctx_;
+  struct {
+    ::llvm::StructType* object_ty;
+    ::llvm::StructType* int32_ty;
+    ::llvm::StructType* string_ty;
+  } builtin_types_;
+  ::std::unordered_map<::std::string, ::llvm::Type*> builtin_types_map_;
 };
 
-}
+}  // namespace quo
 
 #endif  // IR_GENERATOR_HPP_

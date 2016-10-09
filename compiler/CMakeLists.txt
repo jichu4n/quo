@@ -22,6 +22,6 @@ add_executable(
   quoc
   main.cpp
   ir_generator.cpp)
-target_link_libraries(quoc ast)
+target_link_libraries(quoc ast glog)
 llvm_config(quoc core)
 

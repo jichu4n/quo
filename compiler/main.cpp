@@ -16,17 +16,29 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "ast/ast.pb.h"
-#include "compiler/ir_generator.hpp"
 #include <memory>
+#include "glog/logging.h"
+#include "compiler/ir_generator.hpp"
 
 using ::std::unique_ptr;
+using namespace ::quo;
 
 int main(int argc, char* argv[]) {
-  ::quo::ast::ModuleDef module_def;
+  ModuleDef module_def;
+  FuncDef* fn_def = module_def.add_members()->mutable_func_def();
+  fn_def->set_name("foo");
+  FuncParam* param = fn_def->add_params();
+  param->set_name("x");
+  param->mutable_type_spec()->set_name("Int");
+  RetStmt* ret = fn_def->mutable_block()->add_stmts()->mutable_ret();
+  BinaryOpExpr* expr = ret->mutable_expr()->mutable_binary_op();
+  expr->set_op(BinaryOpExpr::ADD);
+  expr->mutable_left_expr()->mutable_constant()->set_intvalue(42);
+  expr->mutable_right_expr()->mutable_constant()->set_intvalue(9);
+  LOG(INFO) << module_def.DebugString();
 
-  ::quo::IRGenerator ir_generator;
-  unique_ptr<::llvm::Module> module = ir_generator.run(module_def);
+  IRGenerator ir_generator;
+  unique_ptr<::llvm::Module> module = ir_generator.ProcessModule(module_def);
 
   module->dump();
 

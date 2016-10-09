@@ -23,6 +23,7 @@ import distutils.spawn
 
 PWD = os.path.dirname(os.path.abspath(__file__))
 EXTRA_FLAGS = [
+    '-I%s' % os.path.join(PWD),
     '-I%s' % os.path.join(PWD, 'deps', 'include'),
     '-I%s' % os.path.join(PWD, 'build'),
 ]
