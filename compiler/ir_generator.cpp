@@ -93,7 +93,7 @@ void IRGenerator::SetupBuiltinTypes() {
   TypeSpec object_type_spec;
   object_type_spec.set_name("Object");
   ::llvm::Type* const object_fields[] = {
-    ::llvm::PointerType::getUnqual(::llvm::Type::getVoidTy(ctx_)),
+    ::llvm::PointerType::getUnqual(::llvm::Type::getInt8Ty(ctx_)),
   };
   builtin_types_.object_ty = ::llvm::StructType::create(
       ctx_, object_fields, object_type_spec.name());
@@ -105,7 +105,7 @@ void IRGenerator::SetupBuiltinTypes() {
   TypeSpec int32_type_spec;
   int32_type_spec.set_name("Int32");
   ::llvm::Type* const int32_fields[] = {
-    ::llvm::PointerType::getUnqual(::llvm::Type::getVoidTy(ctx_)),
+    ::llvm::PointerType::getUnqual(::llvm::Type::getInt8Ty(ctx_)),
     ::llvm::Type::getInt32Ty(ctx_),
   };
   builtin_types_.int32_ty = ::llvm::StructType::create(
@@ -118,7 +118,7 @@ void IRGenerator::SetupBuiltinTypes() {
   TypeSpec string_type_spec;
   int32_type_spec.set_name("String");
   ::llvm::Type* const string_fields[] = {
-    ::llvm::PointerType::getUnqual(::llvm::Type::getVoidTy(ctx_)),
+    ::llvm::PointerType::getUnqual(::llvm::Type::getInt8Ty(ctx_)),
     ::llvm::Type::getInt32Ty(ctx_),
     ::llvm::Type::getInt8PtrTy(ctx_),
   };

@@ -18,6 +18,7 @@
 
 #include <memory>
 #include "glog/logging.h"
+#include "llvm/Support/raw_ostream.h"
 #include "compiler/ir_generator.hpp"
 
 using ::std::unique_ptr;
@@ -35,12 +36,16 @@ int main(int argc, char* argv[]) {
   expr->set_op(BinaryOpExpr::ADD);
   expr->mutable_left_expr()->mutable_constant()->set_intvalue(42);
   expr->mutable_right_expr()->mutable_constant()->set_intvalue(9);
-  LOG(INFO) << module_def.DebugString();
+  // LOG(INFO) << module_def.DebugString();
 
   IRGenerator ir_generator;
   unique_ptr<::llvm::Module> module = ir_generator.ProcessModule(module_def);
 
-  module->dump();
+  module->print(
+      ::llvm::outs(),
+      nullptr /* AssemblyAnnotationWriter */,
+      false /* ShouldPreserveUseListOrder */,
+      true /* IsForDebug */);
 
   return 0;
 }
