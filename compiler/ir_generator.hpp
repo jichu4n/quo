@@ -22,7 +22,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "llvm/LinkAllIR.h"
+#include <llvm/LinkAllIR.h>
 #include "ast/ast.pb.h"
 
 namespace quo {

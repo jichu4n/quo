@@ -20,8 +20,8 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include "llvm/IR/IRBuilder.h"
-#include "glog/logging.h"
+#include <llvm/IR/IRBuilder.h>
+#include <glog/logging.h>
 
 namespace quo {
 
@@ -73,14 +73,18 @@ void IRGenerator::ProcessModuleFuncDef(
     arg.setName(fn_def.params(i).name());
   }
 
-  ::llvm::BasicBlock* bb = ::llvm::BasicBlock::Create(ctx_, "entry", fn);
+  ::llvm::BasicBlock* bb = ::llvm::BasicBlock::Create(ctx_, "", fn);
   ::llvm::IRBuilder<> builder(ctx_);
   builder.SetInsertPoint(bb);
+
+  if (fn_ty->getReturnType()->isVoidTy()) {
+    builder.CreateRetVoid();
+  }
 }
 
 ::llvm::Type* IRGenerator::LookupType(const TypeSpec& type_spec) {
   if (type_spec.name().empty()) {
-    return builtin_types_.object_ty;
+    return ::llvm::Type::getVoidTy(ctx_);
   }
   const auto it = builtin_types_map_.find(type_spec.SerializeAsString());
   if (it == builtin_types_map_.end()) {
@@ -97,8 +101,6 @@ void IRGenerator::SetupBuiltinTypes() {
   };
   builtin_types_.object_ty = ::llvm::StructType::create(
       ctx_, object_fields, object_type_spec.name());
-  builtin_types_map_.insert(
-      {TypeSpec().SerializeAsString(), builtin_types_.object_ty});
   builtin_types_map_.insert(
       {object_type_spec.SerializeAsString(), builtin_types_.object_ty});
 
