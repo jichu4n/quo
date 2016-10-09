@@ -18,11 +18,17 @@
 
 #include "ast/ast.pb.h"
 #include "compiler/ir_generator.hpp"
+#include <memory>
+
+using ::std::unique_ptr;
 
 int main(int argc, char* argv[]) {
   ::quo::ast::ModuleDef module_def;
-  module_def.set_name("hello");
-  ::quo::IRGenerator ir_generator;
 
-  return ir_generator.run(module_def)->getName().size();
+  ::quo::IRGenerator ir_generator;
+  unique_ptr<::llvm::Module> module = ir_generator.run(module_def);
+
+  module->dump();
+
+  return 0;
 }
