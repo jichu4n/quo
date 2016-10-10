@@ -19,14 +19,17 @@
 #include "compiler/ir_generator.hpp"
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 #include <glog/logging.h>
 
 namespace quo {
 
+using ::std::string;
+using ::std::transform;
+using ::std::unordered_map;
 using ::std::unique_ptr;
 using ::std::vector;
-using ::std::transform;
 
 struct IRGenerator::State {
   ::llvm::Module* module;
@@ -35,6 +38,7 @@ struct IRGenerator::State {
   ::llvm::Function* fn;
   const FnDef* fn_def;
   ::llvm::IRBuilder<>* ir_builder;
+  unordered_map<string, ::llvm::Value*> locals;
 };
 
 IRGenerator::IRGenerator() {
@@ -91,6 +95,16 @@ void IRGenerator::ProcessModuleFnDef(
   ::llvm::IRBuilder<> builder(ctx_);
   builder.SetInsertPoint(bb);
   state->ir_builder = &builder;
+
+  // Create mutable copies of args.
+  state->locals.clear();
+  for (::llvm::Argument& arg : fn->args()) {
+    ::llvm::Value* arg_local = builder.CreateAlloca(
+        arg.getType(), nullptr, arg.getName());
+    state->locals.insert({ arg.getName(), arg_local });
+    builder.CreateStore(&arg, arg_local);
+  }
+
   ProcessBlock(state, fn_def.block());
 
   if (fn_ty->getReturnType()->isVoidTy()) {
@@ -151,13 +165,14 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
     State* state, const VarExpr& expr) {
   ExprResult result = { nullptr, nullptr };
 
-  // Lookup function args.
-  for (::llvm::Argument& arg : state->fn->args()) {
-    if (arg.getName() == expr.name()) {
-      result.value = &arg;
-      return result;
-    }
+  auto it = state->locals.find(expr.name());
+  if (it != state->locals.end()) {
+    result.address = it->second;
+    result.value = state->ir_builder->CreateLoad(
+        it->second, it->first);
+    return result;
   }
+
   LOG(FATAL) << "Unknown variable: " << expr.name();
 }
 
