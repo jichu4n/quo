@@ -57,6 +57,11 @@ class IRGenerator {
 
   ::llvm::Type* LookupType(const TypeSpec& type_spec);
   ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
+  ::llvm::Value* ExtractInt32Value(
+      State* state, ::llvm::Value* wrapped_int32_value);
+  ::llvm::Value* CreateBoolValue(State* state, ::llvm::Value* raw_bool_value);
+  ::llvm::Value* ExtractBoolValue(
+      State* state, ::llvm::Value* wrapped_bool_value);
 
   ::llvm::LLVMContext ctx_;
   struct {

@@ -18,6 +18,7 @@
 
 #include "compiler/ir_generator.hpp"
 #include <algorithm>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -25,6 +26,9 @@
 
 namespace quo {
 
+using ::std::bind;
+using ::std::function;
+using ::std::mem_fn;
 using ::std::string;
 using ::std::transform;
 using ::std::unordered_map;
@@ -95,7 +99,7 @@ void IRGenerator::SetupBuiltinTypes() {
   bool_type_spec.set_name("Bool");
   ::llvm::Type* const bool_fields[] = {
     ::llvm::PointerType::getInt8PtrTy(ctx_),
-    ::llvm::Type::getInt8Ty(ctx_),
+    ::llvm::Type::getInt1Ty(ctx_),
   };
   builtin_types_.bool_ty = ::llvm::StructType::create(
       ctx_, bool_fields, bool_type_spec.name());
@@ -280,22 +284,112 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
     State* state, const BinaryOpExpr& expr) {
+  const unordered_map<
+      int,
+      function<::llvm::Value*(::llvm::Value*, ::llvm::Value*)>> kIntOps = {
+      {
+          static_cast<int>(BinaryOpExpr::ADD),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateAdd(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::SUB),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateSub(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::MUL),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateMul(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::DIV),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateSDiv(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::MOD),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateSRem(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::EQ),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateICmpEQ(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::NE),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateICmpNE(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::GT),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateICmpSGT(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::GE),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateICmpSGE(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::LT),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateICmpSLT(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::LE),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateICmpSLE(l, r);
+          }
+      },
+  };
+
   ExprResult result = { nullptr, nullptr };
   ExprResult left_result = ProcessExpr(state, expr.left_expr());
   ExprResult right_result = ProcessExpr(state, expr.right_expr());
   switch (expr.op()) {
     case BinaryOpExpr::ADD:
+    case BinaryOpExpr::SUB:
+    case BinaryOpExpr::MUL:
+    case BinaryOpExpr::DIV:
+    case BinaryOpExpr::MOD:
       if (left_result.value->getType() == builtin_types_.int32_ty &&
           right_result.value->getType() == builtin_types_.int32_ty) {
         result.value = CreateInt32Value(
             state,
-            state->ir_builder->CreateAdd(
-                state->ir_builder->CreateExtractValue(
-                    left_result.value, {1}),
-                state->ir_builder->CreateExtractValue(
-                    right_result.value, {1})));
+            kIntOps.at(expr.op())(
+                ExtractInt32Value(state, left_result.value),
+                ExtractInt32Value(state, right_result.value)));
       } else {
-        LOG(FATAL) << "Incompatible types for ADD";
+        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+      }
+      break;
+    case BinaryOpExpr::EQ:
+    case BinaryOpExpr::NE:
+    case BinaryOpExpr::GT:
+    case BinaryOpExpr::GE:
+    case BinaryOpExpr::LT:
+    case BinaryOpExpr::LE:
+      if (left_result.value->getType() == builtin_types_.int32_ty &&
+          right_result.value->getType() == builtin_types_.int32_ty) {
+        result.value = CreateBoolValue(
+            state,
+            kIntOps.at(expr.op())(
+                ExtractInt32Value(state, left_result.value),
+                ExtractInt32Value(state, right_result.value)));
+      } else {
+        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
       }
       break;
     default:
@@ -328,6 +422,30 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
       nullptr);
   return state->ir_builder->CreateInsertValue(
       init_value, raw_int32_value, {1});
+}
+
+::llvm::Value* IRGenerator::ExtractInt32Value(
+    State* state, ::llvm::Value* wrapped_int32_value) {
+  return state->ir_builder->CreateExtractValue(wrapped_int32_value, {1});
+}
+
+::llvm::Value* IRGenerator::CreateBoolValue(
+    State* state, ::llvm::Value* raw_bool_value) {
+  ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
+      builtin_types_.bool_ty,
+      ::llvm::ConstantPointerNull::get(
+          ::llvm::Type::getInt8PtrTy(ctx_)),
+      ::llvm::ConstantInt::getSigned(
+          ::llvm::Type::getInt1Ty(ctx_),
+          0),
+      nullptr);
+  return state->ir_builder->CreateInsertValue(
+      init_value, raw_bool_value, {1});
+}
+
+::llvm::Value* IRGenerator::ExtractBoolValue(
+    State* state, ::llvm::Value* wrapped_bool_value) {
+  return state->ir_builder->CreateExtractValue(wrapped_bool_value, {1});
 }
 
 }  // namespace quo
