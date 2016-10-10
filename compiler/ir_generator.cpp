@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <llvm/IR/IRBuilder.h>
 #include <glog/logging.h>
 
 namespace quo {
@@ -28,6 +27,15 @@ namespace quo {
 using ::std::unique_ptr;
 using ::std::vector;
 using ::std::transform;
+
+struct IRGenerator::State {
+  ::llvm::Module* module;
+  const ModuleDef* module_def;
+  ::llvm::FunctionType* fn_ty;
+  ::llvm::Function* fn;
+  const FnDef* fn_def;
+  ::llvm::IRBuilder<>* ir_builder;
+};
 
 IRGenerator::IRGenerator() {
   SetupBuiltinTypes();
@@ -37,17 +45,20 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
     const ModuleDef& module_def) {
   unique_ptr<::llvm::Module> module(
       new ::llvm::Module(module_def.name(), ctx_));
+  State state;
+  state.module = module.get();
+  state.module_def = &module_def;
   for (const auto& member : module_def.members()) {
-    ProcessModuleMember(module.get(), member);
+    ProcessModuleMember(&state, member);
   }
   return module;
 }
 
 void IRGenerator::ProcessModuleMember(
-    ::llvm::Module* module, const ModuleDef::Member& member) {
+    State* state, const ModuleDef::Member& member) {
   switch (member.type_case()) {
     case ModuleDef::Member::kFnDef:
-      ProcessModuleFnDef(module, member.fn_def());
+      ProcessModuleFnDef(state, member.fn_def());
       break;
     default:
       LOG(FATAL) << "Unsupported module member type: " << member.type_case();
@@ -55,7 +66,8 @@ void IRGenerator::ProcessModuleMember(
 }
 
 void IRGenerator::ProcessModuleFnDef(
-    ::llvm::Module* module, const FnDef& fn_def) {
+    State* state, const FnDef& fn_def) {
+  state->fn_def = &fn_def;
   vector<::llvm::Type*> param_tys(fn_def.params_size());
   transform(
       fn_def.params().begin(),
@@ -66,20 +78,114 @@ void IRGenerator::ProcessModuleFnDef(
       });
   ::llvm::FunctionType* fn_ty = ::llvm::FunctionType::get(
       LookupType(fn_def.return_type_spec()), param_tys, false /* isVarArg */);
+  state->fn_ty = fn_ty;
   ::llvm::Function* fn = ::llvm::Function::Create(
-      fn_ty, ::llvm::Function::ExternalLinkage, fn_def.name(), module);
+      fn_ty, ::llvm::Function::ExternalLinkage, fn_def.name(), state->module);
   int i = 0;
   for (::llvm::Argument& arg : fn->args()) {
     arg.setName(fn_def.params(i).name());
   }
+  state->fn = fn;
 
   ::llvm::BasicBlock* bb = ::llvm::BasicBlock::Create(ctx_, "", fn);
   ::llvm::IRBuilder<> builder(ctx_);
   builder.SetInsertPoint(bb);
+  state->ir_builder = &builder;
+  ProcessBlock(state, fn_def.block());
 
   if (fn_ty->getReturnType()->isVoidTy()) {
     builder.CreateRetVoid();
   }
+}
+
+void IRGenerator::ProcessBlock(State* state, const Block& block) {
+  for (const Stmt& stmt : block.stmts()) {
+    switch (stmt.type_case()) {
+      case Stmt::kExpr:
+        ProcessExpr(state, stmt.expr().expr());
+        break;
+      case Stmt::kRet:
+        ProcessRetStmt(state, stmt.ret());
+        break;
+      default:
+        LOG(FATAL) << "Unknown statement type:" << stmt.type_case();
+    }
+  }
+}
+
+void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
+  state->ir_builder->CreateRet(ProcessExpr(state, stmt.expr()).value);
+}
+
+IRGenerator::ExprResult IRGenerator::ProcessExpr(
+    State* state, const Expr& expr) {
+  switch (expr.type_case()) {
+    case Expr::kConstant:
+      return ProcessConstantExpr(state, expr.constant());
+    case Expr::kBinaryOp:
+      return ProcessBinaryOpExpr(state, expr.binary_op());
+    case Expr::kVar:
+      return ProcessVarExpr(state, expr.var());
+    default:
+      LOG(FATAL) << "Unknown expression type:" << expr.type_case();
+  }
+}
+
+IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
+    State* state, const ConstantExpr& expr) {
+  ExprResult result = { nullptr, nullptr };
+  switch (expr.value_case()) {
+    case ConstantExpr::kIntValue:
+      result.value = CreateInt32Value(
+          state,
+          ::llvm::ConstantInt::getSigned(
+              ::llvm::Type::getInt32Ty(ctx_), expr.intvalue()));
+      break;
+    default:
+      LOG(FATAL) << "Unknown constant type:" << expr.value_case();
+  }
+  return result;
+}
+
+IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
+    State* state, const VarExpr& expr) {
+  ExprResult result = { nullptr, nullptr };
+
+  // Lookup function args.
+  for (::llvm::Argument& arg : state->fn->args()) {
+    if (arg.getName() == expr.name()) {
+      result.value = &arg;
+      return result;
+    }
+  }
+  LOG(FATAL) << "Unknown variable: " << expr.name();
+}
+
+IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
+    State* state, const BinaryOpExpr& expr) {
+  ExprResult result = { nullptr, nullptr };
+  ExprResult left_result = ProcessExpr(state, expr.left_expr());
+  ExprResult right_result = ProcessExpr(state, expr.right_expr());
+  switch (expr.op()) {
+    case BinaryOpExpr::ADD:
+      if (left_result.value->getType() == builtin_types_.int32_ty &&
+          right_result.value->getType() == builtin_types_.int32_ty) {
+        result.value = CreateInt32Value(
+            state,
+            state->ir_builder->CreateAdd(
+                state->ir_builder->CreateExtractValue(
+                    left_result.value, {1}),
+                state->ir_builder->CreateExtractValue(
+                    right_result.value, {1})));
+      } else {
+        LOG(FATAL) << "Incompatible types for ADD";
+      }
+      break;
+    default:
+      LOG(FATAL) << "Unknown binary operator :"
+          << BinaryOpExpr::Op_Name(expr.op());
+  }
+  return result;
 }
 
 ::llvm::Type* IRGenerator::LookupType(const TypeSpec& type_spec) {
@@ -91,6 +197,20 @@ void IRGenerator::ProcessModuleFnDef(
     LOG(FATAL) << "Unknown type: " << type_spec.DebugString();
   }
   return it->second;
+}
+
+::llvm::Value* IRGenerator::CreateInt32Value(
+    State* state, ::llvm::Value* raw_int32_value) {
+  ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
+      builtin_types_.int32_ty,
+      ::llvm::ConstantPointerNull::get(
+          ::llvm::Type::getInt8PtrTy(ctx_)),
+      ::llvm::ConstantInt::getSigned(
+          ::llvm::Type::getInt32Ty(ctx_),
+          0),
+      nullptr);
+  return state->ir_builder->CreateInsertValue(
+      init_value, raw_int32_value, {1});
 }
 
 void IRGenerator::SetupBuiltinTypes() {

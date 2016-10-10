@@ -124,6 +124,7 @@ function install_llvm() {
   "$bin/cmake" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DLLVM_ENABLE_RTTI=ON \
     "$llvm_src"
   make -j4
   make install

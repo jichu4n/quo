@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <llvm/IR/IRBuilder.h>
 #include <llvm/LinkAllIR.h>
 #include "ast/ast.pb.h"
 
@@ -35,11 +36,24 @@ class IRGenerator {
   ::std::unique_ptr<::llvm::Module> ProcessModule(const ModuleDef& module_def);
 
  protected:
+  struct State;
+  struct ExprResult {
+    ::llvm::Value* value;
+    ::llvm::Value* address;
+  };
+
   void ProcessModuleMember(
-      ::llvm::Module* module, const ModuleDef::Member& member);
-  void ProcessModuleFnDef(::llvm::Module* module, const FnDef& fn_def);
+      State* state, const ModuleDef::Member& member);
+  void ProcessModuleFnDef(State* state, const FnDef& fn_def);
+  void ProcessBlock(State* state, const Block& block);
+  void ProcessRetStmt(State* state, const RetStmt& stmt);
+  ExprResult ProcessExpr(State* state, const Expr& expr);
+  ExprResult ProcessConstantExpr(State* state, const ConstantExpr& expr);
+  ExprResult ProcessVarExpr(State* state, const VarExpr& expr);
+  ExprResult ProcessBinaryOpExpr(State* state, const BinaryOpExpr& expr);
 
   ::llvm::Type* LookupType(const TypeSpec& type_spec);
+  ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
 
  private:
   void SetupBuiltinTypes();
