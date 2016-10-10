@@ -42,6 +42,9 @@ class IRGenerator {
     ::llvm::Value* address;
   };
 
+  void SetupBuiltinTypes();
+  void SetupBuiltinFunctions(State* state);
+
   void ProcessModuleMember(
       State* state, const ModuleDef::Member& member);
   void ProcessModuleFnDef(State* state, const FnDef& fn_def);
@@ -54,9 +57,6 @@ class IRGenerator {
 
   ::llvm::Type* LookupType(const TypeSpec& type_spec);
   ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
-
- private:
-  void SetupBuiltinTypes();
 
   ::llvm::LLVMContext ctx_;
   struct {

@@ -39,6 +39,12 @@ struct IRGenerator::State {
   const FnDef* fn_def;
   ::llvm::IRBuilder<>* ir_builder;
   unordered_map<string, ::llvm::Value*> locals;
+
+  struct {
+    ::llvm::Constant* quo_alloc;
+    ::llvm::Constant* quo_free;
+    ::llvm::Constant* quo_copy;
+  } builtin_fns_;
 };
 
 IRGenerator::IRGenerator() {
@@ -52,10 +58,86 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   State state;
   state.module = module.get();
   state.module_def = &module_def;
+  SetupBuiltinFunctions(&state);
   for (const auto& member : module_def.members()) {
     ProcessModuleMember(&state, member);
   }
   return module;
+}
+
+void IRGenerator::SetupBuiltinTypes() {
+  TypeSpec object_type_spec;
+  object_type_spec.set_name("Object");
+  ::llvm::Type* const object_fields[] = {
+    ::llvm::Type::getInt8PtrTy(ctx_),
+  };
+  builtin_types_.object_ty = ::llvm::StructType::create(
+      ctx_, object_fields, object_type_spec.name());
+  builtin_types_map_.insert(
+      {object_type_spec.SerializeAsString(), builtin_types_.object_ty});
+
+  TypeSpec int32_type_spec;
+  int32_type_spec.set_name("Int32");
+  ::llvm::Type* const int32_fields[] = {
+    ::llvm::Type::getInt8PtrTy(ctx_),
+    ::llvm::Type::getInt32Ty(ctx_),
+  };
+  builtin_types_.int32_ty = ::llvm::StructType::create(
+      ctx_, int32_fields, int32_type_spec.name());
+  builtin_types_map_.insert(
+      {int32_type_spec.SerializeAsString(), builtin_types_.int32_ty});
+  TypeSpec int_type_spec;
+  int_type_spec.set_name("Int");
+  builtin_types_map_.insert(
+      {int_type_spec.SerializeAsString(), builtin_types_.int32_ty});
+
+  TypeSpec bool_type_spec;
+  bool_type_spec.set_name("Bool");
+  ::llvm::Type* const bool_fields[] = {
+    ::llvm::PointerType::getInt8PtrTy(ctx_),
+    ::llvm::Type::getInt8Ty(ctx_),
+  };
+  builtin_types_.bool_ty = ::llvm::StructType::create(
+      ctx_, bool_fields, bool_type_spec.name());
+  builtin_types_map_.insert(
+      {bool_type_spec.SerializeAsString(), builtin_types_.bool_ty});
+
+  TypeSpec string_type_spec;
+  int32_type_spec.set_name("String");
+  ::llvm::Type* const string_fields[] = {
+    ::llvm::Type::getInt8PtrTy(ctx_),
+    ::llvm::Type::getInt32Ty(ctx_),
+    ::llvm::Type::getInt8PtrTy(ctx_),
+  };
+  builtin_types_.string_ty = ::llvm::StructType::create(
+      ctx_, string_fields, string_type_spec.name());
+  builtin_types_map_.insert(
+      {string_type_spec.SerializeAsString(), builtin_types_.string_ty});
+}
+
+void IRGenerator::SetupBuiltinFunctions(State* state) {
+  state->builtin_fns_.quo_alloc = state->module->getOrInsertFunction(
+      "__quo_alloc",
+      ::llvm::FunctionType::get(
+          ::llvm::Type::getInt8PtrTy(ctx_),
+          { ::llvm::Type::getInt32Ty(ctx_) },
+          false));  // isVarArg
+  state->builtin_fns_.quo_free = state->module->getOrInsertFunction(
+      "__quo_free",
+      ::llvm::FunctionType::get(
+          ::llvm::Type::getVoidTy(ctx_),
+          { ::llvm::Type::getInt8PtrTy(ctx_) },
+          false));  // isVarArg
+  state->builtin_fns_.quo_copy = state->module->getOrInsertFunction(
+      "__quo_copy",
+      ::llvm::FunctionType::get(
+          ::llvm::Type::getInt8PtrTy(ctx_),
+          {
+              ::llvm::Type::getInt8PtrTy(ctx_),
+              ::llvm::Type::getInt8PtrTy(ctx_),
+              ::llvm::Type::getInt32Ty(ctx_),
+          },
+          false));  // isVarArg
 }
 
 void IRGenerator::ProcessModuleMember(
@@ -78,16 +160,19 @@ void IRGenerator::ProcessModuleFnDef(
       fn_def.params().end(),
       param_tys.begin(),
       [this](const FnParam& param) {
-        return LookupType(param.type_spec());
+        return ::llvm::PointerType::getUnqual(LookupType(param.type_spec()));
       });
   ::llvm::FunctionType* fn_ty = ::llvm::FunctionType::get(
-      LookupType(fn_def.return_type_spec()), param_tys, false /* isVarArg */);
+      ::llvm::PointerType::getUnqual(LookupType(fn_def.return_type_spec())),
+      param_tys,
+      false /* isVarArg */);
   state->fn_ty = fn_ty;
   ::llvm::Function* fn = ::llvm::Function::Create(
       fn_ty, ::llvm::Function::ExternalLinkage, fn_def.name(), state->module);
   int i = 0;
   for (::llvm::Argument& arg : fn->args()) {
     arg.setName(fn_def.params(i).name());
+    ++i;
   }
   state->fn = fn;
 
@@ -96,12 +181,13 @@ void IRGenerator::ProcessModuleFnDef(
   builder.SetInsertPoint(bb);
   state->ir_builder = &builder;
 
-  // Create mutable copies of args.
+  // Add args to locals.
   state->locals.clear();
   for (::llvm::Argument& arg : fn->args()) {
     ::llvm::Value* arg_local = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
     state->locals.insert({ arg.getName(), arg_local });
+    // TODO: Implement copy and move modes.
     builder.CreateStore(&arg, arg_local);
   }
 
@@ -128,7 +214,22 @@ void IRGenerator::ProcessBlock(State* state, const Block& block) {
 }
 
 void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
-  state->ir_builder->CreateRet(ProcessExpr(state, stmt.expr()).value);
+  ExprResult expr_result = ProcessExpr(state, stmt.expr());
+  if (expr_result.address == nullptr) {
+    ::llvm::Value* value_size = state->ir_builder->CreatePtrToInt(
+        state->ir_builder->CreateGEP(
+          ::llvm::ConstantPointerNull::get(
+            ::llvm::PointerType::getUnqual(expr_result.value->getType())),
+          ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
+        ::llvm::Type::getInt32Ty(ctx_));
+    expr_result.address = state->ir_builder->CreatePointerCast(
+        state->ir_builder->CreateCall(
+            state->builtin_fns_.quo_alloc, { value_size }),
+        ::llvm::PointerType::getUnqual(expr_result.value->getType()));
+    // TODO: Proper copying and memory management.
+    state->ir_builder->CreateStore(expr_result.value, expr_result.address);
+  }
+  state->ir_builder->CreateRet(expr_result.address);
 }
 
 IRGenerator::ExprResult IRGenerator::ProcessExpr(
@@ -167,9 +268,10 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
 
   auto it = state->locals.find(expr.name());
   if (it != state->locals.end()) {
-    result.address = it->second;
-    result.value = state->ir_builder->CreateLoad(
+    result.address = state->ir_builder->CreateLoad(
         it->second, it->first);
+    result.value = state->ir_builder->CreateLoad(
+        result.address);
     return result;
   }
 
@@ -226,56 +328,6 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
       nullptr);
   return state->ir_builder->CreateInsertValue(
       init_value, raw_int32_value, {1});
-}
-
-void IRGenerator::SetupBuiltinTypes() {
-  TypeSpec object_type_spec;
-  object_type_spec.set_name("Object");
-  ::llvm::Type* const object_fields[] = {
-    ::llvm::Type::getInt8PtrTy(ctx_),
-  };
-  builtin_types_.object_ty = ::llvm::StructType::create(
-      ctx_, object_fields, object_type_spec.name());
-  builtin_types_map_.insert(
-      {object_type_spec.SerializeAsString(), builtin_types_.object_ty});
-
-  TypeSpec int32_type_spec;
-  int32_type_spec.set_name("Int32");
-  ::llvm::Type* const int32_fields[] = {
-    ::llvm::Type::getInt8PtrTy(ctx_),
-    ::llvm::Type::getInt32Ty(ctx_),
-  };
-  builtin_types_.int32_ty = ::llvm::StructType::create(
-      ctx_, int32_fields, int32_type_spec.name());
-  builtin_types_map_.insert(
-      {int32_type_spec.SerializeAsString(), builtin_types_.int32_ty});
-  TypeSpec int_type_spec;
-  int_type_spec.set_name("Int");
-  builtin_types_map_.insert(
-      {int_type_spec.SerializeAsString(), builtin_types_.int32_ty});
-
-  TypeSpec bool_type_spec;
-  bool_type_spec.set_name("Bool");
-  ::llvm::Type* const bool_fields[] = {
-    ::llvm::PointerType::getInt8PtrTy(ctx_),
-    ::llvm::Type::getInt8Ty(ctx_),
-  };
-  builtin_types_.bool_ty = ::llvm::StructType::create(
-      ctx_, bool_fields, bool_type_spec.name());
-  builtin_types_map_.insert(
-      {bool_type_spec.SerializeAsString(), builtin_types_.bool_ty});
-
-  TypeSpec string_type_spec;
-  int32_type_spec.set_name("String");
-  ::llvm::Type* const string_fields[] = {
-    ::llvm::Type::getInt8PtrTy(ctx_),
-    ::llvm::Type::getInt32Ty(ctx_),
-    ::llvm::Type::getInt8PtrTy(ctx_),
-  };
-  builtin_types_.string_ty = ::llvm::StructType::create(
-      ctx_, string_fields, string_type_spec.name());
-  builtin_types_map_.insert(
-      {string_type_spec.SerializeAsString(), builtin_types_.string_ty});
 }
 
 }  // namespace quo
