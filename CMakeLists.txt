@@ -31,7 +31,7 @@ configure_file(
 # Use dependencies in the "deps" directory.
 list(INSERT CMAKE_PREFIX_PATH 0 "${PROJECT_SOURCE_DIR}/deps")
 # Use CMake libs in the "deps" directory.
-list(INSERT CMAKE_MODULE_PATH 0, "${PROJECT_SOURCE_DIR}/deps/lib/cmake")
+list(INSERT CMAKE_MODULE_PATH 0 "${PROJECT_SOURCE_DIR}/deps/lib/cmake")
 
 # Create __init__.py in build directory.
 file(WRITE "${PROJECT_BINARY_DIR}/__init__.py")
@@ -41,7 +41,9 @@ include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 link_directories("${PROJECT_SOURCE_DIR}/deps/lib")
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 set(BUILD_SHARED_LIBS OFF)
-set(CMAKE_EXE_LINKER_FLAGS "-static")
+if(NOT APPLE)
+  list(INSERT CMAKE_EXE_LINKER_FLAGS 0 "-static")
+endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
 
 # Configure protocol buffer compiler and libs.
@@ -50,8 +52,12 @@ find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 # For some reason, this always yields shared libraries:
 # link_libraries(${Protobuf_LIBRARIES})
-link_libraries("protobuf")
+find_library(protobuf_LIB "protobuf")
+link_libraries(${protobuf_LIB})
 
+# Configure Google Logging lib.
+find_library(glog_LIB "glog")
+link_libraries(${glog_LIB})
 
 # Sub-directories.
 add_subdirectory("ast")
