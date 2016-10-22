@@ -260,6 +260,13 @@ IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
           ::llvm::ConstantInt::getSigned(
               ::llvm::Type::getInt32Ty(ctx_), expr.intvalue()));
       break;
+    case ConstantExpr::kBoolValue:
+      result.value = CreateBoolValue(
+          state,
+          expr.boolvalue() ?
+              ::llvm::ConstantInt::getTrue(ctx_) :
+              ::llvm::ConstantInt::getFalse(ctx_));
+      break;
     default:
       LOG(FATAL) << "Unknown constant type:" << expr.value_case();
   }
@@ -284,7 +291,7 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
     State* state, const BinaryOpExpr& expr) {
-  const unordered_map<
+  static const unordered_map<
       int,
       function<::llvm::Value*(::llvm::Value*, ::llvm::Value*)>> kIntOps = {
       {
@@ -353,6 +360,18 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
             return state->ir_builder->CreateICmpSLE(l, r);
           }
       },
+      {
+          static_cast<int>(BinaryOpExpr::AND),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateAnd(l, r);
+          }
+      },
+      {
+          static_cast<int>(BinaryOpExpr::OR),
+          [state](::llvm::Value* l, ::llvm::Value* r) {
+            return state->ir_builder->CreateOr(l, r);
+          }
+      },
   };
 
   ExprResult result = { nullptr, nullptr };
@@ -375,8 +394,6 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
         LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
       }
       break;
-    case BinaryOpExpr::EQ:
-    case BinaryOpExpr::NE:
     case BinaryOpExpr::GT:
     case BinaryOpExpr::GE:
     case BinaryOpExpr::LT:
@@ -388,6 +405,39 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
             kIntOps.at(expr.op())(
                 ExtractInt32Value(state, left_result.value),
                 ExtractInt32Value(state, right_result.value)));
+      } else {
+        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+      }
+      break;
+    case BinaryOpExpr::EQ:
+    case BinaryOpExpr::NE:
+      if (left_result.value->getType() == builtin_types_.int32_ty &&
+          right_result.value->getType() == builtin_types_.int32_ty) {
+        result.value = CreateBoolValue(
+            state,
+            kIntOps.at(expr.op())(
+                ExtractInt32Value(state, left_result.value),
+                ExtractInt32Value(state, right_result.value)));
+      } else if (left_result.value->getType() == builtin_types_.bool_ty &&
+          right_result.value->getType() == builtin_types_.bool_ty) {
+        result.value = CreateBoolValue(
+            state,
+            kIntOps.at(expr.op())(
+                ExtractBoolValue(state, left_result.value),
+                ExtractBoolValue(state, right_result.value)));
+      } else {
+        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+      }
+      break;
+    case BinaryOpExpr::AND:
+    case BinaryOpExpr::OR:
+      if (left_result.value->getType() == builtin_types_.bool_ty &&
+          right_result.value->getType() == builtin_types_.bool_ty) {
+        result.value = CreateBoolValue(
+            state,
+            kIntOps.at(expr.op())(
+                ExtractBoolValue(state, left_result.value),
+                ExtractBoolValue(state, right_result.value)));
       } else {
         LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
       }
