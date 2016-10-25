@@ -61,5 +61,6 @@ link_libraries(${glog_LIB})
 
 # Sub-directories.
 add_subdirectory("ast")
+add_subdirectory("runtime")
 add_subdirectory("compiler")
 
