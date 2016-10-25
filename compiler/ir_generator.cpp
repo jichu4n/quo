@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include <vector>
 #include <glog/logging.h>
+#include <llvm/Support/raw_ostream.h>
 
 namespace quo {
 
@@ -191,7 +192,7 @@ void IRGenerator::ProcessModuleFnDef(
     ::llvm::Value* arg_local = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
     state->locals.insert({ arg.getName(), arg_local });
-    // TODO: Implement copy and move modes.
+    // TODO(cji): Implement copy and move modes.
     builder.CreateStore(&arg, arg_local);
   }
 
@@ -219,20 +220,7 @@ void IRGenerator::ProcessBlock(State* state, const Block& block) {
 
 void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
   ExprResult expr_result = ProcessExpr(state, stmt.expr());
-  if (expr_result.address == nullptr) {
-    ::llvm::Value* value_size = state->ir_builder->CreatePtrToInt(
-        state->ir_builder->CreateGEP(
-          ::llvm::ConstantPointerNull::get(
-            ::llvm::PointerType::getUnqual(expr_result.value->getType())),
-          ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
-        ::llvm::Type::getInt32Ty(ctx_));
-    expr_result.address = state->ir_builder->CreatePointerCast(
-        state->ir_builder->CreateCall(
-            state->builtin_fns_.quo_alloc, { value_size }),
-        ::llvm::PointerType::getUnqual(expr_result.value->getType()));
-    // TODO: Proper copying and memory management.
-    state->ir_builder->CreateStore(expr_result.value, expr_result.address);
-  }
+  EnsureAddress(state, &expr_result);
   state->ir_builder->CreateRet(expr_result.address);
 }
 
@@ -245,6 +233,8 @@ IRGenerator::ExprResult IRGenerator::ProcessExpr(
       return ProcessBinaryOpExpr(state, expr.binary_op());
     case Expr::kVar:
       return ProcessVarExpr(state, expr.var());
+    case Expr::kCall:
+      return ProcessCallExpr(state, expr.call());
     default:
       LOG(FATAL) << "Unknown expression type:" << expr.type_case();
   }
@@ -283,6 +273,12 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
         it->second, it->first);
     result.value = state->ir_builder->CreateLoad(
         result.address);
+    return result;
+  }
+
+  ::llvm::Function* fn = state->module->getFunction(expr.name());
+  if (fn != nullptr) {
+    result.value = fn;
     return result;
   }
 
@@ -449,6 +445,27 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
   return result;
 }
 
+IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
+    State* state, const CallExpr& expr) {
+  ExprResult result = { nullptr, nullptr };
+  ExprResult fn_result = ProcessExpr(state, expr.fn_expr());
+  vector<::llvm::Value*> arg_results(expr.arg_exprs_size());
+  transform(
+      expr.arg_exprs().begin(),
+      expr.arg_exprs().end(),
+      arg_results.begin(),
+      [this, state](Expr e) {
+        ExprResult arg_result = ProcessExpr(state, e);
+        EnsureAddress(state, &arg_result);
+        return arg_result.address;
+      });
+  result.address = state->ir_builder->CreateCall(
+      fn_result.value,
+      arg_results);
+  result.value = state->ir_builder->CreateLoad(result.address);
+  return result;
+}
+
 ::llvm::Type* IRGenerator::LookupType(const TypeSpec& type_spec) {
   if (type_spec.name().empty()) {
     return ::llvm::Type::getVoidTy(ctx_);
@@ -496,6 +513,25 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
 ::llvm::Value* IRGenerator::ExtractBoolValue(
     State* state, ::llvm::Value* wrapped_bool_value) {
   return state->ir_builder->CreateExtractValue(wrapped_bool_value, {1});
+}
+
+void IRGenerator::EnsureAddress(
+    IRGenerator::State* state, IRGenerator::ExprResult* result) {
+  if (result->address != nullptr) {
+    return;
+  }
+  ::llvm::Value* value_size = state->ir_builder->CreatePtrToInt(
+      state->ir_builder->CreateGEP(
+        ::llvm::ConstantPointerNull::get(
+          ::llvm::PointerType::getUnqual(result->value->getType())),
+        ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
+      ::llvm::Type::getInt32Ty(ctx_));
+  result->address = state->ir_builder->CreatePointerCast(
+      state->ir_builder->CreateCall(
+          state->builtin_fns_.quo_alloc, { value_size }),
+      ::llvm::PointerType::getUnqual(result->value->getType()));
+  // TODO(cji): Proper copying and memory management.
+  state->ir_builder->CreateStore(result->value, result->address);
 }
 
 }  // namespace quo

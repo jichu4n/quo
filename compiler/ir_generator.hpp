@@ -54,6 +54,7 @@ class IRGenerator {
   ExprResult ProcessConstantExpr(State* state, const ConstantExpr& expr);
   ExprResult ProcessVarExpr(State* state, const VarExpr& expr);
   ExprResult ProcessBinaryOpExpr(State* state, const BinaryOpExpr& expr);
+  ExprResult ProcessCallExpr(State* state, const CallExpr& expr);
 
   ::llvm::Type* LookupType(const TypeSpec& type_spec);
   ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
@@ -62,6 +63,7 @@ class IRGenerator {
   ::llvm::Value* CreateBoolValue(State* state, ::llvm::Value* raw_bool_value);
   ::llvm::Value* ExtractBoolValue(
       State* state, ::llvm::Value* wrapped_bool_value);
+  void EnsureAddress(State* state, ExprResult* result);
 
   ::llvm::LLVMContext ctx_;
   struct {
