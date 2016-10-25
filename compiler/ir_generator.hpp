@@ -50,6 +50,7 @@ class IRGenerator {
   void ProcessModuleFnDef(State* state, const FnDef& fn_def);
   void ProcessBlock(State* state, const Block& block);
   void ProcessRetStmt(State* state, const RetStmt& stmt);
+  void ProcessCondStmt(State* state, const CondStmt& stmt);
   ExprResult ProcessExpr(State* state, const Expr& expr);
   ExprResult ProcessConstantExpr(State* state, const ConstantExpr& expr);
   ExprResult ProcessVarExpr(State* state, const VarExpr& expr);
@@ -63,6 +64,8 @@ class IRGenerator {
   ::llvm::Value* CreateBoolValue(State* state, ::llvm::Value* raw_bool_value);
   ::llvm::Value* ExtractBoolValue(
       State* state, ::llvm::Value* wrapped_bool_value);
+  // If "result' does not have a memory address, create a temporary variable and
+  // copy the value there. Otherwise, do nothing.
   void EnsureAddress(State* state, ExprResult* result);
 
   ::llvm::LLVMContext ctx_;

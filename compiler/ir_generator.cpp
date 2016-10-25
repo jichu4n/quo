@@ -200,6 +200,8 @@ void IRGenerator::ProcessModuleFnDef(
 
   if (fn_ty->getReturnType()->isVoidTy()) {
     builder.CreateRetVoid();
+  } else {
+    builder.CreateUnreachable();
   }
 }
 
@@ -212,6 +214,9 @@ void IRGenerator::ProcessBlock(State* state, const Block& block) {
       case Stmt::kRet:
         ProcessRetStmt(state, stmt.ret());
         break;
+      case Stmt::kCond:
+        ProcessCondStmt(state, stmt.cond());
+        break;
       default:
         LOG(FATAL) << "Unknown statement type:" << stmt.type_case();
     }
@@ -222,6 +227,34 @@ void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
   ExprResult expr_result = ProcessExpr(state, stmt.expr());
   EnsureAddress(state, &expr_result);
   state->ir_builder->CreateRet(expr_result.address);
+}
+
+void IRGenerator::ProcessCondStmt(State* state, const CondStmt& stmt) {
+  ExprResult cond_expr_result = ProcessExpr(state, stmt.cond_expr());
+  ::llvm::BasicBlock* true_bb = ::llvm::BasicBlock::Create(
+      ctx_, "if", state->fn);
+  ::llvm::BasicBlock* false_bb = ::llvm::BasicBlock::Create(ctx_, "else");
+  bool need_merge_bb = false;
+  ::llvm::BasicBlock* merge_bb = ::llvm::BasicBlock::Create(ctx_, "endif");
+
+  state->ir_builder->CreateCondBr(
+      ExtractBoolValue(state, cond_expr_result.value), true_bb, false_bb);
+
+  state->ir_builder->SetInsertPoint(true_bb);
+  ProcessBlock(state, stmt.true_block());
+  if (state->ir_builder->GetInsertBlock()->getTerminator() == nullptr) {
+    state->ir_builder->CreateBr(merge_bb);
+  }
+
+  false_bb->insertInto(state->fn);
+  state->ir_builder->SetInsertPoint(false_bb);
+  ProcessBlock(state, stmt.false_block());
+  if (state->ir_builder->GetInsertBlock()->getTerminator() == nullptr) {
+    state->ir_builder->CreateBr(merge_bb);
+  }
+
+  merge_bb->insertInto(state->fn);
+  state->ir_builder->SetInsertPoint(merge_bb);
 }
 
 IRGenerator::ExprResult IRGenerator::ProcessExpr(
