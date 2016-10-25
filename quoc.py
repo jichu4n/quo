@@ -31,15 +31,13 @@ import sys
 from parser import lexer, parser
 
 
-if __name__ == '__main__':
-  arg_parser = argparse.ArgumentParser()
-  arg_parser.add_argument('-o', help='Output file', metavar='output_file')
-  arg_parser.add_argument('input_file', help='Input file')
-  args = vars(arg_parser.parse_args())
-
-  with open(args['input_file'], 'r') as file_obj:
+def compile_file(input_file, output_file=None):
+  with open(input_file, 'r') as file_obj:
     lines = file_obj.readlines()
-  input_file_root = os.path.splitext(args['input_file'])[0]
+  input_file_root = os.path.splitext(input_file)[0]
+  assert input_file_root != input_file or output_file is not None, (
+      'Input file "%s" has no extension, and no output file provided' %
+      input_file)
 
   # 0. Build.
   build_sh = os.path.join(
@@ -47,7 +45,7 @@ if __name__ == '__main__':
       'build.sh')
   p0 = subprocess.run([build_sh])
   if p0.returncode != 0:
-    sys.exit(p0.returncode)
+    return p0.returncode
 
   # 1. Parse source code into AST.
   parse = parser.create_parser()
@@ -62,7 +60,7 @@ if __name__ == '__main__':
   quoc = os.path.join(build_dir, 'compiler', 'quoc')
   if not os.path.exists(quoc):
     print('Cannot find quoc at %s, exiting' % quoc, file=sys.stderr)
-    sys.exit(1)
+    return 1
   bc_file = input_file_root + '.bc'
   p1 = subprocess.run(
       [quoc],
@@ -73,7 +71,7 @@ if __name__ == '__main__':
   if p1.returncode != 0:
     print(p1.stdout, file=sys.stdout)
     print(p1.stderr, file=sys.stderr)
-    sys.exit(p1.returncode)
+    return p1.returncode
   with open(bc_file, 'w') as file_obj:
     file_obj.write(p1.stdout)
 
@@ -85,15 +83,14 @@ if __name__ == '__main__':
       'llc')
   if not os.path.exists(llc):
     print('Cannot find llc at %s, exiting' % llc, file=sys.stderr)
-    sys.exit(1)
-  input_file_root = os.path.splitext(args['input_file'])[0]
+    return 1
   asm_file = input_file_root + '.s'
   p2 = subprocess.run(
       [llc, '-o', asm_file],
       input=p1.stdout,
       universal_newlines=True)
   if p2.returncode != 0:
-    sys.exit(p2.returncode)
+    return p2.returncode
 
   # 4. Link.
   if 'CXX' in os.environ:
@@ -105,13 +102,13 @@ if __name__ == '__main__':
         break
   if cxx is None:
     print('Cannot find C++ compiler, exiting', file=sys.stderr)
-    sys.exit(1)
+    return 1
   runtime_dir = os.path.join(
       build_dir,
       'runtime')
   cxx_args = [
       cxx,
-      '-o', args['o'] if args['o'] else input_file_root,
+      '-o', output_file if output_file else input_file_root,
       asm_file,
       '-L', runtime_dir,
       '-lruntime',
@@ -119,5 +116,14 @@ if __name__ == '__main__':
   if sys.platform != 'darwin':
     cxx_args.append('-static')
   p3 = subprocess.run(cxx_args)
-  sys.exit(p3.returncode)
+  return p3.returncode
+
+
+if __name__ == '__main__':
+  arg_parser = argparse.ArgumentParser()
+  arg_parser.add_argument('-o', help='Output file', metavar='output_file')
+  arg_parser.add_argument('input_file', help='Input file')
+  args = vars(arg_parser.parse_args())
+
+  sys.exit(compile_file(args['input_file'], output_file=args['o']))
 
