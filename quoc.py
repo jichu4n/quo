@@ -20,7 +20,7 @@
 
 Example usage:
 
-    quoc.py foo.quo && ./a.out
+    quoc.py foo.quo && ./foo
 """
 
 import argparse
@@ -40,6 +40,14 @@ if __name__ == '__main__':
   with open(args['input_file'], 'r') as file_obj:
     lines = file_obj.readlines()
   input_file_root = os.path.splitext(args['input_file'])[0]
+
+  # 0. Build.
+  build_sh = os.path.join(
+      os.path.dirname(__file__),
+      'build.sh')
+  p0 = subprocess.run([build_sh])
+  if p0.returncode != 0:
+    sys.exit(p0.returncode)
 
   # 1. Parse source code into AST.
   parse = parser.create_parser()
