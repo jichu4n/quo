@@ -217,6 +217,9 @@ void IRGenerator::ProcessBlock(State* state, const Block& block) {
       case Stmt::kCond:
         ProcessCondStmt(state, stmt.cond());
         break;
+      case Stmt::kVarDecl:
+        ProcessVarDeclStmt(state, stmt.var_decl());
+        break;
       default:
         LOG(FATAL) << "Unknown statement type:" << stmt.type_case();
     }
@@ -255,6 +258,24 @@ void IRGenerator::ProcessCondStmt(State* state, const CondStmt& stmt) {
 
   merge_bb->insertInto(state->fn);
   state->ir_builder->SetInsertPoint(merge_bb);
+}
+
+void IRGenerator::ProcessVarDeclStmt(State* state, const VarDeclStmt& stmt) {
+  ::llvm::Value* var;
+  if (stmt.has_init_expr()) {
+    ExprResult init_expr_result = ProcessExpr(state, stmt.init_expr());
+    var = state->ir_builder->CreateAlloca(
+        ::llvm::PointerType::getUnqual(
+            init_expr_result.value->getType()), nullptr, stmt.name());
+    state->ir_builder->CreateStore(
+        CreateObject(state, init_expr_result.value), var);
+  } else {
+    ::llvm::Type* ty = LookupType(stmt.type_spec());
+    var = state->ir_builder->CreateAlloca(
+        ::llvm::PointerType::getUnqual(ty), nullptr, stmt.name());
+    state->ir_builder->CreateStore(CreateObject(state, ty), var);
+  }
+  state->locals.insert({ stmt.name(), var });
 }
 
 IRGenerator::ExprResult IRGenerator::ProcessExpr(
@@ -553,18 +574,28 @@ void IRGenerator::EnsureAddress(
   if (result->address != nullptr) {
     return;
   }
+  result->address = CreateObject(state, result->value);
+}
+
+::llvm::Value* IRGenerator::CreateObject(State* state, ::llvm::Type* ty) {
   ::llvm::Value* value_size = state->ir_builder->CreatePtrToInt(
       state->ir_builder->CreateGEP(
         ::llvm::ConstantPointerNull::get(
-          ::llvm::PointerType::getUnqual(result->value->getType())),
+          ::llvm::PointerType::getUnqual(ty)),
         ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
       ::llvm::Type::getInt32Ty(ctx_));
-  result->address = state->ir_builder->CreatePointerCast(
+  ::llvm::Value* p = state->ir_builder->CreatePointerCast(
       state->ir_builder->CreateCall(
           state->builtin_fns_.quo_alloc, { value_size }),
-      ::llvm::PointerType::getUnqual(result->value->getType()));
-  // TODO(cji): Proper copying and memory management.
-  state->ir_builder->CreateStore(result->value, result->address);
+      ::llvm::PointerType::getUnqual(ty));
+  return p;
+}
+
+::llvm::Value* IRGenerator::CreateObject(
+    IRGenerator::State* state, ::llvm::Value* init_value) {
+  ::llvm::Value* p = CreateObject(state, init_value->getType());
+  state->ir_builder->CreateStore(init_value, p);
+  return p;
 }
 
 }  // namespace quo
