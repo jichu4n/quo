@@ -283,12 +283,14 @@ IRGenerator::ExprResult IRGenerator::ProcessExpr(
   switch (expr.type_case()) {
     case Expr::kConstant:
       return ProcessConstantExpr(state, expr.constant());
-    case Expr::kBinaryOp:
-      return ProcessBinaryOpExpr(state, expr.binary_op());
     case Expr::kVar:
       return ProcessVarExpr(state, expr.var());
     case Expr::kCall:
       return ProcessCallExpr(state, expr.call());
+    case Expr::kBinaryOp:
+      return ProcessBinaryOpExpr(state, expr.binary_op());
+    case Expr::kAssign:
+      return ProcessAssignExpr(state, expr.assign());
     default:
       LOG(FATAL) << "Unknown expression type:" << expr.type_case();
   }
@@ -518,6 +520,18 @@ IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
       arg_results);
   result.value = state->ir_builder->CreateLoad(result.address);
   return result;
+}
+
+IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
+    State* state, const AssignExpr& expr) {
+  ExprResult dest_result = ProcessExpr(state, expr.dest_expr());
+  if (dest_result.address == nullptr) {
+    LOG(FATAL) << "Cannot assign to expression: "
+               << expr.dest_expr().ShortDebugString();
+  }
+  ExprResult value_result = ProcessExpr(state, expr.value_expr());
+  state->ir_builder->CreateStore(value_result.value, dest_result.address);
+  return { value_result.value, dest_result.address };
 }
 
 ::llvm::Type* IRGenerator::LookupType(const TypeSpec& type_spec) {

@@ -15,10 +15,7 @@
 #    limitations under the License.                                           #
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-"""Compiles and runs a simple Fibonacci sequence algorithm.
-
-Tests compilation of simple functions, integer arithmetic, and branching.
-"""
+"""Compiles and runs test Quo programs."""
 # pylint: disable=missing-docstring
 
 import logging
@@ -28,9 +25,22 @@ import subprocess
 import unittest
 
 
-class FibTest(unittest.TestCase):
+class CompileTest(unittest.TestCase):
 
-  TEMPLATE = '''
+  DATA_DIR = os.path.join(os.path.dirname(__file__), 'testdata')
+
+  def compile_and_check_exit_code(self, input_file, exit_code):
+    logging.info('Compiling %s', input_file)
+    input_file = os.path.join(self.DATA_DIR, input_file)
+    output_file = os.path.splitext(input_file)[0]
+    r = quoc.compile_file(input_file, output_file=output_file)
+    self.assertEqual(r, 0)
+    logging.info('Running %s', output_file)
+    input_file = os.path.join(self.DATA_DIR, input_file)
+    p = subprocess.run([output_file])
+    self.assertEqual(p.returncode, exit_code)
+
+  FIB_TEMPLATE = '''
 fn Fib(x Int) Int {
    if x <= 2 {
      return 1;
@@ -46,16 +56,17 @@ fn Main() Int {
   FIB = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233]
 
   def test_fib(self):
-    input_file = os.path.join(
-        os.path.dirname(__file__), 'testdata', 'fib.quo')
-    output_file = os.path.join(
-        os.path.dirname(__file__), 'testdata', 'fib')
+    input_file = 'fib.quo'
     for i in range(1, len(self.FIB)):
       logging.info('Testing Fib(%d)', i)
-      with open(input_file, 'w') as file_obj:
-        file_obj.write(self.TEMPLATE % i)
-      r = quoc.compile_file(input_file, output_file=output_file)
-      self.assertEqual(r, 0)
-      p = subprocess.run([output_file])
-      self.assertEqual(p.returncode, self.FIB[i])
+      with open(os.path.join(self.DATA_DIR, input_file), 'w') as file_obj:
+        file_obj.write(self.FIB_TEMPLATE % i)
+      self.compile_and_check_exit_code(input_file, self.FIB[i])
+
+  COMPILE_TESTS = {
+      'assign.quo': 94,
+  }
+  def test_compile(self):
+    for input_file, exit_code in self.COMPILE_TESTS.items():
+      self.compile_and_check_exit_code(input_file, exit_code)
 

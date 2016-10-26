@@ -1,0 +1,6 @@
+fn Main() Int {
+  var x = 42, y = x + 5;
+  y *= 2;
+  return y;
+}
+
