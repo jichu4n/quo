@@ -44,7 +44,7 @@ set(BUILD_SHARED_LIBS OFF)
 if(NOT APPLE)
   list(INSERT CMAKE_EXE_LINKER_FLAGS 0 "-static")
 endif()
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -g")
 
 # Configure protocol buffer compiler and libs.
 include(FindProtobuf)
@@ -55,9 +55,13 @@ include_directories(${Protobuf_INCLUDE_DIRS})
 find_library(protobuf_LIB "protobuf")
 link_libraries(${protobuf_LIB})
 
-# Configure Google Logging lib.
+# Configure Google logging library.
 find_library(glog_LIB "glog")
 link_libraries(${glog_LIB})
+
+# Configure Google flags library.
+find_library(gflags_LIB "gflags")
+link_libraries(${gflags_LIB})
 
 # Sub-directories.
 add_subdirectory("ast")

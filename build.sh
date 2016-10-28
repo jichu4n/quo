@@ -26,6 +26,6 @@ build="$PWD/build"
 mkdir -p "$build"
 cd "$build"
 "$cmake" ../
-"$cmake" --build .
-# make VERBOSE=1
+# "$cmake" --build .
+make VERBOSE=1
 

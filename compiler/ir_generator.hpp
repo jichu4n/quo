@@ -41,6 +41,19 @@ class IRGenerator {
     ::llvm::Value* value;
     ::llvm::Value* address;
   };
+  // Represents a single layer of variable scope.
+  struct Scope {
+    // Addresses of variable in this scope in insertion order.
+    ::std::vector<::llvm::Value*> vars;
+    // Map from name to variables.
+    ::std::unordered_map<::std::string, ::llvm::Value*> vars_by_name;
+    // Map from address to names.
+    ::std::unordered_map<::llvm::Value*, ::std::string > vars_by_address;
+
+    void Add(const ::std::string& name, ::llvm::Value* address);
+    ::llvm::Value* Lookup(const ::std::string& name);
+    const ::std::string* Lookup(::llvm::Value* address);
+  };
 
   void SetupBuiltinTypes();
   void SetupBuiltinFunctions(State* state);
@@ -48,7 +61,8 @@ class IRGenerator {
   void ProcessModuleMember(
       State* state, const ModuleDef::Member& member);
   void ProcessModuleFnDef(State* state, const FnDef& fn_def);
-  void ProcessBlock(State* state, const Block& block);
+  void ProcessBlock(
+      State* state, const Block& block, bool manage_parent_scope = false);
   void ProcessRetStmt(State* state, const RetStmt& stmt);
   void ProcessCondStmt(State* state, const CondStmt& stmt);
   void ProcessVarDeclStmt(State* state, const VarDeclStmt& stmt);
@@ -71,6 +85,9 @@ class IRGenerator {
   // If "result' does not have a memory address, create a temporary variable and
   // copy the value there. Otherwise, do nothing.
   void EnsureAddress(State* state, ExprResult* result);
+  // Generates code to deallocate variables in all scopes up to and including
+  // the function's root scope. Does NOT pop off the scopes.
+  void DestroyFnScopes(State* state);
 
   ::llvm::LLVMContext ctx_;
   struct {

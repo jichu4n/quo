@@ -110,11 +110,13 @@ def compile_file(input_file, output_file=None):
       cxx,
       '-o', output_file if output_file else input_file_root,
       asm_file,
+      '-g',
       '-L', runtime_dir,
       '-lruntime',
+      '-lpthread',
   ]
-  if sys.platform != 'darwin':
-    cxx_args.append('-static')
+  # if sys.platform != 'darwin':
+  #  cxx_args.append('-static')
   p3 = subprocess.run(cxx_args)
   return p3.returncode
 

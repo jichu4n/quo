@@ -36,6 +36,7 @@
 
 PROTOBUF_CPP_URL='https://github.com/google/protobuf/releases/download/v3.1.0/protobuf-cpp-3.1.0.tar.gz'
 GLOG_URL='https://github.com/google/glog/archive/v0.3.4.tar.gz'
+GFLAGS_URL='https://github.com/gflags/gflags/archive/v2.1.2.tar.gz'
 CMAKE_URL='https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz'
 LLVM_URL='http://llvm.org/releases/3.9.0/llvm-3.9.0.src.tar.xz'
 
@@ -64,7 +65,7 @@ function install_protobuf() {
   make install
 }
 
-# Protocol buffer compiler and C++ libs.
+# Google logging library.
 function install_glog() {
   cd "$prefix"
   glog_archive="$src/glog.tar.gz"
@@ -79,12 +80,42 @@ function install_glog() {
     cd "$glog_src"
     tar -xvz --strip-components=1 -f "$glog_archive"
   fi
-  ./configure --prefix="$prefix"
+  CPPFLAGS="-I$prefix/include" \
+    LDFLAGS="-L$prefix/lib" \
+    ./configure --prefix="$prefix"
   make -j4
   make install
 }
 
-# CMake (required by LLVM).
+# Google flags library.
+function install_gflags() {
+  cd "$prefix"
+  gflags_archive="$src/gflags.tar.gz"
+  gflags_src="$src/gflags"
+  gflags_build="$src/gflags_build"
+  if [ ! -e "$gflags_archive" ]; then
+    curl -L -o "$gflags_archive" "$GFLAGS_URL"
+  fi
+  if [ -e "$gflags_src/CMakeLists.txt" ]; then
+    cd "$gflags_src"
+  else
+    mkdir -p "$gflags_src"
+    cd "$gflags_src"
+    tar -xvz --strip-components=1 -f "$gflags_archive"
+    cd "$prefix"
+  fi
+  mkdir -p "$gflags_build"
+  cd "$gflags_build"
+  "$bin/cmake" \
+    -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DBUILD_SHARED_LIBS=ON \
+    -DBUILD_STATIC_LIBS=ON \
+    "$gflags_src"
+  make -j4
+  make install
+}
+
+# CMake (required by LLVM and Google flags).
 function install_cmake() {
   cd "$prefix"
   cmake_archive="$src/cmake.tar.gz"
@@ -132,7 +163,7 @@ function install_llvm() {
 
 mkdir -p "$src"
 if [ "$#" -eq 0 ]; then
-  components=(protobuf glog cmake llvm)
+  components=(protobuf cmake gflags glog llvm)
 else
   components=$@
 fi

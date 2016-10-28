@@ -16,8 +16,33 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+find_library(pthread_LIB "pthread")
+
 add_library(
   runtime
+  STATIC
   memory.cpp
   main.cpp)
-
+add_custom_command(
+  TARGET runtime
+  POST_BUILD
+  COMMAND
+  ${CMAKE_COMMAND} -E make_directory deps_objs)
+add_custom_command(
+  TARGET runtime
+  POST_BUILD
+  COMMAND
+  ${CMAKE_AR}
+    x
+    ${gflags_LIB}
+  COMMAND
+  ${CMAKE_AR}
+    x
+    ${glog_LIB}
+  COMMAND
+  ${CMAKE_AR}
+    qs
+    $<TARGET_FILE:runtime>
+    *
+  WORKING_DIRECTORY
+  deps_objs)
