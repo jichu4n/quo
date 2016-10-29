@@ -16,8 +16,6 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-find_library(pthread_LIB "pthread")
-
 add_library(
   runtime
   STATIC
@@ -26,6 +24,8 @@ add_library(
 add_custom_command(
   TARGET runtime
   POST_BUILD
+  COMMAND
+  ${CMAKE_COMMAND} -E remove_directory deps_objs
   COMMAND
   ${CMAKE_COMMAND} -E make_directory deps_objs)
 add_custom_command(

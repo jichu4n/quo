@@ -82,6 +82,7 @@ function install_glog() {
   fi
   CPPFLAGS="-I$prefix/include" \
     LDFLAGS="-L$prefix/lib" \
+    CXXFLAGS="-g" \
     ./configure --prefix="$prefix"
   make -j4
   make install
@@ -106,6 +107,7 @@ function install_gflags() {
   fi
   mkdir -p "$gflags_build"
   cd "$gflags_build"
+  CXXFLAGS="-g" \
   "$bin/cmake" \
     -DCMAKE_INSTALL_PREFIX="$prefix" \
     -DBUILD_SHARED_LIBS=ON \
