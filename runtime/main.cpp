@@ -18,19 +18,18 @@
 
 #include "runtime/basic_types.hpp"
 #include "runtime/memory.hpp"
-#include <memory>
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 
 extern "C" QInt32* Main();
 
-using ::std::unique_ptr;
-
 // Entry point to a Quo program.
 int main(int argc, char* argv[]) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
-  unique_ptr<QInt32> r(Main());
-  return r->value;
+  QInt32* r = Main();
+  int32_t r_value = r->value;
+  __quo_free(r);
+  return r_value;
 }
 

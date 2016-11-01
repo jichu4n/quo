@@ -49,9 +49,17 @@ class IRGenerator {
     ::std::unordered_map<::std::string, ::llvm::Value*> vars_by_name;
     // Map from address to names.
     ::std::unordered_map<::llvm::Value*, ::std::string > vars_by_address;
+    // Addresses of temps in this scope in insertion order.
+    ::std::vector<::llvm::Value*> temps;
 
-    void Add(const ::std::string& name, ::llvm::Value* address);
+    // Adds a variable into the scope.
+    void AddVar(const ::std::string& name, ::llvm::Value* address);
+    // Adds a temp into the scope.
+    void AddTemp(::llvm::Value* address);
+
+    // Look up a variable's address by name. Returns nullptr if not found.
     ::llvm::Value* Lookup(const ::std::string& name);
+    // Look up a variable's name by address. Returns nullptr if not found.
     const ::std::string* Lookup(::llvm::Value* address);
   };
 
@@ -85,6 +93,11 @@ class IRGenerator {
   // If "result' does not have a memory address, create a temporary variable and
   // copy the value there. Otherwise, do nothing.
   void EnsureAddress(State* state, ExprResult* result);
+
+  // Generates code to deallocate temps in a scope.
+  void DestroyTemps(State* state);
+  // Generates code to deallocate variables in a scope.
+  void DestroyScope(State* state, Scope* scope);
   // Generates code to deallocate variables in all scopes up to and including
   // the function's root scope. Does NOT pop off the scopes.
   void DestroyFnScopes(State* state);

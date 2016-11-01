@@ -192,14 +192,15 @@ void IRGenerator::ProcessModuleFnDef(
   builder.SetInsertPoint(bb);
   state->ir_builder = &builder;
 
-  // Add args to locals.
+  // Add args to scope.
   state->scopes.emplace_back();
   state->current_fn_scope_it = (++state->scopes.rbegin()).base();
   for (::llvm::Argument& arg : fn->args()) {
+    ::llvm::Value* arg_value = builder.CreateLoad(&arg, arg.getName() + "_val");
     ::llvm::Value* arg_var = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
-    builder.CreateStore(&arg, arg_var);
-    state->scopes.back().Add(arg.getName(), arg_var);
+    builder.CreateStore(CreateObject(state, arg_value), arg_var);
+    state->scopes.back().AddVar(arg.getName(), arg_var);
   }
 
   ProcessBlock(state, fn_def.block(), true);
@@ -233,6 +234,10 @@ void IRGenerator::ProcessBlock(
       default:
         LOG(FATAL) << "Unknown statement type:" << stmt.type_case();
     }
+    if (state->ir_builder->GetInsertBlock()->getTerminator() == nullptr) {
+      DestroyTemps(state);
+    }
+    state->scopes.back().temps.clear();
   }
   if (state->ir_builder->GetInsertBlock()->getTerminator() == nullptr) {
     DestroyFnScopes(state);
@@ -243,6 +248,7 @@ void IRGenerator::ProcessBlock(
 void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
   ExprResult expr_result = ProcessExpr(state, stmt.expr());
   ::llvm::Value* ret_address = CreateObject(state, expr_result.value);
+  DestroyTemps(state);
   DestroyFnScopes(state);
   state->ir_builder->CreateRet(ret_address);
 }
@@ -289,7 +295,7 @@ void IRGenerator::ProcessVarDeclStmt(State* state, const VarDeclStmt& stmt) {
         ::llvm::PointerType::getUnqual(ty), nullptr, stmt.name());
     state->ir_builder->CreateStore(CreateObject(state, ty), var);
   }
-  state->scopes.back().Add(stmt.name(), var);
+  state->scopes.back().AddVar(stmt.name(), var);
 }
 
 IRGenerator::ExprResult IRGenerator::ProcessExpr(
@@ -537,6 +543,7 @@ IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
       fn_result.value,
       arg_results);
   result.value = state->ir_builder->CreateLoad(result.address);
+  state->scopes.back().AddTemp(result.address);
   return result;
 }
 
@@ -607,6 +614,8 @@ void IRGenerator::EnsureAddress(
     return;
   }
   result->address = CreateObject(state, result->value);
+  result->address->setName("temp");
+  state->scopes.back().AddTemp(result->address);
 }
 
 ::llvm::Value* IRGenerator::CreateObject(State* state, ::llvm::Type* ty) {
@@ -630,30 +639,50 @@ void IRGenerator::EnsureAddress(
   return p;
 }
 
+void IRGenerator::DestroyTemps(State* state) {
+  Scope& scope = state->scopes.back();
+  for (auto it = scope.temps.rbegin(); it != scope.temps.rend(); ++it) {
+    state->ir_builder->CreateCall(
+        state->builtin_fns_.quo_free,
+        {
+            state->ir_builder->CreateBitCast(
+                *it, ::llvm::Type::getInt8PtrTy(ctx_)),
+        });
+  }
+}
+
+void IRGenerator::DestroyScope(State* state, Scope* scope) {
+  for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
+    const string& var_name = *CHECK_NOTNULL(scope->Lookup(*it));
+    state->ir_builder->CreateCall(
+        state->builtin_fns_.quo_free,
+        {
+            state->ir_builder->CreateBitCast(
+                state->ir_builder->CreateLoad(
+                    *it,
+                    var_name + "_addr"),
+                ::llvm::Type::getInt8PtrTy(ctx_)),
+        });
+  }
+}
+
 void IRGenerator::DestroyFnScopes(State* state) {
   auto scope_it = state->scopes.rbegin();
   do {
-    for (auto it = scope_it->vars.rbegin(); it != scope_it->vars.rend(); ++it) {
-      const string* const var_name = scope_it->Lookup(*it);
-      state->ir_builder->CreateCall(
-          state->builtin_fns_.quo_free,
-          {
-              state->ir_builder->CreateBitCast(
-                  state->ir_builder->CreateLoad(
-                      *it,
-                      (*CHECK_NOTNULL(var_name)) + "_addr"),
-                  ::llvm::Type::getInt8PtrTy(ctx_)),
-          });
-    }
+    DestroyScope(state, &(*scope_it));
   } while ((++scope_it).base() != state->current_fn_scope_it);
 }
 
 
-void IRGenerator::Scope::Add(
+void IRGenerator::Scope::AddVar(
     const ::std::string& name, ::llvm::Value* address) {
   vars.push_back(address);
   vars_by_name.insert({ name, address});
   vars_by_address.insert({ address, name });
+}
+
+void IRGenerator::Scope::AddTemp(::llvm::Value* address) {
+  temps.push_back(address);
 }
 
 ::llvm::Value* IRGenerator::Scope::Lookup(const ::std::string& name) {

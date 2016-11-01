@@ -17,6 +17,9 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "runtime/memory.hpp"
+#include <iterator>
+#include <sstream>
+#include <vector>
 #include <cstdlib>
 #include <cstring>
 #include <gflags/gflags.h>
@@ -26,16 +29,68 @@ DEFINE_bool(
     debug_mm, false,
     "Log memory management debug information");
 
+using ::std::endl;
+using ::std::getline;
+using ::std::istringstream;
+using ::std::istream_iterator;
+using ::std::ostringstream;
+using ::std::string;
+using ::std::vector;
+namespace google {
+namespace glog_internal_namespace_ {
+extern void DumpStackTraceToString(string* stacktrace);
+}
+}
+using ::google::glog_internal_namespace_::DumpStackTraceToString;
+
+namespace {
+
+string GetStackTraceString() {
+  string raw_st;
+  DumpStackTraceToString(&raw_st);
+  istringstream raw_st_stream(raw_st);
+
+  // Drop first two lines, which correspond to this function and the memory
+  // management function.
+  string line;
+  getline(raw_st_stream, line);
+  getline(raw_st_stream, line);
+
+  ostringstream result_stream;
+  while (raw_st_stream) {
+    getline(raw_st_stream, line);
+    // Split line by whitespaces.
+    istringstream line_stream(line);
+    const string fn_name(vector<string>(
+        istream_iterator<string>(line_stream),
+        istream_iterator<string>()).back());
+    result_stream << fn_name;
+    if (fn_name == "main") {
+      break;
+    } else {
+      result_stream << " ";
+    }
+  }
+  return result_stream.str();
+}
+
+}
+
 extern "C" {
 
 void* __quo_alloc(int32_t size) {
   void* p = malloc(size);
-  LOG_IF(INFO, FLAGS_debug_mm) << "[MM] " << p << " = ALLOC(" << size << " )";
+  if (FLAGS_debug_mm) {
+    LOG(INFO) << p << " ALLOC(" << size << ") ["
+        << GetStackTraceString() << "]";
+  }
   return p;
 }
 
 void __quo_free(void* p) {
-  LOG_IF(INFO, FLAGS_debug_mm) << "[MM] FREE(" << p << ")";
+  if (FLAGS_debug_mm) {
+    LOG(INFO) << p << " FREE [" << GetStackTraceString() << "]";
+  }
   free(p);
 }
 
