@@ -16,36 +16,32 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef BASIC_TYPES_HPP_
-#define BASIC_TYPES_HPP_
+#include "runtime/basic_types.hpp"
 
-#include <string>
-#include <cstdint>
-#include "runtime/descriptor.hpp"
+namespace {
 
-// Base class for Quo objects.
-struct QObject {
-  QClassDescriptor* descriptor;
+void QStringDestroy(QObject* o) {
+  QString* s = static_cast<QString*>(o);
+  delete s->value;
+  s->value = nullptr;
+}
+
+}
+
+const QClassDescriptor __quo_ObjectDescriptor = {
+  "Object",
 };
-extern const QClassDescriptor __quo_ObjectDescriptor;
 
-// A 32-bit integer.
-struct QInt32 : public QObject {
-  int32_t value;
+const QClassDescriptor __quo_Int32Descriptor = {
+  "Int32",
 };
-extern const QClassDescriptor __quo_Int32Descriptor;
 
-// A boolean.
-struct QBool : public QObject {
-  int8_t value;
+const QClassDescriptor __quo_BoolDescriptor = {
+  "Bool",
 };
-extern const QClassDescriptor __quo_BoolDescriptor;
 
-// A string.
-struct QString : public QObject {
-  ::std::string* value;
+const QClassDescriptor __quo_StringDescriptor = {
+  "String",
+  &QStringDestroy,
 };
-extern const QClassDescriptor __quo_StringDescriptor;
-
-#endif  // BASIC_TYPES_HPP_
 

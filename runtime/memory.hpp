@@ -21,12 +21,14 @@
 
 #include <cstdint>
 
+struct QObject;
+
 extern "C" {
 
 // Allocate "size"-bytes of memory.
 extern void* __quo_alloc(int32_t size);
 // Free memory.
-extern void __quo_free(void* ptr);
+extern void __quo_free(QObject* ptr);
 // Copy "size" bytes from src to dest, and return dest.
 extern void* __quo_copy(void* dest, const void* src, int32_t size);
 

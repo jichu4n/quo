@@ -19,25 +19,15 @@
 #ifndef DESCRIPTOR_HPP_
 #define DESCRIPTOR_HPP_
 
-#include <cstdint>
-#include "array.hpp"
-#include "string.hpp"
+#include <functional>
+#include <string>
+#include <vector>
 
-struct QFieldDescriptor;
-struct QFunctionDescriptor;
+struct QObject;
 
 struct QClassDescriptor {
-  QString name;
-  QArray<QFieldDescriptor> fields;
-  QArray<QFunctionDescriptor> methods;
-  QArray<QClassDescriptor> parents;
-};
-
-struct QFieldDescriptor {
-  uint32_t index;
-  QString name;
-  QClassDescriptor* type;
-  uint32_t flags;
+  ::std::string name;
+  ::std::function<void(QObject*)> destroy;
 };
 
 #endif  // DESCRIPTOR_HPP_

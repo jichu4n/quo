@@ -51,7 +51,12 @@ struct IRGenerator::State {
     ::llvm::Constant* quo_alloc;
     ::llvm::Constant* quo_free;
     ::llvm::Constant* quo_copy;
-  } builtin_fns_;
+  } builtin_fns;
+
+  struct {
+    ::llvm::GlobalVariable* int32_desc;
+    ::llvm::GlobalVariable* bool_desc;
+  } builtin_globals;
 };
 
 IRGenerator::IRGenerator() {
@@ -65,6 +70,7 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   State state;
   state.module = module.get();
   state.module_def = &module_def;
+  SetupBuiltinGlobals(&state);
   SetupBuiltinFunctions(&state);
   for (const auto& member : module_def.members()) {
     ProcessModuleMember(&state, member);
@@ -113,7 +119,6 @@ void IRGenerator::SetupBuiltinTypes() {
   int32_type_spec.set_name("String");
   ::llvm::Type* const string_fields[] = {
     ::llvm::Type::getInt8PtrTy(ctx_),
-    ::llvm::Type::getInt32Ty(ctx_),
     ::llvm::Type::getInt8PtrTy(ctx_),
   };
   builtin_types_.string_ty = ::llvm::StructType::create(
@@ -122,20 +127,45 @@ void IRGenerator::SetupBuiltinTypes() {
       {string_type_spec.SerializeAsString(), builtin_types_.string_ty});
 }
 
+void IRGenerator::SetupBuiltinGlobals(State* state) {
+  state->builtin_globals.int32_desc = new ::llvm::GlobalVariable(
+      *state->module,
+      ::llvm::Type::getInt8Ty(ctx_),
+      true,  // isConstant
+      ::llvm::GlobalVariable::ExternalLinkage,
+      nullptr,  // initializer,
+      "__quo_Int32Descriptor",
+      nullptr,  // insertBefore
+      ::llvm::GlobalVariable::NotThreadLocal,
+      0,  // address space
+      true);  // isExternallyInitialized
+  state->builtin_globals.bool_desc = new ::llvm::GlobalVariable(
+      *state->module,
+      ::llvm::Type::getInt8Ty(ctx_),
+      true,  // isConstant
+      ::llvm::GlobalVariable::ExternalLinkage,
+      nullptr,  // initializer,
+      "__quo_BoolDescriptor",
+      nullptr,  // insertBefore
+      ::llvm::GlobalVariable::NotThreadLocal,
+      0,  // address space
+      true);  // isExternallyInitialized
+}
+
 void IRGenerator::SetupBuiltinFunctions(State* state) {
-  state->builtin_fns_.quo_alloc = state->module->getOrInsertFunction(
+  state->builtin_fns.quo_alloc = state->module->getOrInsertFunction(
       "__quo_alloc",
       ::llvm::FunctionType::get(
           ::llvm::Type::getInt8PtrTy(ctx_),
           { ::llvm::Type::getInt32Ty(ctx_) },
           false));  // isVarArg
-  state->builtin_fns_.quo_free = state->module->getOrInsertFunction(
+  state->builtin_fns.quo_free = state->module->getOrInsertFunction(
       "__quo_free",
       ::llvm::FunctionType::get(
           ::llvm::Type::getVoidTy(ctx_),
           { ::llvm::Type::getInt8PtrTy(ctx_) },
           false));  // isVarArg
-  state->builtin_fns_.quo_copy = state->module->getOrInsertFunction(
+  state->builtin_fns.quo_copy = state->module->getOrInsertFunction(
       "__quo_copy",
       ::llvm::FunctionType::get(
           ::llvm::Type::getInt8PtrTy(ctx_),
@@ -574,8 +604,7 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
     State* state, ::llvm::Value* raw_int32_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtin_types_.int32_ty,
-      ::llvm::ConstantPointerNull::get(
-          ::llvm::Type::getInt8PtrTy(ctx_)),
+      state->builtin_globals.int32_desc,
       ::llvm::ConstantInt::getSigned(
           ::llvm::Type::getInt32Ty(ctx_),
           0),
@@ -593,8 +622,7 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
     State* state, ::llvm::Value* raw_bool_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtin_types_.bool_ty,
-      ::llvm::ConstantPointerNull::get(
-          ::llvm::Type::getInt8PtrTy(ctx_)),
+      state->builtin_globals.bool_desc,
       ::llvm::ConstantInt::getSigned(
           ::llvm::Type::getInt1Ty(ctx_),
           0),
@@ -627,7 +655,7 @@ void IRGenerator::EnsureAddress(
       ::llvm::Type::getInt32Ty(ctx_));
   ::llvm::Value* p = state->ir_builder->CreatePointerCast(
       state->ir_builder->CreateCall(
-          state->builtin_fns_.quo_alloc, { value_size }),
+          state->builtin_fns.quo_alloc, { value_size }),
       ::llvm::PointerType::getUnqual(ty));
   return p;
 }
@@ -643,7 +671,7 @@ void IRGenerator::DestroyTemps(State* state) {
   Scope& scope = state->scopes.back();
   for (auto it = scope.temps.rbegin(); it != scope.temps.rend(); ++it) {
     state->ir_builder->CreateCall(
-        state->builtin_fns_.quo_free,
+        state->builtin_fns.quo_free,
         {
             state->ir_builder->CreateBitCast(
                 *it, ::llvm::Type::getInt8PtrTy(ctx_)),
@@ -655,7 +683,7 @@ void IRGenerator::DestroyScope(State* state, Scope* scope) {
   for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
     const string& var_name = *CHECK_NOTNULL(scope->Lookup(*it));
     state->ir_builder->CreateCall(
-        state->builtin_fns_.quo_free,
+        state->builtin_fns.quo_free,
         {
             state->ir_builder->CreateBitCast(
                 state->ir_builder->CreateLoad(

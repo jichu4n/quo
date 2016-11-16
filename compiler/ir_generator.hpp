@@ -64,6 +64,7 @@ class IRGenerator {
   };
 
   void SetupBuiltinTypes();
+  void SetupBuiltinGlobals(State* state);
   void SetupBuiltinFunctions(State* state);
 
   void ProcessModuleMember(

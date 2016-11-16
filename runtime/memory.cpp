@@ -17,6 +17,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "runtime/memory.hpp"
+#include <functional>
 #include <iterator>
 #include <sstream>
 #include <vector>
@@ -24,12 +25,15 @@
 #include <cstring>
 #include <gflags/gflags.h>
 #include <glog/logging.h>
+#include "runtime/basic_types.hpp"
+#include "runtime/descriptor.hpp"
 
 DEFINE_bool(
     debug_mm, false,
     "Log memory management debug information");
 
 using ::std::endl;
+using ::std::function;
 using ::std::getline;
 using ::std::istringstream;
 using ::std::istream_iterator;
@@ -76,8 +80,6 @@ string GetStackTraceString() {
 
 }
 
-extern "C" {
-
 void* __quo_alloc(int32_t size) {
   void* p = malloc(size);
   if (FLAGS_debug_mm) {
@@ -87,16 +89,20 @@ void* __quo_alloc(int32_t size) {
   return p;
 }
 
-void __quo_free(void* p) {
+void __quo_free(QObject* p) {
   if (FLAGS_debug_mm) {
-    LOG(INFO) << p << " FREE [" << GetStackTraceString() << "]";
+    LOG(INFO)
+        << p << " FREE " << p->descriptor->name
+        << " [" << GetStackTraceString() << "]";
+  }
+  QClassDescriptor *dp = p->descriptor;
+  if (dp->destroy) {
+    dp->destroy(p);
   }
   free(p);
 }
 
 void* __quo_copy(void* dest, const void* src, int32_t size) {
   return memcpy(dest, src, size);
-}
-
 }
 
