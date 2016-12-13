@@ -38,29 +38,36 @@ class IRGenerator {
  protected:
   struct State;
   struct ExprResult {
+    TypeSpec type_spec;
     ::llvm::Value* value;
+    ::llvm::Value* address;
+    const FnDef* fn_def;
+  };
+  struct Var {
+    ::std::string name;
+    TypeSpec type_spec;
     ::llvm::Value* address;
   };
   // Represents a single layer of variable scope.
   struct Scope {
     // Addresses of variable in this scope in insertion order.
-    ::std::vector<::llvm::Value*> vars;
+    ::std::vector<Var> vars;
     // Map from name to variables.
-    ::std::unordered_map<::std::string, ::llvm::Value*> vars_by_name;
+    ::std::unordered_map<::std::string, Var*> vars_by_name;
     // Map from address to names.
-    ::std::unordered_map<::llvm::Value*, ::std::string > vars_by_address;
+    ::std::unordered_map<::llvm::Value*, Var*> vars_by_address;
     // Addresses of temps in this scope in insertion order.
     ::std::vector<::llvm::Value*> temps;
 
     // Adds a variable into the scope.
-    void AddVar(const ::std::string& name, ::llvm::Value* address);
+    void AddVar(const Var& var);
     // Adds a temp into the scope.
     void AddTemp(::llvm::Value* address);
 
     // Look up a variable's address by name. Returns nullptr if not found.
-    ::llvm::Value* Lookup(const ::std::string& name);
+    const Var* Lookup(const ::std::string& name);
     // Look up a variable's name by address. Returns nullptr if not found.
-    const ::std::string* Lookup(::llvm::Value* address);
+    const Var* Lookup(::llvm::Value* address);
   };
 
   void SetupBuiltinTypes();
@@ -83,14 +90,17 @@ class IRGenerator {
   ExprResult ProcessAssignExpr(State* state, const AssignExpr& expr);
 
   ::llvm::Type* LookupType(const TypeSpec& type_spec);
+  ::llvm::GlobalVariable* LookupDescriptor(
+      State* state, const TypeSpec& type_spec);
   ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
   ::llvm::Value* ExtractInt32Value(
       State* state, ::llvm::Value* wrapped_int32_value);
   ::llvm::Value* CreateBoolValue(State* state, ::llvm::Value* raw_bool_value);
   ::llvm::Value* ExtractBoolValue(
       State* state, ::llvm::Value* wrapped_bool_value);
-  ::llvm::Value* CreateObject(State* state, ::llvm::Type* ty);
-  ::llvm::Value* CreateObject(State* state, ::llvm::Value* init_value);
+  ::llvm::Value* CreateObject(State* state, const TypeSpec& type_spec);
+  ::llvm::Value* CreateObject(
+      State* state, const TypeSpec& type_spec, ::llvm::Value* init_value);
   // If "result' does not have a memory address, create a temporary variable and
   // copy the value there. Otherwise, do nothing.
   void EnsureAddress(State* state, ExprResult* result);
@@ -105,9 +115,14 @@ class IRGenerator {
 
   ::llvm::LLVMContext ctx_;
   struct {
+    TypeSpec object_type_spec;
     ::llvm::StructType* object_ty;
+    TypeSpec int32_type_spec;
+    TypeSpec int_type_spec;
     ::llvm::StructType* int32_ty;
+    TypeSpec bool_type_spec;
     ::llvm::StructType* bool_ty;
+    TypeSpec string_type_spec;
     ::llvm::StructType* string_ty;
   } builtin_types_;
   ::std::unordered_map<::std::string, ::llvm::Type*> builtin_types_map_;

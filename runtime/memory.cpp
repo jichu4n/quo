@@ -80,29 +80,38 @@ string GetStackTraceString() {
 
 }
 
-void* __quo_alloc(int32_t size) {
-  void* p = malloc(size);
+QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
+  QObject* p = static_cast<QObject*>(malloc(size));
   if (FLAGS_debug_mm) {
-    LOG(INFO) << p << " ALLOC(" << size << ") ["
+    LOG(INFO) << p << " " << dp->name << " ALLOC(" << size << ") ["
         << GetStackTraceString() << "]";
+  }
+  p->descriptor = dp;
+  if (dp->init) {
+    dp->init(p);
   }
   return p;
 }
 
 void __quo_free(QObject* p) {
+  const QClassDescriptor *dp = p->descriptor;
   if (FLAGS_debug_mm) {
-    LOG(INFO)
-        << p << " FREE " << p->descriptor->name
-        << " [" << GetStackTraceString() << "]";
+    LOG(INFO) << p << " " << dp->name << " FREE " << " ["
+        << GetStackTraceString() << "]";
   }
-  QClassDescriptor *dp = p->descriptor;
   if (dp->destroy) {
     dp->destroy(p);
   }
   free(p);
 }
 
-void* __quo_copy(void* dest, const void* src, int32_t size) {
-  return memcpy(dest, src, size);
+void* __quo_copy(QObject* dest, const QObject* src, int32_t size) {
+  const QClassDescriptor* dp = src->descriptor;
+  if (dp->copy) {
+    dp->copy(dest, src);
+  } else  {
+    memcpy(dest, src, size);
+  }
+  return dest;
 }
 

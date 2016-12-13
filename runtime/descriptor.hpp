@@ -27,7 +27,9 @@ struct QObject;
 
 struct QClassDescriptor {
   ::std::string name;
+  ::std::function<void(QObject*)> init;
   ::std::function<void(QObject*)> destroy;
+  ::std::function<void(QObject*, const QObject*)> copy;
 };
 
 #endif  // DESCRIPTOR_HPP_

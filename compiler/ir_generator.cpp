@@ -46,6 +46,7 @@ struct IRGenerator::State {
   ::llvm::IRBuilder<>* ir_builder;
   list<Scope> scopes;
   list<Scope>::iterator current_fn_scope_it;
+  ::std::unordered_map<::std::string, const FnDef*> fn_defs_by_name;
 
   struct {
     ::llvm::Constant* quo_alloc;
@@ -56,7 +57,10 @@ struct IRGenerator::State {
   struct {
     ::llvm::GlobalVariable* int32_desc;
     ::llvm::GlobalVariable* bool_desc;
+    ::llvm::GlobalVariable* string_desc;
   } builtin_globals;
+  ::std::unordered_map<::std::string, ::llvm::GlobalVariable*>
+      builtin_descs_map_;
 };
 
 IRGenerator::IRGenerator() {
@@ -73,58 +77,71 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   SetupBuiltinGlobals(&state);
   SetupBuiltinFunctions(&state);
   for (const auto& member : module_def.members()) {
+    // TODO: Handle extern fns.
+    if (member.type_case() != ModuleDef::Member::kFnDef) {
+      continue;
+    }
+    const FnDef* fn_def = &member.fn_def();
+    state.fn_defs_by_name.insert({ fn_def->name(), fn_def });
+  }
+  for (const auto& member : module_def.members()) {
     ProcessModuleMember(&state, member);
   }
   return module;
 }
 
 void IRGenerator::SetupBuiltinTypes() {
-  TypeSpec object_type_spec;
-  object_type_spec.set_name("Object");
+  builtin_types_.object_type_spec.set_name("Object");
   ::llvm::Type* const object_fields[] = {
     ::llvm::Type::getInt8PtrTy(ctx_),
   };
   builtin_types_.object_ty = ::llvm::StructType::create(
-      ctx_, object_fields, object_type_spec.name());
-  builtin_types_map_.insert(
-      {object_type_spec.SerializeAsString(), builtin_types_.object_ty});
+      ctx_, object_fields, builtin_types_.object_type_spec.name());
+  builtin_types_map_.insert({
+      builtin_types_.object_type_spec.SerializeAsString(),
+      builtin_types_.object_ty,
+  });
 
-  TypeSpec int32_type_spec;
-  int32_type_spec.set_name("Int32");
+  builtin_types_.int32_type_spec.set_name("Int32");
   ::llvm::Type* const int32_fields[] = {
     ::llvm::Type::getInt8PtrTy(ctx_),
     ::llvm::Type::getInt32Ty(ctx_),
   };
   builtin_types_.int32_ty = ::llvm::StructType::create(
-      ctx_, int32_fields, int32_type_spec.name());
-  builtin_types_map_.insert(
-      {int32_type_spec.SerializeAsString(), builtin_types_.int32_ty});
-  TypeSpec int_type_spec;
-  int_type_spec.set_name("Int");
-  builtin_types_map_.insert(
-      {int_type_spec.SerializeAsString(), builtin_types_.int32_ty});
+      ctx_, int32_fields, builtin_types_.int32_type_spec.name());
+  builtin_types_map_.insert({
+      builtin_types_.int32_type_spec.SerializeAsString(),
+      builtin_types_.int32_ty,
+  });
+  builtin_types_.int_type_spec.set_name("Int");
+  builtin_types_map_.insert({
+      builtin_types_.int_type_spec.SerializeAsString(),
+      builtin_types_.int32_ty,
+  });
 
-  TypeSpec bool_type_spec;
-  bool_type_spec.set_name("Bool");
+  builtin_types_.bool_type_spec.set_name("Bool");
   ::llvm::Type* const bool_fields[] = {
     ::llvm::PointerType::getInt8PtrTy(ctx_),
     ::llvm::Type::getInt1Ty(ctx_),
   };
   builtin_types_.bool_ty = ::llvm::StructType::create(
-      ctx_, bool_fields, bool_type_spec.name());
-  builtin_types_map_.insert(
-      {bool_type_spec.SerializeAsString(), builtin_types_.bool_ty});
+      ctx_, bool_fields, builtin_types_.bool_type_spec.name());
+  builtin_types_map_.insert({
+      builtin_types_.bool_type_spec.SerializeAsString(),
+      builtin_types_.bool_ty,
+  });
 
-  TypeSpec string_type_spec;
-  int32_type_spec.set_name("String");
+  builtin_types_.string_type_spec.set_name("String");
   ::llvm::Type* const string_fields[] = {
     ::llvm::Type::getInt8PtrTy(ctx_),
     ::llvm::Type::getInt8PtrTy(ctx_),
   };
   builtin_types_.string_ty = ::llvm::StructType::create(
-      ctx_, string_fields, string_type_spec.name());
-  builtin_types_map_.insert(
-      {string_type_spec.SerializeAsString(), builtin_types_.string_ty});
+      ctx_, string_fields, builtin_types_.string_type_spec.name());
+  builtin_types_map_.insert({
+      builtin_types_.string_type_spec.SerializeAsString(),
+      builtin_types_.string_ty,
+  });
 }
 
 void IRGenerator::SetupBuiltinGlobals(State* state) {
@@ -139,6 +156,14 @@ void IRGenerator::SetupBuiltinGlobals(State* state) {
       ::llvm::GlobalVariable::NotThreadLocal,
       0,  // address space
       true);  // isExternallyInitialized
+  state->builtin_descs_map_.insert({
+      builtin_types_.int32_type_spec.SerializeAsString(),
+      state->builtin_globals.int32_desc,
+  });
+  state->builtin_descs_map_.insert({
+      builtin_types_.int_type_spec.SerializeAsString(),
+      state->builtin_globals.int32_desc,
+  });
   state->builtin_globals.bool_desc = new ::llvm::GlobalVariable(
       *state->module,
       ::llvm::Type::getInt8Ty(ctx_),
@@ -150,6 +175,25 @@ void IRGenerator::SetupBuiltinGlobals(State* state) {
       ::llvm::GlobalVariable::NotThreadLocal,
       0,  // address space
       true);  // isExternallyInitialized
+  state->builtin_descs_map_.insert({
+      builtin_types_.bool_type_spec.SerializeAsString(),
+      state->builtin_globals.bool_desc,
+  });
+  state->builtin_globals.string_desc = new ::llvm::GlobalVariable(
+      *state->module,
+      ::llvm::Type::getInt8Ty(ctx_),
+      true,  // isConstant
+      ::llvm::GlobalVariable::ExternalLinkage,
+      nullptr,  // initializer,
+      "__quo_StringDescriptor",
+      nullptr,  // insertBefore
+      ::llvm::GlobalVariable::NotThreadLocal,
+      0,  // address space
+      true);  // isExternallyInitialized
+  state->builtin_descs_map_.insert({
+      builtin_types_.string_type_spec.SerializeAsString(),
+      state->builtin_globals.string_desc,
+  });
 }
 
 void IRGenerator::SetupBuiltinFunctions(State* state) {
@@ -157,7 +201,7 @@ void IRGenerator::SetupBuiltinFunctions(State* state) {
       "__quo_alloc",
       ::llvm::FunctionType::get(
           ::llvm::Type::getInt8PtrTy(ctx_),
-          { ::llvm::Type::getInt32Ty(ctx_) },
+          { ::llvm::Type::getInt8PtrTy(ctx_), ::llvm::Type::getInt32Ty(ctx_) },
           false));  // isVarArg
   state->builtin_fns.quo_free = state->module->getOrInsertFunction(
       "__quo_free",
@@ -212,8 +256,7 @@ void IRGenerator::ProcessModuleFnDef(
       fn_ty, ::llvm::Function::ExternalLinkage, fn_def.name(), state->module);
   int i = 0;
   for (::llvm::Argument& arg : fn->args()) {
-    arg.setName(fn_def.params(i).name());
-    ++i;
+    arg.setName(fn_def.params(i++).name());
   }
   state->fn = fn;
 
@@ -225,12 +268,14 @@ void IRGenerator::ProcessModuleFnDef(
   // Add args to scope.
   state->scopes.emplace_back();
   state->current_fn_scope_it = (++state->scopes.rbegin()).base();
+  i = 0;
   for (::llvm::Argument& arg : fn->args()) {
+    const TypeSpec& type_spec = fn_def.params(i++).type_spec();
     ::llvm::Value* arg_value = builder.CreateLoad(&arg, arg.getName() + "_val");
     ::llvm::Value* arg_var = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
-    builder.CreateStore(CreateObject(state, arg_value), arg_var);
-    state->scopes.back().AddVar(arg.getName(), arg_var);
+    builder.CreateStore(CreateObject(state, type_spec, arg_value), arg_var);
+    state->scopes.back().AddVar({ arg.getName(), type_spec, arg_var});
   }
 
   ProcessBlock(state, fn_def.block(), true);
@@ -277,7 +322,8 @@ void IRGenerator::ProcessBlock(
 
 void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
   ExprResult expr_result = ProcessExpr(state, stmt.expr());
-  ::llvm::Value* ret_address = CreateObject(state, expr_result.value);
+  ::llvm::Value* ret_address = CreateObject(
+      state, expr_result.type_spec, expr_result.value);
   DestroyTemps(state);
   DestroyFnScopes(state);
   state->ir_builder->CreateRet(ret_address);
@@ -312,20 +358,23 @@ void IRGenerator::ProcessCondStmt(State* state, const CondStmt& stmt) {
 
 void IRGenerator::ProcessVarDeclStmt(State* state, const VarDeclStmt& stmt) {
   ::llvm::Value* var;
+  TypeSpec type_spec;
   if (stmt.has_init_expr()) {
     ExprResult init_expr_result = ProcessExpr(state, stmt.init_expr());
+    type_spec = init_expr_result.type_spec;
     var = state->ir_builder->CreateAlloca(
         ::llvm::PointerType::getUnqual(
             init_expr_result.value->getType()), nullptr, stmt.name());
     state->ir_builder->CreateStore(
-        CreateObject(state, init_expr_result.value), var);
+        CreateObject(state, type_spec, init_expr_result.value), var);
   } else {
-    ::llvm::Type* ty = LookupType(stmt.type_spec());
+    type_spec = stmt.type_spec();
+    ::llvm::Type* ty = LookupType(type_spec);
     var = state->ir_builder->CreateAlloca(
         ::llvm::PointerType::getUnqual(ty), nullptr, stmt.name());
-    state->ir_builder->CreateStore(CreateObject(state, ty), var);
+    state->ir_builder->CreateStore(CreateObject(state, type_spec), var);
   }
-  state->scopes.back().AddVar(stmt.name(), var);
+  state->scopes.back().AddVar({ stmt.name(), type_spec, var });
 }
 
 IRGenerator::ExprResult IRGenerator::ProcessExpr(
@@ -348,15 +397,17 @@ IRGenerator::ExprResult IRGenerator::ProcessExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
     State* state, const ConstantExpr& expr) {
-  ExprResult result = { nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr };
   switch (expr.value_case()) {
     case ConstantExpr::kIntValue:
+      result.type_spec = builtin_types_.int32_type_spec;
       result.value = CreateInt32Value(
           state,
           ::llvm::ConstantInt::getSigned(
               ::llvm::Type::getInt32Ty(ctx_), expr.intvalue()));
       break;
     case ConstantExpr::kBoolValue:
+      result.type_spec = builtin_types_.bool_type_spec;
       result.value = CreateBoolValue(
           state,
           expr.boolvalue() ?
@@ -371,15 +422,16 @@ IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
     State* state, const VarExpr& expr) {
-  ExprResult result = { nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr };
 
   for (auto scope_it = state->scopes.rbegin();
       scope_it != state->scopes.rend();
       ++scope_it) {
-    ::llvm::Value* var = scope_it->Lookup(expr.name());
+    const Var* var = scope_it->Lookup(expr.name());
     if (var != nullptr) {
+      result.type_spec = var->type_spec;
       result.address = state->ir_builder->CreateLoad(
-          var, expr.name() + "_addr");
+          var->address, expr.name() + "_addr");
       result.value = state->ir_builder->CreateLoad(
           result.address, expr.name() + "_val");
       return result;
@@ -387,7 +439,9 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
   }
 
   ::llvm::Function* fn = state->module->getFunction(expr.name());
-  if (fn != nullptr) {
+  const auto fn_def_it = state->fn_defs_by_name.find(expr.name());
+  if (fn != nullptr && fn_def_it != state->fn_defs_by_name.end()) {
+    result.fn_def = fn_def_it->second;
     result.value = fn;
     return result;
   }
@@ -480,7 +534,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
       },
   };
 
-  ExprResult result = { nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr };
   ExprResult left_result = ProcessExpr(state, expr.left_expr());
   ExprResult right_result = ProcessExpr(state, expr.right_expr());
   switch (expr.op()) {
@@ -491,6 +545,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
     case BinaryOpExpr::MOD:
       if (left_result.value->getType() == builtin_types_.int32_ty &&
           right_result.value->getType() == builtin_types_.int32_ty) {
+        result.type_spec = builtin_types_.int32_type_spec;
         result.value = CreateInt32Value(
             state,
             kIntOps.at(expr.op())(
@@ -506,6 +561,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
     case BinaryOpExpr::LE:
       if (left_result.value->getType() == builtin_types_.int32_ty &&
           right_result.value->getType() == builtin_types_.int32_ty) {
+        result.type_spec = builtin_types_.bool_type_spec;
         result.value = CreateBoolValue(
             state,
             kIntOps.at(expr.op())(
@@ -519,6 +575,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
     case BinaryOpExpr::NE:
       if (left_result.value->getType() == builtin_types_.int32_ty &&
           right_result.value->getType() == builtin_types_.int32_ty) {
+        result.type_spec = builtin_types_.bool_type_spec;
         result.value = CreateBoolValue(
             state,
             kIntOps.at(expr.op())(
@@ -526,6 +583,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
                 ExtractInt32Value(state, right_result.value)));
       } else if (left_result.value->getType() == builtin_types_.bool_ty &&
           right_result.value->getType() == builtin_types_.bool_ty) {
+        result.type_spec = builtin_types_.bool_type_spec;
         result.value = CreateBoolValue(
             state,
             kIntOps.at(expr.op())(
@@ -539,6 +597,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
     case BinaryOpExpr::OR:
       if (left_result.value->getType() == builtin_types_.bool_ty &&
           right_result.value->getType() == builtin_types_.bool_ty) {
+        result.type_spec = builtin_types_.bool_type_spec;
         result.value = CreateBoolValue(
             state,
             kIntOps.at(expr.op())(
@@ -557,7 +616,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
     State* state, const CallExpr& expr) {
-  ExprResult result = { nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr };
   ExprResult fn_result = ProcessExpr(state, expr.fn_expr());
   vector<::llvm::Value*> arg_results(expr.arg_exprs_size());
   transform(
@@ -569,6 +628,7 @@ IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
         EnsureAddress(state, &arg_result);
         return arg_result.address;
       });
+  result.type_spec = CHECK_NOTNULL(fn_result.fn_def)->return_type_spec();
   result.address = state->ir_builder->CreateCall(
       fn_result.value,
       arg_results);
@@ -586,7 +646,7 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
   }
   ExprResult value_result = ProcessExpr(state, expr.value_expr());
   state->ir_builder->CreateStore(value_result.value, dest_result.address);
-  return { value_result.value, dest_result.address };
+  return { dest_result.type_spec, value_result.value, dest_result.address };
 }
 
 ::llvm::Type* IRGenerator::LookupType(const TypeSpec& type_spec) {
@@ -595,6 +655,15 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
   }
   const auto it = builtin_types_map_.find(type_spec.SerializeAsString());
   if (it == builtin_types_map_.end()) {
+    LOG(FATAL) << "Unknown type: " << type_spec.DebugString();
+  }
+  return it->second;
+}
+
+::llvm::GlobalVariable* IRGenerator::LookupDescriptor(
+    State* state, const TypeSpec& type_spec) {
+  const auto it = state->builtin_descs_map_.find(type_spec.SerializeAsString());
+  if (it == state->builtin_descs_map_.end()) {
     LOG(FATAL) << "Unknown type: " << type_spec.DebugString();
   }
   return it->second;
@@ -641,12 +710,15 @@ void IRGenerator::EnsureAddress(
   if (result->address != nullptr) {
     return;
   }
-  result->address = CreateObject(state, result->value);
+  result->address = CreateObject(state, result->type_spec, result->value);
   result->address->setName("temp");
   state->scopes.back().AddTemp(result->address);
 }
 
-::llvm::Value* IRGenerator::CreateObject(State* state, ::llvm::Type* ty) {
+::llvm::Value* IRGenerator::CreateObject(
+    State* state, const TypeSpec& type_spec) {
+  ::llvm::Type* const ty = LookupType(type_spec);
+  ::llvm::Value* const desc = LookupDescriptor(state, type_spec);
   ::llvm::Value* value_size = state->ir_builder->CreatePtrToInt(
       state->ir_builder->CreateGEP(
         ::llvm::ConstantPointerNull::get(
@@ -655,14 +727,16 @@ void IRGenerator::EnsureAddress(
       ::llvm::Type::getInt32Ty(ctx_));
   ::llvm::Value* p = state->ir_builder->CreatePointerCast(
       state->ir_builder->CreateCall(
-          state->builtin_fns.quo_alloc, { value_size }),
+          state->builtin_fns.quo_alloc, { desc, value_size }),
       ::llvm::PointerType::getUnqual(ty));
   return p;
 }
 
 ::llvm::Value* IRGenerator::CreateObject(
-    IRGenerator::State* state, ::llvm::Value* init_value) {
-  ::llvm::Value* p = CreateObject(state, init_value->getType());
+    IRGenerator::State* state,
+    const TypeSpec& type_spec,
+    ::llvm::Value* init_value) {
+  ::llvm::Value* p = CreateObject(state, type_spec);
   state->ir_builder->CreateStore(init_value, p);
   return p;
 }
@@ -681,14 +755,13 @@ void IRGenerator::DestroyTemps(State* state) {
 
 void IRGenerator::DestroyScope(State* state, Scope* scope) {
   for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
-    const string& var_name = *CHECK_NOTNULL(scope->Lookup(*it));
     state->ir_builder->CreateCall(
         state->builtin_fns.quo_free,
         {
             state->ir_builder->CreateBitCast(
                 state->ir_builder->CreateLoad(
-                    *it,
-                    var_name + "_addr"),
+                    it->address,
+                    it->name + "_addr"),
                 ::llvm::Type::getInt8PtrTy(ctx_)),
         });
   }
@@ -702,25 +775,25 @@ void IRGenerator::DestroyFnScopes(State* state) {
 }
 
 
-void IRGenerator::Scope::AddVar(
-    const ::std::string& name, ::llvm::Value* address) {
-  vars.push_back(address);
-  vars_by_name.insert({ name, address});
-  vars_by_address.insert({ address, name });
+void IRGenerator::Scope::AddVar(const Var& var) {
+  vars.push_back(var);
+  Var* varp = &vars.back();
+  vars_by_name.insert({ var.name, varp});
+  vars_by_address.insert({ var.address, varp });
 }
 
 void IRGenerator::Scope::AddTemp(::llvm::Value* address) {
   temps.push_back(address);
 }
 
-::llvm::Value* IRGenerator::Scope::Lookup(const ::std::string& name) {
+const IRGenerator::Var* IRGenerator::Scope::Lookup(const ::std::string& name) {
   auto it = vars_by_name.find(name);
   return it == vars_by_name.end() ? nullptr : it->second;
 }
 
-const ::std::string* IRGenerator::Scope::Lookup(::llvm::Value* address) {
+const IRGenerator::Var* IRGenerator::Scope::Lookup(::llvm::Value* address) {
   auto it = vars_by_address.find(address);
-  return it == vars_by_address.end() ? nullptr : &(it->second);
+  return it == vars_by_address.end() ? nullptr : it->second;
 }
 
 }  // namespace quo

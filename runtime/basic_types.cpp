@@ -20,10 +20,19 @@
 
 namespace {
 
+void QStringInit(QObject* o) {
+  static_cast<QString*>(o)->value = new ::std::string();
+}
+
 void QStringDestroy(QObject* o) {
   QString* s = static_cast<QString*>(o);
   delete s->value;
   s->value = nullptr;
+}
+
+void QStringCopy(QObject* dest, const QObject* src) {
+  *(static_cast<QString*>(dest)->value) =
+      *(static_cast<const QString*>(src)->value);
 }
 
 }
@@ -42,6 +51,8 @@ const QClassDescriptor __quo_BoolDescriptor = {
 
 const QClassDescriptor __quo_StringDescriptor = {
   "String",
+  &QStringInit,
   &QStringDestroy,
+  &QStringCopy,
 };
 
