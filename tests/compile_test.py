@@ -30,15 +30,16 @@ class CompileTest(unittest.TestCase):
   DATA_DIR = os.path.join(os.path.dirname(__file__), 'testdata')
 
   def compile_and_check_exit_code(self, input_file, exit_code):
-    logging.info('Compiling %s', input_file)
+    logging.info('[%s] Compiling...', input_file)
     input_file = os.path.join(self.DATA_DIR, input_file)
     output_file = os.path.splitext(input_file)[0]
     r = quoc.compile_file(input_file, output_file=output_file)
     self.assertEqual(r, 0)
-    logging.info('Running %s', output_file)
+    logging.info('[%s] Running...', output_file)
     input_file = os.path.join(self.DATA_DIR, input_file)
     p = subprocess.run([output_file])
     self.assertEqual(p.returncode, exit_code)
+    logging.info('[%s] OK', input_file)
 
   FIB_TEMPLATE = '''
 fn Fib(x Int) Int {
@@ -68,6 +69,7 @@ fn Main() Int {
 
   COMPILE_TESTS = {
       'assign.quo': 94,
+      'string.quo': 12,
   }
   def test_compile(self):
     for input_file, exit_code in self.COMPILE_TESTS.items():

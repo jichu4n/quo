@@ -46,6 +46,11 @@ struct QString : public QObject {
   ::std::string* value;
 };
 extern const QClassDescriptor __quo_StringDescriptor;
+extern "C" QString* __quo_alloc_string(const char* value, int32_t length);
+extern "C" QString* __quo_string_concat(QString* left, QString* right);
+
+// Basic printing.
+extern "C" QInt32* __quo_print(const QString* s);
 
 #endif  // BASIC_TYPES_HPP_
 

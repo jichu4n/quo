@@ -52,6 +52,10 @@ struct IRGenerator::State {
     ::llvm::Constant* quo_alloc;
     ::llvm::Constant* quo_free;
     ::llvm::Constant* quo_copy;
+    ::llvm::Constant* quo_alloc_string;
+    ::llvm::Constant* quo_string_concat;
+    FnDef quo_print_fn_def;
+    ::llvm::Constant* quo_print;
   } builtin_fns;
 
   struct {
@@ -218,6 +222,34 @@ void IRGenerator::SetupBuiltinFunctions(State* state) {
               ::llvm::Type::getInt8PtrTy(ctx_),
               ::llvm::Type::getInt32Ty(ctx_),
           },
+          false));  // isVarArg
+  state->builtin_fns.quo_alloc_string = state->module->getOrInsertFunction(
+      "__quo_alloc_string",
+      ::llvm::FunctionType::get(
+          ::llvm::PointerType::getUnqual(builtin_types_.string_ty),
+          { ::llvm::Type::getInt8PtrTy(ctx_), ::llvm::Type::getInt32Ty(ctx_) },
+          false));  // isVarArg
+  state->builtin_fns.quo_string_concat = state->module->getOrInsertFunction(
+      "__quo_string_concat",
+      ::llvm::FunctionType::get(
+          ::llvm::PointerType::getUnqual(builtin_types_.string_ty),
+          {
+              ::llvm::PointerType::getUnqual(builtin_types_.string_ty),
+              ::llvm::PointerType::getUnqual(builtin_types_.string_ty),
+          },
+          false));  // isVarArg
+
+  state->builtin_fns.quo_print_fn_def.set_name("Print");
+  state->builtin_fns.quo_print_fn_def.mutable_return_type_spec()->CopyFrom(
+      builtin_types_.int32_type_spec);
+  FnParam* param = state->builtin_fns.quo_print_fn_def.add_params();
+  param->set_name("s");
+  param->mutable_type_spec()->CopyFrom(builtin_types_.string_type_spec);
+  state->builtin_fns.quo_print = state->module->getOrInsertFunction(
+      "__quo_print",
+      ::llvm::FunctionType::get(
+          ::llvm::PointerType::getUnqual(builtin_types_.int32_ty),
+          { ::llvm::PointerType::getUnqual(builtin_types_.string_ty) },
           false));  // isVarArg
 }
 
@@ -415,6 +447,31 @@ IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
               ::llvm::ConstantInt::getTrue(ctx_) :
               ::llvm::ConstantInt::getFalse(ctx_));
       break;
+    case ConstantExpr::kStrValue: {
+      result.type_spec = builtin_types_.string_type_spec;
+      ::llvm::Constant* array = ::llvm::ConstantDataArray::getString(
+          ctx_,
+          expr.strvalue(),
+          false);  // addNull
+      ::llvm::GlobalVariable* array_var = new ::llvm::GlobalVariable(
+          *state->module,
+          array->getType(),
+          true,  // isConstant
+          ::llvm::GlobalValue::PrivateLinkage,
+          array);
+      result.address = state->ir_builder->CreateCall(
+          state->builtin_fns.quo_alloc_string,
+          {
+              state->ir_builder->CreateBitCast(
+                  array_var,
+                  ::llvm::Type::getInt8PtrTy(ctx_)),
+              ::llvm::ConstantInt::getSigned(
+                  ::llvm::Type::getInt32Ty(ctx_), expr.strvalue().size()),
+          });
+      state->scopes.back().AddTemp(result.address);
+      result.value = state->ir_builder->CreateLoad(result.address);
+      break;
+    }
     default:
       LOG(FATAL) << "Unknown constant type:" << expr.value_case();
   }
@@ -444,6 +501,12 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
   if (fn != nullptr && fn_def_it != state->fn_defs_by_name.end()) {
     result.fn_def = fn_def_it->second;
     result.value = fn;
+    return result;
+  }
+
+  if (expr.name() == state->builtin_fns.quo_print_fn_def.name()) {
+    result.fn_def = &state->builtin_fns.quo_print_fn_def;
+    result.value = state->builtin_fns.quo_print;
     return result;
   }
 
@@ -540,6 +603,17 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
   ExprResult right_result = ProcessExpr(state, expr.right_expr());
   switch (expr.op()) {
     case BinaryOpExpr::ADD:
+      if (left_result.value->getType() == builtin_types_.string_ty &&
+          right_result.value->getType() == builtin_types_.string_ty) {
+        result.type_spec = builtin_types_.string_type_spec;
+        result.address = state->ir_builder->CreateCall(
+            state->builtin_fns.quo_string_concat,
+            { left_result.address, right_result.address });
+        state->scopes.back().AddTemp(result.address);
+        result.value = state->ir_builder->CreateLoad(result.address);
+        break;
+      }
+      // fall through
     case BinaryOpExpr::SUB:
     case BinaryOpExpr::MUL:
     case BinaryOpExpr::DIV:
@@ -630,9 +704,7 @@ IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
         return arg_result.address;
       });
   result.type_spec = CHECK_NOTNULL(fn_result.fn_def)->return_type_spec();
-  result.address = state->ir_builder->CreateCall(
-      fn_result.value,
-      arg_results);
+  result.address = state->ir_builder->CreateCall(fn_result.value, arg_results);
   result.value = state->ir_builder->CreateLoad(result.address);
   state->scopes.back().AddTemp(result.address);
   return result;

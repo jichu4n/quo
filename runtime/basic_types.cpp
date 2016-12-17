@@ -17,6 +17,7 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "runtime/basic_types.hpp"
+#include "runtime/memory.hpp"
 
 namespace {
 
@@ -55,4 +56,26 @@ const QClassDescriptor __quo_StringDescriptor = {
   &QStringDestroy,
   &QStringCopy,
 };
+
+QString* __quo_alloc_string(const char* value, int32_t length) {
+  QString* s = static_cast<QString*>(__quo_alloc(
+      &__quo_StringDescriptor, sizeof(QString)));
+  s->value->assign(value, length);
+  return s;
+}
+
+QString* __quo_string_concat(QString* left, QString* right) {
+  QString* s = static_cast<QString*>(__quo_alloc(
+      &__quo_StringDescriptor, sizeof(QString)));
+  s->value->assign(*left->value);
+  s->value->append(*right->value);
+  return s;
+}
+
+QInt32* __quo_print(const QString* s) {
+  QInt32* r = static_cast<QInt32*>(__quo_alloc(
+      &__quo_Int32Descriptor, sizeof(QInt32)));
+  r->value = printf("%s", s->value->c_str());
+  return r;
+}
 

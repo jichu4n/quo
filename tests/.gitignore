@@ -3,4 +3,5 @@ testdata/*.s
 testdata/fib.quo
 testdata/fib
 testdata/assign
+testdata/string
 
