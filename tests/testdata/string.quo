@@ -1,5 +1,6 @@
 fn Main() Int {
   var x = 'hello' String;
-  return Print(x + ' world' + '!');
+  var y = x + ' ' + 'world' + '!';
+  return Print(y);
 }
 

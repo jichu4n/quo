@@ -19,9 +19,11 @@
 #ifndef IR_GENERATOR_HPP_
 #define IR_GENERATOR_HPP_
 
+#include <list>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/LinkAllIR.h>
 #include "ast/ast.pb.h"
@@ -51,13 +53,13 @@ class IRGenerator {
   // Represents a single layer of variable scope.
   struct Scope {
     // Addresses of variable in this scope in insertion order.
-    ::std::vector<Var> vars;
+    ::std::list<Var> vars;
     // Map from name to variables.
     ::std::unordered_map<::std::string, Var*> vars_by_name;
     // Map from address to names.
     ::std::unordered_map<::llvm::Value*, Var*> vars_by_address;
     // Addresses of temps in this scope in insertion order.
-    ::std::vector<::llvm::Value*> temps;
+    ::std::list<::llvm::Value*> temps;
 
     // Adds a variable into the scope.
     void AddVar(const Var& var);
