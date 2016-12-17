@@ -101,6 +101,13 @@ class IRGenerator {
   ::llvm::Value* CreateObject(State* state, const TypeSpec& type_spec);
   ::llvm::Value* CreateObject(
       State* state, const TypeSpec& type_spec, ::llvm::Value* init_value);
+  ::llvm::Value* AssignObject(
+      State* state,
+      const TypeSpec& type_spec,
+      ::llvm::Value* dest_address,
+      ::llvm::Value* src_address);
+  ::llvm::Value* CloneObject(
+      State* state, const TypeSpec& type_spec, ::llvm::Value* src_address);
   // If "result' does not have a memory address, create a temporary variable and
   // copy the value there. Otherwise, do nothing.
   void EnsureAddress(State* state, ExprResult* result);

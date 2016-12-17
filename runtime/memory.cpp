@@ -105,7 +105,7 @@ void __quo_free(QObject* p) {
   free(p);
 }
 
-void* __quo_copy(QObject* dest, const QObject* src, int32_t size) {
+QObject* __quo_copy(QObject* dest, const QObject* src, int32_t size) {
   const QClassDescriptor* dp = src->descriptor;
   if (dp->copy) {
     dp->copy(dest, src);

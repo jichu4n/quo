@@ -2,3 +2,5 @@ testdata/*.bc
 testdata/*.s
 testdata/fib.quo
 testdata/fib
+testdata/assign
+

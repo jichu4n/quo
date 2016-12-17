@@ -31,7 +31,7 @@ extern QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size);
 // Free memory.
 extern void __quo_free(QObject* ptr);
 // Copy "size" bytes from src to dest, and return dest.
-extern void* __quo_copy(QObject* dest, const QObject* src, int32_t size);
+extern QObject* __quo_copy(QObject* dest, const QObject* src, int32_t size);
 
 }
 
