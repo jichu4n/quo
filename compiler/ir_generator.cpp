@@ -50,8 +50,9 @@ struct IRGenerator::State {
 
   struct {
     ::llvm::Constant* quo_alloc;
-    ::llvm::Constant* quo_free;
-    ::llvm::Constant* quo_copy;
+    ::llvm::Constant* quo_inc_refs;
+    ::llvm::Constant* quo_dec_refs;
+    ::llvm::Constant* quo_assign;
     ::llvm::Constant* quo_alloc_string;
     ::llvm::Constant* quo_string_concat;
     FnDef quo_print_fn_def;
@@ -98,6 +99,7 @@ void IRGenerator::SetupBuiltinTypes() {
   builtin_types_.object_type_spec.set_name("Object");
   ::llvm::Type* const object_fields[] = {
     ::llvm::Type::getInt8PtrTy(ctx_),
+    ::llvm::Type::getInt32Ty(ctx_),
   };
   builtin_types_.object_ty = ::llvm::StructType::create(
       ctx_, object_fields, builtin_types_.object_type_spec.name());
@@ -108,7 +110,7 @@ void IRGenerator::SetupBuiltinTypes() {
 
   builtin_types_.int32_type_spec.set_name("Int32");
   ::llvm::Type* const int32_fields[] = {
-    ::llvm::Type::getInt8PtrTy(ctx_),
+    builtin_types_.object_ty,
     ::llvm::Type::getInt32Ty(ctx_),
   };
   builtin_types_.int32_ty = ::llvm::StructType::create(
@@ -125,7 +127,7 @@ void IRGenerator::SetupBuiltinTypes() {
 
   builtin_types_.bool_type_spec.set_name("Bool");
   ::llvm::Type* const bool_fields[] = {
-    ::llvm::PointerType::getInt8PtrTy(ctx_),
+    builtin_types_.object_ty,
     ::llvm::Type::getInt1Ty(ctx_),
   };
   builtin_types_.bool_ty = ::llvm::StructType::create(
@@ -137,7 +139,7 @@ void IRGenerator::SetupBuiltinTypes() {
 
   builtin_types_.string_type_spec.set_name("String");
   ::llvm::Type* const string_fields[] = {
-    ::llvm::Type::getInt8PtrTy(ctx_),
+    builtin_types_.object_ty,
     ::llvm::Type::getInt8PtrTy(ctx_),
   };
   builtin_types_.string_ty = ::llvm::StructType::create(
@@ -207,20 +209,25 @@ void IRGenerator::SetupBuiltinFunctions(State* state) {
           ::llvm::Type::getInt8PtrTy(ctx_),
           { ::llvm::Type::getInt8PtrTy(ctx_), ::llvm::Type::getInt32Ty(ctx_) },
           false));  // isVarArg
-  state->builtin_fns.quo_free = state->module->getOrInsertFunction(
-      "__quo_free",
+  state->builtin_fns.quo_inc_refs = state->module->getOrInsertFunction(
+      "__quo_inc_refs",
       ::llvm::FunctionType::get(
           ::llvm::Type::getVoidTy(ctx_),
           { ::llvm::Type::getInt8PtrTy(ctx_) },
           false));  // isVarArg
-  state->builtin_fns.quo_copy = state->module->getOrInsertFunction(
-      "__quo_copy",
+  state->builtin_fns.quo_dec_refs = state->module->getOrInsertFunction(
+      "__quo_dec_refs",
       ::llvm::FunctionType::get(
-          ::llvm::Type::getInt8PtrTy(ctx_),
+          ::llvm::Type::getVoidTy(ctx_),
+          { ::llvm::Type::getInt8PtrTy(ctx_) },
+          false));  // isVarArg
+  state->builtin_fns.quo_assign = state->module->getOrInsertFunction(
+      "__quo_assign",
+      ::llvm::FunctionType::get(
+          ::llvm::Type::getVoidTy(ctx_),
           {
+              ::llvm::PointerType::getUnqual(::llvm::Type::getInt8PtrTy(ctx_)),
               ::llvm::Type::getInt8PtrTy(ctx_),
-              ::llvm::Type::getInt8PtrTy(ctx_),
-              ::llvm::Type::getInt32Ty(ctx_),
           },
           false));  // isVarArg
   state->builtin_fns.quo_alloc_string = state->module->getOrInsertFunction(
@@ -300,13 +307,22 @@ void IRGenerator::ProcessModuleFnDef(
   // Add args to scope.
   state->scopes.emplace_back();
   state->current_fn_scope_it = (++state->scopes.rbegin()).base();
+  vector<::llvm::Argument*> args;
   i = 0;
   for (::llvm::Argument& arg : fn->args()) {
     const TypeSpec& type_spec = fn_def.params(i++).type_spec();
     ::llvm::Value* arg_var = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
-    builder.CreateStore(CloneObject(state, type_spec, &arg), arg_var);
+    // Store args in scope and increment ref counts.
+    builder.CreateStore(&arg, arg_var);
+    state->ir_builder->CreateCall(
+        state->builtin_fns.quo_inc_refs,
+        {
+            state->ir_builder->CreateBitCast(
+                &arg, ::llvm::Type::getInt8PtrTy(ctx_)),
+        });
     state->scopes.back().AddVar({ arg.getName(), type_spec, arg_var});
+    args.push_back(&arg);
   }
 
   ProcessBlock(state, fn_def.block(), true);
@@ -354,8 +370,13 @@ void IRGenerator::ProcessBlock(
 void IRGenerator::ProcessRetStmt(State* state, const RetStmt& stmt) {
   ExprResult expr_result = ProcessExpr(state, stmt.expr());
   EnsureAddress(state, &expr_result);
-  ::llvm::Value* ret_address = CloneObject(
-      state, expr_result.type_spec, expr_result.address);
+  ::llvm::Value* ret_address = expr_result.address;
+  state->ir_builder->CreateCall(
+      state->builtin_fns.quo_inc_refs,
+      {
+          state->ir_builder->CreateBitCast(
+              ret_address, ::llvm::Type::getInt8PtrTy(ctx_)),
+      });
   DestroyTemps(state);
   DestroyFnScopes(state);
   state->ir_builder->CreateRet(ret_address);
@@ -391,21 +412,32 @@ void IRGenerator::ProcessCondStmt(State* state, const CondStmt& stmt) {
 void IRGenerator::ProcessVarDeclStmt(State* state, const VarDeclStmt& stmt) {
   ::llvm::Value* var;
   TypeSpec type_spec;
+  ::llvm::Type* ty;
+  ExprResult init_expr_result;
   if (stmt.has_init_expr()) {
-    ExprResult init_expr_result = ProcessExpr(state, stmt.init_expr());
+    init_expr_result = ProcessExpr(state, stmt.init_expr());
+    if (stmt.has_type_spec() &&
+        stmt.type_spec().SerializeAsString() !=
+        init_expr_result.type_spec.SerializeAsString()) {
+      LOG(FATAL) << "Invalid init expr in var decl: " << stmt.DebugString();
+    }
     EnsureAddress(state, &init_expr_result);
     type_spec = init_expr_result.type_spec;
-    var = state->ir_builder->CreateAlloca(
-        ::llvm::PointerType::getUnqual(
-            init_expr_result.value->getType()), nullptr, stmt.name());
-    state->ir_builder->CreateStore(
-        CloneObject(state, type_spec, init_expr_result.address), var);
+    ty = init_expr_result.value->getType();
   } else {
+    if (!stmt.has_type_spec()) {
+      LOG(FATAL) << "Missing type spec in var decl: " << stmt.DebugString();
+    }
     type_spec = stmt.type_spec();
-    ::llvm::Type* ty = LookupType(type_spec);
-    var = state->ir_builder->CreateAlloca(
-        ::llvm::PointerType::getUnqual(ty), nullptr, stmt.name());
-    state->ir_builder->CreateStore(CreateObject(state, type_spec), var);
+    ty = LookupType(type_spec);
+  }
+  var = state->ir_builder->CreateAlloca(
+      ::llvm::PointerType::getUnqual(ty), nullptr, stmt.name());
+  state->ir_builder->CreateStore(
+      ::llvm::ConstantPointerNull::get(::llvm::PointerType::getUnqual(ty)),
+      var);
+  if (stmt.has_init_expr()) {
+    AssignObject(state, type_spec, var, init_expr_result.address);
   }
   state->scopes.back().AddVar({ stmt.name(), type_spec, var });
 }
@@ -488,8 +520,9 @@ IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
     const Var* var = scope_it->Lookup(expr.name());
     if (var != nullptr) {
       result.type_spec = var->type_spec;
+      result.ref_address = var->ref_address;
       result.address = state->ir_builder->CreateLoad(
-          var->address, expr.name() + "_addr");
+          var->ref_address, expr.name() + "_addr");
       result.value = state->ir_builder->CreateLoad(
           result.address, expr.name() + "_val");
       return result;
@@ -627,7 +660,8 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
                 ExtractInt32Value(state, left_result.value),
                 ExtractInt32Value(state, right_result.value)));
       } else {
-        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+        LOG(FATAL) << "Incompatible types for binary operation "
+          << BinaryOpExpr::Op_Name(expr.op());
       }
       break;
     case BinaryOpExpr::GT:
@@ -713,18 +747,22 @@ IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
 IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
     State* state, const AssignExpr& expr) {
   ExprResult dest_result = ProcessExpr(state, expr.dest_expr());
-  if (dest_result.address == nullptr) {
+  if (dest_result.address == nullptr || dest_result.ref_address == nullptr) {
     LOG(FATAL) << "Cannot assign to expression: "
                << expr.dest_expr().ShortDebugString();
   }
   ExprResult value_result = ProcessExpr(state, expr.value_expr());
   EnsureAddress(state, &value_result);
   ::llvm::Value* dest_address = AssignObject(
-      state, dest_result.type_spec, dest_result.address, value_result.address);
+      state,
+      dest_result.type_spec,
+      dest_result.ref_address,
+      value_result.address);
   return {
       dest_result.type_spec,
       state->ir_builder->CreateLoad(dest_address),
       dest_address,
+      dest_result.ref_address,
   };
 }
 
@@ -752,10 +790,12 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
     State* state, ::llvm::Value* raw_int32_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtin_types_.int32_ty,
-      state->builtin_globals.int32_desc,
-      ::llvm::ConstantInt::getSigned(
-          ::llvm::Type::getInt32Ty(ctx_),
-          0),
+      ::llvm::ConstantStruct::get(
+        builtin_types_.object_ty,
+        state->builtin_globals.int32_desc,
+        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
+        nullptr),
+      ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 0),
       nullptr);
   return state->ir_builder->CreateInsertValue(
       init_value, raw_int32_value, {1});
@@ -770,10 +810,12 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
     State* state, ::llvm::Value* raw_bool_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtin_types_.bool_ty,
+      ::llvm::ConstantStruct::get(
+        builtin_types_.object_ty,
       state->builtin_globals.bool_desc,
-      ::llvm::ConstantInt::getSigned(
-          ::llvm::Type::getInt1Ty(ctx_),
-          0),
+        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
+        nullptr),
+      ::llvm::ConstantInt::getSigned(::llvm::Type::getInt1Ty(ctx_), 0),
       nullptr);
   return state->ir_builder->CreateInsertValue(
       init_value, raw_bool_value, {1});
@@ -823,25 +865,19 @@ void IRGenerator::EnsureAddress(
 ::llvm::Value* IRGenerator::AssignObject(
     IRGenerator::State* state,
     const TypeSpec& type_spec,
-    ::llvm::Value* dest_address,
+    ::llvm::Value* dest_ref_address,
     ::llvm::Value* src_address) {
-  ::llvm::Value* value_size = state->ir_builder->CreatePtrToInt(
-      state->ir_builder->CreateGEP(
-        ::llvm::ConstantPointerNull::get(
-          ::llvm::PointerType::getUnqual(LookupType(type_spec))),
-        ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
-      ::llvm::Type::getInt32Ty(ctx_));
-  return state->ir_builder->CreateBitCast(
-      state->ir_builder->CreateCall(
-          state->builtin_fns.quo_copy,
-          {
-              state->ir_builder->CreateBitCast(
-                  dest_address, ::llvm::Type::getInt8PtrTy(ctx_)),
-              state->ir_builder->CreateBitCast(
-                  src_address, ::llvm::Type::getInt8PtrTy(ctx_)),
-              value_size,
-          }),
-      dest_address->getType());
+  state->ir_builder->CreateCall(
+      state->builtin_fns.quo_assign,
+      {
+          state->ir_builder->CreateBitCast(
+              dest_ref_address,
+              ::llvm::PointerType::getUnqual(
+                ::llvm::Type::getInt8PtrTy(ctx_))),
+          state->ir_builder->CreateBitCast(
+              src_address, ::llvm::Type::getInt8PtrTy(ctx_)),
+      });
+  return src_address;
 }
 
 ::llvm::Value* IRGenerator::CloneObject(
@@ -856,7 +892,7 @@ void IRGenerator::DestroyTemps(State* state) {
   Scope& scope = state->scopes.back();
   for (auto it = scope.temps.rbegin(); it != scope.temps.rend(); ++it) {
     state->ir_builder->CreateCall(
-        state->builtin_fns.quo_free,
+        state->builtin_fns.quo_dec_refs,
         {
             state->ir_builder->CreateBitCast(
                 *it, ::llvm::Type::getInt8PtrTy(ctx_)),
@@ -867,11 +903,11 @@ void IRGenerator::DestroyTemps(State* state) {
 void IRGenerator::DestroyScope(State* state, Scope* scope) {
   for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
     state->ir_builder->CreateCall(
-        state->builtin_fns.quo_free,
+        state->builtin_fns.quo_dec_refs,
         {
             state->ir_builder->CreateBitCast(
                 state->ir_builder->CreateLoad(
-                    it->address,
+                    it->ref_address,
                     it->name + "_addr"),
                 ::llvm::Type::getInt8PtrTy(ctx_)),
         });
@@ -890,7 +926,7 @@ void IRGenerator::Scope::AddVar(const Var& var) {
   vars.push_back(var);
   Var* varp = &vars.back();
   vars_by_name.insert({ var.name, varp});
-  vars_by_address.insert({ var.address, varp });
+  vars_by_ref_address.insert({ var.ref_address, varp });
 }
 
 void IRGenerator::Scope::AddTemp(::llvm::Value* address) {
@@ -903,8 +939,8 @@ const IRGenerator::Var* IRGenerator::Scope::Lookup(const ::std::string& name) {
 }
 
 const IRGenerator::Var* IRGenerator::Scope::Lookup(::llvm::Value* address) {
-  auto it = vars_by_address.find(address);
-  return it == vars_by_address.end() ? nullptr : it->second;
+  auto it = vars_by_ref_address.find(address);
+  return it == vars_by_ref_address.end() ? nullptr : it->second;
 }
 
 }  // namespace quo

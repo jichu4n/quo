@@ -26,6 +26,7 @@
 // Base class for Quo objects.
 struct QObject {
   const QClassDescriptor* descriptor;
+  int32_t refs;
 };
 extern const QClassDescriptor __quo_ObjectDescriptor;
 

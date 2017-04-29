@@ -39,16 +39,27 @@ class IRGenerator {
 
  protected:
   struct State;
+  // The result of evaluating an expression. Only a subset of the fields will be
+  // set for any given expression.
   struct ExprResult {
+    // The underlying type of the expression, e.g. Int32
     TypeSpec type_spec;
+    // The value of the expression (QObject).
     ::llvm::Value* value;
+    // Address on the heap storing the value (QObject*). Only set if the value
+    // is actually stored in memory (i.e. not an intermediate value).
     ::llvm::Value* address;
+    // Address on the stack or heap of a reference pointing to this object
+    // (QObject**). Only set if the expression resolves to a reference
+    // (variable, instance member, or array element).
+    ::llvm::Value* ref_address;
+    // A function reference. Only set if the expression resolves to a function.
     const FnDef* fn_def;
   };
   struct Var {
     ::std::string name;
     TypeSpec type_spec;
-    ::llvm::Value* address;
+    ::llvm::Value* ref_address;
   };
   // Represents a single layer of variable scope.
   struct Scope {
@@ -57,7 +68,7 @@ class IRGenerator {
     // Map from name to variables.
     ::std::unordered_map<::std::string, Var*> vars_by_name;
     // Map from address to names.
-    ::std::unordered_map<::llvm::Value*, Var*> vars_by_address;
+    ::std::unordered_map<::llvm::Value*, Var*> vars_by_ref_address;
     // Addresses of temps in this scope in insertion order.
     ::std::list<::llvm::Value*> temps;
 

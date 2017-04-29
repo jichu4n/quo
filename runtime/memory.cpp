@@ -87,31 +87,52 @@ QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
         << GetStackTraceString() << "]";
   }
   p->descriptor = dp;
+  p->refs = 1;
   if (dp->init) {
     dp->init(p);
   }
   return p;
 }
 
-void __quo_free(QObject* p) {
-  const QClassDescriptor *dp = p->descriptor;
+void __quo_inc_refs(QObject* p) {
+  ++(p->refs);
   if (FLAGS_debug_mm) {
-    LOG(INFO) << p << " " << dp->name << " FREE " << " ["
+    const QClassDescriptor *dp = p->descriptor;
+    LOG(INFO) << p << " " << dp->name << " ++REF=" << p->refs << " ["
         << GetStackTraceString() << "]";
   }
-  if (dp->destroy) {
-    dp->destroy(p);
-  }
-  free(p);
 }
 
-QObject* __quo_copy(QObject* dest, const QObject* src, int32_t size) {
-  const QClassDescriptor* dp = src->descriptor;
-  if (dp->copy) {
-    dp->copy(dest, src);
-  } else  {
-    memcpy(dest, src, size);
+void __quo_dec_refs(QObject* p) {
+  const QClassDescriptor *dp = p->descriptor;
+  --(p->refs);
+  if (p->refs < 0) {
+    LOG(FATAL) << p << " " << dp->name << " INVALID REFS: " << p->refs << " ["
+      << GetStackTraceString() << "]";
+  } else if (p->refs == 0) {
+    if (FLAGS_debug_mm) {
+      LOG(INFO) << p << " " << dp->name << " FREE " << " ["
+          << GetStackTraceString() << "]";
+    }
+    if (dp->destroy) {
+      dp->destroy(p);
+    }
+    free(p);
+  } else {
+    if (FLAGS_debug_mm) {
+      LOG(INFO) << p << " " << dp->name << " --REF=" << p->refs << " ["
+          << GetStackTraceString() << "]";
+    }
   }
-  return dest;
+}
+
+void __quo_assign(QObject** dest, QObject* src) {
+  if (src != nullptr) {
+    __quo_inc_refs(src);
+  }
+  if (*dest != nullptr) {
+    __quo_dec_refs(*dest);
+  }
+  *dest = src;
 }
 

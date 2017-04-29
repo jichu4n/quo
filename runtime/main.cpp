@@ -29,7 +29,7 @@ int main(int argc, char* argv[]) {
   ::google::InitGoogleLogging(argv[0]);
   QInt32* r = Main();
   int32_t r_value = r->value;
-  __quo_free(r);
+  __quo_dec_refs(r);
   return r_value;
 }
 

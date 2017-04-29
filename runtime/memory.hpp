@@ -28,10 +28,12 @@ extern "C" {
 
 // Allocate "size"-bytes of memory.
 extern QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size);
-// Free memory.
-extern void __quo_free(QObject* ptr);
-// Copy "size" bytes from src to dest, and return dest.
-extern QObject* __quo_copy(QObject* dest, const QObject* src, int32_t size);
+// Increment reference count.
+extern void __quo_inc_refs(QObject* ptr);
+// Decrement reference count, and dealloc if reference count becomes zero.
+extern void __quo_dec_refs(QObject* ptr);
+// Assign src to dest.
+extern void __quo_assign(QObject** dest, QObject* src);
 
 }
 
