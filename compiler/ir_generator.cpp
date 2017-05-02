@@ -462,7 +462,7 @@ IRGenerator::ExprResult IRGenerator::ProcessExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
     State* state, const ConstantExpr& expr) {
-  ExprResult result = { {}, nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
   switch (expr.value_case()) {
     case ConstantExpr::kIntValue:
       result.type_spec = builtin_types_.int32_type_spec;
@@ -512,7 +512,7 @@ IRGenerator::ExprResult IRGenerator::ProcessConstantExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessVarExpr(
     State* state, const VarExpr& expr) {
-  ExprResult result = { {}, nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
 
   for (auto scope_it = state->scopes.rbegin();
       scope_it != state->scopes.rend();
@@ -631,7 +631,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
       },
   };
 
-  ExprResult result = { {}, nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
   ExprResult left_result = ProcessExpr(state, expr.left_expr());
   ExprResult right_result = ProcessExpr(state, expr.right_expr());
   switch (expr.op()) {
@@ -725,7 +725,7 @@ IRGenerator::ExprResult IRGenerator::ProcessBinaryOpExpr(
 
 IRGenerator::ExprResult IRGenerator::ProcessCallExpr(
     State* state, const CallExpr& expr) {
-  ExprResult result = { {}, nullptr, nullptr };
+  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
   ExprResult fn_result = ProcessExpr(state, expr.fn_expr());
   vector<::llvm::Value*> arg_results(expr.arg_exprs_size());
   transform(
@@ -763,6 +763,7 @@ IRGenerator::ExprResult IRGenerator::ProcessAssignExpr(
       state->ir_builder->CreateLoad(dest_address),
       dest_address,
       dest_result.ref_address,
+      nullptr,
   };
 }
 
