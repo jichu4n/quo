@@ -36,7 +36,7 @@ void QStringCopy(QObject* dest, const QObject* src) {
       *(static_cast<const QString*>(src)->value);
 }
 
-}
+}  // namespace
 
 const QClassDescriptor __quo_ObjectDescriptor = {
   "Object",

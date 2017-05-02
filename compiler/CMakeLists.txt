@@ -21,6 +21,7 @@ find_package(LLVM REQUIRED CONFIG)
 add_executable(
   quoc
   main.cpp
+  symbols.cpp
   ir_generator.cpp)
 target_link_libraries(quoc ast)
 llvm_config(quoc core)

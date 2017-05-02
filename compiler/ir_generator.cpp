@@ -23,8 +23,9 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <glog/logging.h>
-#include <llvm/Support/raw_ostream.h>
+#include "glog/logging.h"
+#include "llvm/Support/raw_ostream.h"
+#include "compiler/symbols.hpp"
 
 namespace quo {
 
@@ -82,7 +83,7 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   SetupBuiltinGlobals(&state);
   SetupBuiltinFunctions(&state);
   for (const auto& member : module_def.members()) {
-    // TODO: Handle extern fns.
+    // TODO(cji): Handle extern fns.
     if (member.type_case() != ModuleDef::Member::kFnDef) {
       continue;
     }
@@ -284,7 +285,7 @@ void IRGenerator::ProcessModuleFnDef(
       });
   ::llvm::Type* const raw_return_ty = LookupType(fn_def.return_type_spec());
   ::llvm::Type* const return_ty = raw_return_ty->isVoidTy() ?
-      raw_return_ty : 
+      raw_return_ty :
       ::llvm::PointerType::getUnqual(raw_return_ty);
   ::llvm::FunctionType* fn_ty = ::llvm::FunctionType::get(
       return_ty,
@@ -920,28 +921,6 @@ void IRGenerator::DestroyFnScopes(State* state) {
   do {
     DestroyScope(state, &(*scope_it));
   } while ((++scope_it).base() != state->current_fn_scope_it);
-}
-
-
-void IRGenerator::Scope::AddVar(const Var& var) {
-  vars.push_back(var);
-  Var* varp = &vars.back();
-  vars_by_name.insert({ var.name, varp});
-  vars_by_ref_address.insert({ var.ref_address, varp });
-}
-
-void IRGenerator::Scope::AddTemp(::llvm::Value* address) {
-  temps.push_back(address);
-}
-
-const IRGenerator::Var* IRGenerator::Scope::Lookup(const ::std::string& name) {
-  auto it = vars_by_name.find(name);
-  return it == vars_by_name.end() ? nullptr : it->second;
-}
-
-const IRGenerator::Var* IRGenerator::Scope::Lookup(::llvm::Value* address) {
-  auto it = vars_by_ref_address.find(address);
-  return it == vars_by_ref_address.end() ? nullptr : it->second;
 }
 
 }  // namespace quo

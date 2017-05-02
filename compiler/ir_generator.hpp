@@ -24,11 +24,13 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/LinkAllIR.h>
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/LinkAllIR.h"
 #include "ast/ast.pb.h"
 
 namespace quo {
+
+class Scope;
 
 // Implements AST to IR generation.
 class IRGenerator {
@@ -55,32 +57,6 @@ class IRGenerator {
     ::llvm::Value* ref_address;
     // A function reference. Only set if the expression resolves to a function.
     const FnDef* fn_def;
-  };
-  struct Var {
-    ::std::string name;
-    TypeSpec type_spec;
-    ::llvm::Value* ref_address;
-  };
-  // Represents a single layer of variable scope.
-  struct Scope {
-    // Addresses of variable in this scope in insertion order.
-    ::std::list<Var> vars;
-    // Map from name to variables.
-    ::std::unordered_map<::std::string, Var*> vars_by_name;
-    // Map from address to names.
-    ::std::unordered_map<::llvm::Value*, Var*> vars_by_ref_address;
-    // Addresses of temps in this scope in insertion order.
-    ::std::list<::llvm::Value*> temps;
-
-    // Adds a variable into the scope.
-    void AddVar(const Var& var);
-    // Adds a temp into the scope.
-    void AddTemp(::llvm::Value* address);
-
-    // Look up a variable's address by name. Returns nullptr if not found.
-    const Var* Lookup(const ::std::string& name);
-    // Look up a variable's name by address. Returns nullptr if not found.
-    const Var* Lookup(::llvm::Value* address);
   };
 
   void SetupBuiltinTypes();

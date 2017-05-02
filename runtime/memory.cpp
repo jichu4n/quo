@@ -20,11 +20,12 @@
 #include <functional>
 #include <iterator>
 #include <sstream>
+#include <string>
 #include <vector>
 #include <cstdlib>
 #include <cstring>
-#include <gflags/gflags.h>
-#include <glog/logging.h>
+#include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "runtime/basic_types.hpp"
 #include "runtime/descriptor.hpp"
 
@@ -78,7 +79,7 @@ string GetStackTraceString() {
   return result_stream.str();
 }
 
-}
+}  // namespace
 
 QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
   QObject* p = static_cast<QObject*>(malloc(size));

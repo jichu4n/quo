@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                           *
- *  Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          *
+ *  Copyright (C) 2017 Chuan Ji <ji@chu4n.com>                               *
  *                                                                           *
  *  Licensed under the Apache License, Version 2.0 (the "License");          *
  *  you may not use this file except in compliance with the License.         *
@@ -16,37 +16,30 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <algorithm>
-#include <iostream>
-#include <memory>
-#include <string>
-#include "glog/logging.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/text_format.h"
-#include "llvm/Support/raw_ostream.h"
-#include "compiler/ir_generator.hpp"
+#include "compiler/symbols.hpp"
 
-using ::std::cin;
-using ::std::unique_ptr;
-using ::google::protobuf::io::IstreamInputStream;
-using ::quo::IRGenerator;
-using ::quo::ModuleDef;
+namespace quo {
 
-int main(int argc, char* argv[]) {
-  IstreamInputStream input_stream(&cin);
-  ModuleDef module_def;
-  CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
-  // LOG(INFO) << module_def.DebugString();
-
-  IRGenerator ir_generator;
-  unique_ptr<::llvm::Module> module = ir_generator.ProcessModule(module_def);
-
-  module->print(
-      ::llvm::outs(),
-      nullptr,  // AssemblyAnnotationWriter
-      false,  // ShouldPreserveUseListOrder
-      true);  // IsForDebug
-
-  return 0;
+void Scope::AddVar(const Var& var) {
+  vars.push_back(var);
+  Var* varp = &vars.back();
+  vars_by_name.insert({ var.name, varp});
+  vars_by_ref_address.insert({ var.ref_address, varp });
 }
+
+void Scope::AddTemp(::llvm::Value* address) {
+  temps.push_back(address);
+}
+
+const Var* Scope::Lookup(const ::std::string& name) {
+  auto it = vars_by_name.find(name);
+  return it == vars_by_name.end() ? nullptr : it->second;
+}
+
+const Var* Scope::Lookup(::llvm::Value* address) {
+  auto it = vars_by_ref_address.find(address);
+  return it == vars_by_ref_address.end() ? nullptr : it->second;
+}
+
+}  // namespace quo
 

@@ -1,6 +1,7 @@
 ply
 protobuf
 
+cpplint
 pylint
 nose
 yapf

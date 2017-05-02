@@ -16,10 +16,10 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include "glog/logging.h"
+#include "gflags/gflags.h"
 #include "runtime/basic_types.hpp"
 #include "runtime/memory.hpp"
-#include <glog/logging.h>
-#include <gflags/gflags.h>
 
 extern "C" QInt32* Main();
 
