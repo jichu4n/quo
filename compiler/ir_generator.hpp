@@ -59,10 +59,6 @@ class IRGenerator {
     const FnDef* fn_def;
   };
 
-  void SetupBuiltinTypes();
-  void SetupBuiltinGlobals(State* state);
-  void SetupBuiltinFunctions(State* state);
-
   void ProcessModuleMember(
       State* state, const ModuleDef::Member& member);
   void ProcessModuleFnDef(State* state, const FnDef& fn_def);
@@ -78,9 +74,6 @@ class IRGenerator {
   ExprResult ProcessBinaryOpExpr(State* state, const BinaryOpExpr& expr);
   ExprResult ProcessAssignExpr(State* state, const AssignExpr& expr);
 
-  ::llvm::Type* LookupType(const TypeSpec& type_spec);
-  ::llvm::GlobalVariable* LookupDescriptor(
-      State* state, const TypeSpec& type_spec);
   ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
   ::llvm::Value* ExtractInt32Value(
       State* state, ::llvm::Value* wrapped_int32_value);
@@ -110,18 +103,6 @@ class IRGenerator {
   void DestroyFnScopes(State* state);
 
   ::llvm::LLVMContext ctx_;
-  struct {
-    TypeSpec object_type_spec;
-    ::llvm::StructType* object_ty;
-    TypeSpec int32_type_spec;
-    TypeSpec int_type_spec;
-    ::llvm::StructType* int32_ty;
-    TypeSpec bool_type_spec;
-    ::llvm::StructType* bool_ty;
-    TypeSpec string_type_spec;
-    ::llvm::StructType* string_ty;
-  } builtin_types_;
-  ::std::unordered_map<::std::string, ::llvm::Type*> builtin_types_map_;
 };
 
 }  // namespace quo
