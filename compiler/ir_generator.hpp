@@ -23,7 +23,6 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/LinkAllIR.h"
 #include "ast/ast.pb.h"
@@ -41,23 +40,6 @@ class IRGenerator {
 
  protected:
   struct State;
-  // The result of evaluating an expression. Only a subset of the fields will be
-  // set for any given expression.
-  struct ExprResult {
-    // The underlying type of the expression, e.g. Int32
-    TypeSpec type_spec;
-    // The value of the expression (QObject).
-    ::llvm::Value* value;
-    // Address on the heap storing the value (QObject*). Only set if the value
-    // is actually stored in memory (i.e. not an intermediate value).
-    ::llvm::Value* address;
-    // Address on the stack or heap of a reference pointing to this object
-    // (QObject**). Only set if the expression resolves to a reference
-    // (variable, instance member, or array element).
-    ::llvm::Value* ref_address;
-    // A function reference. Only set if the expression resolves to a function.
-    const FnDef* fn_def;
-  };
 
   void ProcessModuleMember(
       State* state, const ModuleDef::Member& member);
@@ -67,37 +49,9 @@ class IRGenerator {
   void ProcessRetStmt(State* state, const RetStmt& stmt);
   void ProcessCondStmt(State* state, const CondStmt& stmt);
   void ProcessVarDeclStmt(State* state, const VarDeclStmt& stmt);
-  ExprResult ProcessExpr(State* state, const Expr& expr);
-  ExprResult ProcessConstantExpr(State* state, const ConstantExpr& expr);
-  ExprResult ProcessVarExpr(State* state, const VarExpr& expr);
-  ExprResult ProcessCallExpr(State* state, const CallExpr& expr);
-  ExprResult ProcessBinaryOpExpr(State* state, const BinaryOpExpr& expr);
-  ExprResult ProcessAssignExpr(State* state, const AssignExpr& expr);
-
-  ::llvm::Value* CreateInt32Value(State* state, ::llvm::Value* raw_int32_value);
-  ::llvm::Value* ExtractInt32Value(
-      State* state, ::llvm::Value* wrapped_int32_value);
-  ::llvm::Value* CreateBoolValue(State* state, ::llvm::Value* raw_bool_value);
-  ::llvm::Value* ExtractBoolValue(
-      State* state, ::llvm::Value* wrapped_bool_value);
-  ::llvm::Value* CreateObject(State* state, const TypeSpec& type_spec);
-  ::llvm::Value* CreateObject(
-      State* state, const TypeSpec& type_spec, ::llvm::Value* init_value);
-  ::llvm::Value* AssignObject(
-      State* state,
-      const TypeSpec& type_spec,
-      ::llvm::Value* dest_address,
-      ::llvm::Value* src_address);
-  ::llvm::Value* CloneObject(
-      State* state, const TypeSpec& type_spec, ::llvm::Value* src_address);
-  // If "result' does not have a memory address, create a temporary variable and
-  // copy the value there. Otherwise, do nothing.
-  void EnsureAddress(State* state, ExprResult* result);
 
   // Generates code to deallocate temps in a scope.
   void DestroyTemps(State* state);
-  // Generates code to deallocate variables in a scope.
-  void DestroyScope(State* state, Scope* scope);
   // Generates code to deallocate variables in all scopes up to and including
   // the function's root scope. Does NOT pop off the scopes.
   void DestroyFnScopes(State* state);

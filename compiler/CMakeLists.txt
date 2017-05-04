@@ -22,6 +22,7 @@ add_executable(
   quoc
   main.cpp
   ir_generator.cpp
+  expr_ir_generator.cpp
   symbols.cpp
   builtins.cpp)
 target_link_libraries(quoc ast)

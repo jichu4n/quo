@@ -21,7 +21,10 @@
 
 #include <list>
 #include <string>
+#include <memory>
 #include <unordered_map>
+#include <vector>
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
 #include "ast/ast.pb.h"
 
@@ -48,6 +51,8 @@ struct Scope {
   ::std::unordered_map<::llvm::Value*, Var*> vars_by_ref_address;
   // Addresses of temps in this scope in insertion order.
   ::std::list<::llvm::Value*> temps;
+  // Whether this scope corresponds to a function.
+  bool is_fn_scope;
 
   // Adds a variable into the scope.
   void AddVar(const Var& var);
@@ -55,9 +60,39 @@ struct Scope {
   void AddTemp(::llvm::Value* address);
 
   // Look up a variable's address by name. Returns nullptr if not found.
-  const Var* Lookup(const ::std::string& name);
+  const Var* Lookup(const ::std::string& name) const;
   // Look up a variable's name by address. Returns nullptr if not found.
-  const Var* Lookup(::llvm::Value* address);
+  const Var* Lookup(::llvm::Value* address) const;
+};
+
+// Represents all symbols visible from a particular scope.
+class Symbols {
+ public:
+  // Creates a new symbol table for an AST module.
+  static ::std::unique_ptr<Symbols> Create(const ModuleDef& module_def);
+  // Pushes a new scope onto the stack.
+  Scope* PushScope();
+  // Pops off the top-most scope.
+  void PopScope();
+  // Returns a reference to the top-most scope.
+  Scope* GetScope();
+  // Lists all scopes from the top up to and including the closest function
+  // scope, sorted from top to bottom.
+  const ::std::vector<Scope*> GetScopesInFn();
+
+  // Looks up a variable in the scope stack by name.
+  const Var* LookupVar(const ::std::string& name) const;
+  // Looks up a function definition by name.
+  const FnDef* LookupFnDef(const ::std::string& name) const;
+
+ private:
+  Symbols();
+  void SetupFnDefs(const ModuleDef& module_def);
+
+  // Stack of scopes, from outermost to innermost.
+  ::std::list<Scope> scopes_;
+  // Global functions in the AST, by name.
+  ::std::unordered_map<::std::string, const FnDef*> fn_defs_by_name_;
 };
 
 }  // namespace quo
