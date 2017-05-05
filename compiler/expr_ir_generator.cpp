@@ -29,6 +29,12 @@ using ::std::function;
 using ::std::unordered_map;
 using ::std::vector;
 
+ExprResult::ExprResult()
+    : value(nullptr),
+      address(nullptr),
+      ref_address(nullptr),
+      fn_def(nullptr) {}
+
 ExprIRGenerator::ExprIRGenerator(
     ::llvm::Module* module,
     ::llvm::IRBuilder<>* ir_builder,
@@ -59,7 +65,7 @@ ExprResult ExprIRGenerator::ProcessExpr(const Expr& expr) {
 }
 
 ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
-  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
+  ExprResult result;
   switch (expr.value_case()) {
     case ConstantExpr::kIntValue:
       result.type_spec = builtins_->types.int32_type.type_spec;
@@ -107,7 +113,7 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
 
 ExprResult ExprIRGenerator::ProcessVarExpr(
     const VarExpr& expr) {
-  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
+  ExprResult result;
 
   const Var* var = symbols_->LookupVar(expr.name());
   if (var != nullptr) {
@@ -222,7 +228,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
       },
   };
 
-  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
+  ExprResult result;
   ExprResult left_result = ProcessExpr(expr.left_expr());
   ExprResult right_result = ProcessExpr(expr.right_expr());
   switch (expr.op()) {
@@ -323,7 +329,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
 
 ExprResult ExprIRGenerator::ProcessCallExpr(
     const CallExpr& expr) {
-  ExprResult result = { {}, nullptr, nullptr, nullptr, nullptr };
+  ExprResult result;
   ExprResult fn_result = ProcessExpr(expr.fn_expr());
   vector<::llvm::Value*> arg_results(expr.arg_exprs_size());
   transform(
@@ -350,18 +356,23 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
                << expr.dest_expr().ShortDebugString();
   }
   ExprResult value_result = ProcessExpr(expr.value_expr());
+  if (dest_result.ref_mode == WEAK_REF &&
+      value_result.ref_address == nullptr) {
+    LOG(FATAL) << "Cannot assign temp value to weak reference: "
+               << expr.ShortDebugString();
+  }
   EnsureAddress(&value_result);
   ::llvm::Value* dest_address = AssignObject(
       dest_result.type_spec,
       dest_result.ref_address,
       value_result.address);
-  return {
-      dest_result.type_spec,
-      ir_builder_->CreateLoad(dest_address),
-      dest_address,
-      dest_result.ref_address,
-      nullptr,
-  };
+  ExprResult result;
+  result.type_spec = dest_result.type_spec;
+  result.value = ir_builder_->CreateLoad(dest_address);
+  result.address = dest_address;
+  result.ref_address = dest_result.ref_address;
+  result.ref_mode = dest_result.ref_mode;
+  return result;
 }
 
 ::llvm::Value* ExprIRGenerator::CreateInt32Value(

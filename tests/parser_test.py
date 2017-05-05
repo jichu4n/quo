@@ -242,20 +242,20 @@ class QuoParserTest(unittest.TestCase):
             type_spec=TypeSpec(
                 name='Array',
                 params=[TypeSpec(name='Int')]),
-            ref_mode=STRONG)),
+            ref_mode=STRONG_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='b',
             type_spec=TypeSpec(name='Int'),
-            ref_mode=STRONG,
+            ref_mode=STRONG_REF,
             init_expr=Expr(constant=ConstantExpr(intValue=3)))),
         Stmt(var_decl=VarDeclStmt(
             name='c',
             type_spec=TypeSpec(name='Int'),
-            ref_mode=STRONG)),
+            ref_mode=STRONG_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='d',
             type_spec=TypeSpec(name='Int'),
-            ref_mode=STRONG,
+            ref_mode=STRONG_REF,
             init_expr=Expr(binary_op=BinaryOpExpr(
                 op=BinaryOpExpr.ADD,
                 left_expr=Expr(constant=ConstantExpr(intValue=5)),
@@ -263,30 +263,30 @@ class QuoParserTest(unittest.TestCase):
         Stmt(var_decl=VarDeclStmt(
             name='e',
             type_spec=TypeSpec(name='String'),
-            ref_mode=STRONG,
+            ref_mode=STRONG_REF,
             init_expr=Expr(constant=ConstantExpr(strValue='')))),
         Stmt(var_decl=VarDeclStmt(
             name='f',
-            ref_mode=STRONG)),
+            ref_mode=STRONG_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='g',
-            ref_mode=WEAK)),
+            ref_mode=WEAK_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='h',
-            ref_mode=STRONG)),
+            ref_mode=STRONG_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='i',
-            ref_mode=STRONG)),
+            ref_mode=STRONG_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='j',
-            ref_mode=STRONG)),
+            ref_mode=STRONG_REF)),
         Stmt(var_decl=VarDeclStmt(
             name='k',
-            ref_mode=WEAK,
+            ref_mode=WEAK_REF,
             type_spec=TypeSpec(name='Int'))),
         Stmt(var_decl=VarDeclStmt(
             name='l',
-            ref_mode=STRONG,
+            ref_mode=STRONG_REF,
             type_spec=TypeSpec(name='Int'))),
     ]))
 
@@ -300,18 +300,18 @@ class QuoParserTest(unittest.TestCase):
     FnDef(
         name='foo',
         params=[
-            FnParam(name='a', ref_mode=STRONG),
+            FnParam(name='a', ref_mode=STRONG_REF),
             FnParam(
                 name='b',
-                ref_mode=WEAK,
+                ref_mode=WEAK_REF,
                 type_spec=TypeSpec(name='Int')),
             FnParam(
                 name='c',
-                ref_mode=STRONG,
+                ref_mode=STRONG_REF,
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
             FnParam(
                 name='d',
-                ref_mode=STRONG,
+                ref_mode=STRONG_REF,
                 type_spec=TypeSpec(name='Int'),
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
         ],
@@ -377,7 +377,7 @@ class QuoParserTest(unittest.TestCase):
         members=[
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='a',
-                ref_mode=STRONG)),
+                ref_mode=STRONG_REF)),
             ClassDef.Member(fn_def=FnDef(
                 name='f',
                 return_type_spec=TypeSpec(name='Int'),
@@ -387,11 +387,11 @@ class QuoParserTest(unittest.TestCase):
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='b',
                 type_spec=TypeSpec(name='Int'),
-                ref_mode=WEAK,
+                ref_mode=WEAK_REF,
                 init_expr=Expr(var=VarExpr(name='foo')))),
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='c',
                 type_spec=TypeSpec(name='Int'),
-                ref_mode=STRONG)),
+                ref_mode=STRONG_REF)),
         ]))
 

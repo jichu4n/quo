@@ -192,11 +192,11 @@ class QuoParser(object):
 
   def p_var_mode_strong(self, p):
     '''var_mode :'''
-    p[0] = STRONG
+    p[0] = STRONG_REF
 
   def p_var_mode_weak(self, p):
-    '''var_mode : WEAK'''
-    p[0] = WEAK
+    '''var_mode : WEAK_REF'''
+    p[0] = WEAK_REF
 
   def p_var(self, p):
     '''var : IDENTIFIER'''
@@ -347,12 +347,12 @@ class QuoParser(object):
 
   def p_fn_param_mode_empty(self, p):
     '''fn_param_mode :'''
-    p[0] = STRONG
+    p[0] = STRONG_REF
 
   def p_fn_param_mode(self, p):
-    '''fn_param_mode : WEAK
+    '''fn_param_mode : WEAK_REF
     '''
-    p[0] = WEAK
+    p[0] = WEAK_REF
 
   def p_fn_param_type_spec_empty(self, p):
     '''fn_param_type_spec :'''

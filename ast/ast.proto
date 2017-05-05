@@ -235,7 +235,7 @@ message TypeSpec {
 
 // Mode of a reference.
 enum RefMode {
-  STRONG = 0;
-  WEAK = 1;
+  STRONG_REF = 0;
+  WEAK_REF = 1;
 }
 

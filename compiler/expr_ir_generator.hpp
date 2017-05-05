@@ -44,8 +44,11 @@ struct ExprResult {
   // (variable, instance member, or array element).
   ::llvm::Value* ref_address;
   // The reference mode of ref_address.
+  RefMode ref_mode;
   // A function reference. Only set if the expression resolves to a function.
   const FnDef* fn_def;
+
+  ExprResult();
 };
 
 // Implements AST -> IR generation for expressions.

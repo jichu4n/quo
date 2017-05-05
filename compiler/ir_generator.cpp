@@ -109,18 +109,25 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
   vector<::llvm::Argument*> args;
   i = 0;
   for (::llvm::Argument& arg : fn->args()) {
-    const TypeSpec& type_spec = fn_def.params(i++).type_spec();
+    const FnParam& param = fn_def.params(i++);
     ::llvm::Value* arg_var = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
     // Store args in scope and increment ref counts.
     builder.CreateStore(&arg, arg_var);
-    ir_builder_->CreateCall(
-        builtins_->fns.quo_inc_refs,
-        {
-            ir_builder_->CreateBitCast(
-                &arg, ::llvm::Type::getInt8PtrTy(ctx_)),
-        });
-    symbols_->GetScope()->AddVar({ arg.getName(), type_spec, arg_var});
+    if (param.ref_mode() == STRONG_REF) {
+      ir_builder_->CreateCall(
+          builtins_->fns.quo_inc_refs,
+          {
+              ir_builder_->CreateBitCast(
+                  &arg, ::llvm::Type::getInt8PtrTy(ctx_)),
+          });
+    }
+    symbols_->GetScope()->AddVar({
+        arg.getName(),
+        param.type_spec(),
+        arg_var,
+        param.ref_mode(),
+    });
     args.push_back(&arg);
   }
 
@@ -222,6 +229,11 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
         init_expr_result.type_spec.SerializeAsString()) {
       LOG(FATAL) << "Invalid init expr in var decl: " << stmt.DebugString();
     }
+    if (stmt.ref_mode() == WEAK_REF &&
+        init_expr_result.ref_address == nullptr) {
+      LOG(FATAL) << "Cannot assign temp value to weak reference variable: "
+                 << stmt.ShortDebugString();
+    }
     expr_ir_generator_->EnsureAddress(&init_expr_result);
     type_spec = init_expr_result.type_spec;
     ty = init_expr_result.value->getType();
@@ -241,7 +253,12 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
     expr_ir_generator_->AssignObject(
         type_spec, var, init_expr_result.address);
   }
-  symbols_->GetScope()->AddVar({ stmt.name(), type_spec, var });
+  symbols_->GetScope()->AddVar({
+      stmt.name(),
+      type_spec,
+      var,
+      stmt.ref_mode(),
+  });
 }
 
 void IRGenerator::DestroyTemps() {
@@ -259,15 +276,17 @@ void IRGenerator::DestroyTemps() {
 void IRGenerator::DestroyFnScopes() {
   for (Scope* scope : symbols_->GetScopesInFn()) {
     for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
-      ir_builder_->CreateCall(
-          builtins_->fns.quo_dec_refs,
-          {
-              ir_builder_->CreateBitCast(
-                  ir_builder_->CreateLoad(
-                      it->ref_address,
-                      it->name + "_addr"),
-                  ::llvm::Type::getInt8PtrTy(ctx_)),
-          });
+      if (it->ref_mode == STRONG_REF) {
+        ir_builder_->CreateCall(
+            builtins_->fns.quo_dec_refs,
+            {
+                ir_builder_->CreateBitCast(
+                    ir_builder_->CreateLoad(
+                        it->ref_address,
+                        it->name + "_addr"),
+                    ::llvm::Type::getInt8PtrTy(ctx_)),
+            });
+      }
     }
   }
 }

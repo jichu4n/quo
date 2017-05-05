@@ -39,6 +39,8 @@ struct Var {
   // The address of the variable, as returned by the alloca instruction.
   // Type: QObject**
   ::llvm::Value* ref_address;
+  // The reference mode of the variable.
+  RefMode ref_mode;
 };
 
 // Represents a single layer of variable scope.
