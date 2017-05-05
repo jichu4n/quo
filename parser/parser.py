@@ -77,14 +77,10 @@ class QuoParser(object):
   def p_unary_arith(self, p):
     '''unary_arith : ADD unary_arith
                    | SUB unary_arith
-                   | BORROW unary_arith
-                   | MOVE unary_arith
     '''
     UNARY_OP_MAP = {
         '+': UnaryOpExpr.ADD,
         '-': UnaryOpExpr.SUB,
-        '&': UnaryOpExpr.BORROW,
-        '~': UnaryOpExpr.MOVE,
     }
     p[0] = Expr(unary_op=UnaryOpExpr(op=getattr(UnaryOpExpr, p[1]), expr=p[2]))
 
@@ -351,11 +347,10 @@ class QuoParser(object):
 
   def p_fn_param_mode_empty(self, p):
     '''fn_param_mode :'''
-    p[0] = FnParam.COPY
+    p[0] = FnParam.OWN
 
   def p_fn_param_mode(self, p):
     '''fn_param_mode : BORROW
-                       | MOVE
     '''
     p[0] = getattr(FnParam, p[1])
 
@@ -395,29 +390,18 @@ class QuoParser(object):
     '''return_type_spec : type_spec'''
     p[0] = p[1]
 
-  def p_return_mode_empty(self, p):
-    '''return_mode :'''
-    p[0] = FnDef.COPY
-
-  def p_return_mode(self, p):
-    '''return_mode : BORROW
-                   | MOVE
-    '''
-    p[0] = getattr(FnDef, p[1])
-
   def p_func(self, p):
     '''func : FUNCTION IDENTIFIER type_params \
               L_PAREN fn_param_list R_PAREN \
-              return_mode return_type_spec \
+              return_type_spec \
               L_BRACE stmts R_BRACE'''
     p[0] = FnDef(
         name=p[2],
         params=p[5],
-        return_mode=p[7],
         cc=FnDef.DEFAULT,
-        block=p[10])
-    if p[8] is not None:
-      p[0].return_type_spec.CopyFrom(p[8])
+        block=p[9])
+    if p[7] is not None:
+      p[0].return_type_spec.CopyFrom(p[7])
     if p[3]:
       p[0].type_params.extend(p[3])
 

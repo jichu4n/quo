@@ -94,7 +94,7 @@ class QuoParserTest(unittest.TestCase):
 
   def test_binary_arith(self):
     self.assert_ast_match(
-        'a+b*c-d==e--f/g%~-+-h',
+        'a+b*c-d==e--f/g%-+-h',
         'expr',
         Expr(binary_op=BinaryOpExpr(
             op=BinaryOpExpr.EQ,
@@ -120,15 +120,13 @@ class QuoParserTest(unittest.TestCase):
                             expr=Expr(var=VarExpr(name='f')))),
                         right_expr=Expr(var=VarExpr(name='g')))),
                     right_expr=Expr(unary_op=UnaryOpExpr(
-                        op=UnaryOpExpr.MOVE,
+                        op=UnaryOpExpr.SUB,
                         expr=Expr(unary_op=UnaryOpExpr(
-                            op=UnaryOpExpr.SUB,
+                            op=UnaryOpExpr.ADD,
                             expr=Expr(unary_op=UnaryOpExpr(
-                                op=UnaryOpExpr.ADD,
-                                expr=Expr(unary_op=UnaryOpExpr(
-                                    op=UnaryOpExpr.SUB,
-                                    expr=Expr(var=VarExpr(name='h'))))))))))))))
-        )))
+                                op=UnaryOpExpr.SUB,
+                                expr=Expr(var=VarExpr(name='h'))))))))))))))
+        )
 
   def test_binary_bool(self):
     self.assert_ast_match(
@@ -294,7 +292,7 @@ class QuoParserTest(unittest.TestCase):
 
   def test_func(self):
     self.assert_ast_match('''
-    function foo(a, &b Int, ~c = 0, d = 0 Int) {
+    function foo(a, &b Int, c = 0, d = 0 Int) {
       return a + b + c + d;
     }
     ''',
@@ -302,22 +300,21 @@ class QuoParserTest(unittest.TestCase):
     FnDef(
         name='foo',
         params=[
-            FnParam(name='a', mode=FnParam.COPY),
+            FnParam(name='a', mode=FnParam.OWN),
             FnParam(
                 name='b',
                 mode=FnParam.BORROW,
                 type_spec=TypeSpec(name='Int')),
             FnParam(
                 name='c',
-                mode=FnParam.MOVE,
+                mode=FnParam.OWN,
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
             FnParam(
                 name='d',
-                mode=FnParam.COPY,
+                mode=FnParam.OWN,
                 type_spec=TypeSpec(name='Int'),
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
         ],
-        return_mode=FnDef.COPY,
         cc=FnDef.DEFAULT,
         block=Block(stmts=[
             Stmt(ret=RetStmt(
@@ -333,7 +330,7 @@ class QuoParserTest(unittest.TestCase):
                     right_expr=Expr(var=VarExpr(name='d')))))),
         ])))
     self.assert_ast_match('''
-    function Foo<A, B,>() &Array<Int> {}
+    function Foo<A, B,>() Array<Int> {}
     ''',
     'func',
     FnDef(
@@ -342,7 +339,6 @@ class QuoParserTest(unittest.TestCase):
         return_type_spec=TypeSpec(
             name='Array',
             params=[TypeSpec(name='Int')]),
-        return_mode=FnDef.BORROW,
         cc=FnDef.DEFAULT,
         block=Block()))
 
@@ -369,7 +365,7 @@ class QuoParserTest(unittest.TestCase):
     class MyClass<T> extends Array<T> {
       var a;
       function f() Int { return 42; }
-      var &b = &foo, c Int;
+      var &b = foo, c Int;
     }''',
     'class',
     ClassDef(
@@ -385,7 +381,6 @@ class QuoParserTest(unittest.TestCase):
             ClassDef.Member(fn_def=FnDef(
                 name='f',
                 return_type_spec=TypeSpec(name='Int'),
-                return_mode=FnDef.COPY,
                 cc=FnDef.DEFAULT,
                 block=Block(stmts=[Stmt(ret=RetStmt(
                     expr=Expr(constant=ConstantExpr(intValue=42))))]))),
@@ -393,9 +388,7 @@ class QuoParserTest(unittest.TestCase):
                 name='b',
                 type_spec=TypeSpec(name='Int'),
                 mode=VarDeclStmt.BORROW,
-                init_expr=Expr(unary_op=UnaryOpExpr(
-                    op=UnaryOpExpr.BORROW,
-                    expr=Expr(var=VarExpr(name='foo')))))),
+                init_expr=Expr(var=VarExpr(name='foo')))),
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='c',
                 type_spec=TypeSpec(name='Int'),

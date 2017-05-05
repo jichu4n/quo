@@ -59,8 +59,6 @@ message UnaryOpExpr {
     UNKNOWN = 0;
     ADD = 1;
     SUB = 2;
-    BORROW = 3;
-    MOVE = 4;
     NOT = 5;
   }
 
@@ -179,9 +177,8 @@ message Block {
 message FnParam {
   enum Mode {
     UNKNOWN = 0;
-    COPY = 1;
+    OWN = 1;
     BORROW = 2;
-    MOVE = 3;
   }
   string name = 1;
   Mode mode = 2;
@@ -191,12 +188,6 @@ message FnParam {
 
 // A function definition.
 message FnDef {
-  enum ReturnMode {
-    UNKNOWN = 0;
-    COPY = 1;
-    BORROW = 2;
-    MOVE = 3;
-  }
   enum CC {
     DEFAULT = 0;
     C = 1;
@@ -205,9 +196,8 @@ message FnDef {
   repeated string type_params = 2;
   repeated FnParam params = 3;
   TypeSpec return_type_spec = 4;
-  ReturnMode return_mode = 5;
-  CC cc = 6;
-  Block block = 7;
+  CC cc = 5;
+  Block block = 6;
 }
 
 // An external (C/C++) function declaration.

@@ -60,7 +60,7 @@ class LexerTest(unittest.TestCase):
 
   def test_operators(self):
     self.assert_tokens_match("""
-    < > >= <= = == != ( ) [ ] { }and or not + - * / % & ~ += -= *= /= . ; ,
+    < > >= <= = == != ( ) [ ] { }and or not + - * / % & += -= *= /= . ; ,
     """, [
         'LT',
         'GT',
@@ -84,7 +84,6 @@ class LexerTest(unittest.TestCase):
         'DIV',
         'MOD',
         'BORROW',
-        'MOVE',
         'ADD_ASSIGN',
         'SUB_ASSIGN',
         'MUL_ASSIGN',
