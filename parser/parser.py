@@ -190,13 +190,13 @@ class QuoParser(object):
     '''type_spec_list : type_spec COMMA type_spec_list'''
     p[0] = [p[1]] + p[3]
 
-  def p_var_mode_own(self, p):
+  def p_var_mode_strong(self, p):
     '''var_mode :'''
-    p[0] = VarDeclStmt.OWN
+    p[0] = STRONG
 
-  def p_var_mode_borrow(self, p):
-    '''var_mode : BORROW'''
-    p[0] = VarDeclStmt.BORROW
+  def p_var_mode_weak(self, p):
+    '''var_mode : WEAK'''
+    p[0] = WEAK
 
   def p_var(self, p):
     '''var : IDENTIFIER'''
@@ -210,13 +210,13 @@ class QuoParser(object):
     '''var_list : var_mode var'''
     p[0] = [VarDeclStmt()]
     p[0][0].CopyFrom(p[2])
-    p[0][0].mode = p[1]
+    p[0][0].ref_mode = p[1]
 
   def p_var_list(self, p):
     '''var_list : var_mode var COMMA var_list'''
     p[0] = [VarDeclStmt()] + p[4]
     p[0][0].CopyFrom(p[2])
-    p[0][0].mode = p[1]
+    p[0][0].ref_mode = p[1]
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
@@ -231,7 +231,7 @@ class QuoParser(object):
     for var_decl in p[1]:
       var_decl_stmt = VarDeclStmt(
           name=var_decl.name,
-          mode=var_decl.mode,
+          ref_mode=var_decl.ref_mode,
           type_spec=p[2])
       if var_decl.HasField('init_expr'):
         var_decl_stmt.init_expr.CopyFrom(var_decl.init_expr)
@@ -347,12 +347,12 @@ class QuoParser(object):
 
   def p_fn_param_mode_empty(self, p):
     '''fn_param_mode :'''
-    p[0] = FnParam.OWN
+    p[0] = STRONG
 
   def p_fn_param_mode(self, p):
-    '''fn_param_mode : BORROW
+    '''fn_param_mode : WEAK
     '''
-    p[0] = getattr(FnParam, p[1])
+    p[0] = WEAK
 
   def p_fn_param_type_spec_empty(self, p):
     '''fn_param_type_spec :'''
@@ -364,7 +364,7 @@ class QuoParser(object):
 
   def p_fn_param(self, p):
     '''fn_param : fn_param_mode var fn_param_type_spec'''
-    p[0] = FnParam(name=p[2].name, mode=p[1])
+    p[0] = FnParam(name=p[2].name, ref_mode=p[1])
     if p[2].HasField('init_expr'):
       p[0].init_expr.CopyFrom(p[2].init_expr)
     if p[3] is not None:

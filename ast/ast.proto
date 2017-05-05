@@ -144,14 +144,9 @@ message CondLoopStmt {
 
 // Variable declaration statement.
 message VarDeclStmt {
-  enum Mode {
-    UNKNOWN = 0;
-    OWN = 1;
-    BORROW = 2;
-  }
   string name = 1;
   TypeSpec type_spec = 2;
-  Mode mode = 3;
+  RefMode ref_mode = 3;
   Expr init_expr = 4;
 }
 
@@ -175,13 +170,8 @@ message Block {
 
 // A formal function parameter.
 message FnParam {
-  enum Mode {
-    UNKNOWN = 0;
-    OWN = 1;
-    BORROW = 2;
-  }
   string name = 1;
-  Mode mode = 2;
+  RefMode ref_mode = 2;
   TypeSpec type_spec = 3;
   Expr init_expr = 4;
 }
@@ -241,5 +231,11 @@ message TypeSpec {
   string name = 1;
   repeated TypeSpec params = 2;
   TypeSpec parent = 3;
+}
+
+// Mode of a reference.
+enum RefMode {
+  STRONG = 0;
+  WEAK = 1;
 }
 

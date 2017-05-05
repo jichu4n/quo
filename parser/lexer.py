@@ -79,7 +79,7 @@ class QuoLexer(object):
       'MUL',
       'DIV',
       'MOD',
-      'BORROW',
+      'WEAK',
       'L_PAREN',
       'R_PAREN',
       'L_BRACKET',
@@ -208,7 +208,7 @@ class QuoLexer(object):
     t.value = t.type
     return t
 
-  def t_BORROW(self, t):
+  def t_WEAK(self, t):
     r'&'
     t.value = t.type
     return t

@@ -83,7 +83,7 @@ class LexerTest(unittest.TestCase):
         'MUL',
         'DIV',
         'MOD',
-        'BORROW',
+        'WEAK',
         'ADD_ASSIGN',
         'SUB_ASSIGN',
         'MUL_ASSIGN',

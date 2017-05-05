@@ -43,6 +43,7 @@ struct ExprResult {
   // (QObject**). Only set if the expression resolves to a reference
   // (variable, instance member, or array element).
   ::llvm::Value* ref_address;
+  // The reference mode of ref_address.
   // A function reference. Only set if the expression resolves to a function.
   const FnDef* fn_def;
 };

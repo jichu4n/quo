@@ -242,20 +242,20 @@ class QuoParserTest(unittest.TestCase):
             type_spec=TypeSpec(
                 name='Array',
                 params=[TypeSpec(name='Int')]),
-            mode=VarDeclStmt.OWN)),
+            ref_mode=STRONG)),
         Stmt(var_decl=VarDeclStmt(
             name='b',
             type_spec=TypeSpec(name='Int'),
-            mode=VarDeclStmt.OWN,
+            ref_mode=STRONG,
             init_expr=Expr(constant=ConstantExpr(intValue=3)))),
         Stmt(var_decl=VarDeclStmt(
             name='c',
             type_spec=TypeSpec(name='Int'),
-            mode=VarDeclStmt.OWN)),
+            ref_mode=STRONG)),
         Stmt(var_decl=VarDeclStmt(
             name='d',
             type_spec=TypeSpec(name='Int'),
-            mode=VarDeclStmt.OWN,
+            ref_mode=STRONG,
             init_expr=Expr(binary_op=BinaryOpExpr(
                 op=BinaryOpExpr.ADD,
                 left_expr=Expr(constant=ConstantExpr(intValue=5)),
@@ -263,30 +263,30 @@ class QuoParserTest(unittest.TestCase):
         Stmt(var_decl=VarDeclStmt(
             name='e',
             type_spec=TypeSpec(name='String'),
-            mode=VarDeclStmt.OWN,
+            ref_mode=STRONG,
             init_expr=Expr(constant=ConstantExpr(strValue='')))),
         Stmt(var_decl=VarDeclStmt(
             name='f',
-            mode=VarDeclStmt.OWN)),
+            ref_mode=STRONG)),
         Stmt(var_decl=VarDeclStmt(
             name='g',
-            mode=VarDeclStmt.BORROW)),
+            ref_mode=WEAK)),
         Stmt(var_decl=VarDeclStmt(
             name='h',
-            mode=VarDeclStmt.OWN)),
+            ref_mode=STRONG)),
         Stmt(var_decl=VarDeclStmt(
             name='i',
-            mode=VarDeclStmt.OWN)),
+            ref_mode=STRONG)),
         Stmt(var_decl=VarDeclStmt(
             name='j',
-            mode=VarDeclStmt.OWN)),
+            ref_mode=STRONG)),
         Stmt(var_decl=VarDeclStmt(
             name='k',
-            mode=VarDeclStmt.BORROW,
+            ref_mode=WEAK,
             type_spec=TypeSpec(name='Int'))),
         Stmt(var_decl=VarDeclStmt(
             name='l',
-            mode=VarDeclStmt.OWN,
+            ref_mode=STRONG,
             type_spec=TypeSpec(name='Int'))),
     ]))
 
@@ -300,18 +300,18 @@ class QuoParserTest(unittest.TestCase):
     FnDef(
         name='foo',
         params=[
-            FnParam(name='a', mode=FnParam.OWN),
+            FnParam(name='a', ref_mode=STRONG),
             FnParam(
                 name='b',
-                mode=FnParam.BORROW,
+                ref_mode=WEAK,
                 type_spec=TypeSpec(name='Int')),
             FnParam(
                 name='c',
-                mode=FnParam.OWN,
+                ref_mode=STRONG,
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
             FnParam(
                 name='d',
-                mode=FnParam.OWN,
+                ref_mode=STRONG,
                 type_spec=TypeSpec(name='Int'),
                 init_expr=Expr(constant=ConstantExpr(intValue=0))),
         ],
@@ -377,7 +377,7 @@ class QuoParserTest(unittest.TestCase):
         members=[
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='a',
-                mode=VarDeclStmt.OWN)),
+                ref_mode=STRONG)),
             ClassDef.Member(fn_def=FnDef(
                 name='f',
                 return_type_spec=TypeSpec(name='Int'),
@@ -387,11 +387,11 @@ class QuoParserTest(unittest.TestCase):
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='b',
                 type_spec=TypeSpec(name='Int'),
-                mode=VarDeclStmt.BORROW,
+                ref_mode=WEAK,
                 init_expr=Expr(var=VarExpr(name='foo')))),
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='c',
                 type_spec=TypeSpec(name='Int'),
-                mode=VarDeclStmt.OWN)),
+                ref_mode=STRONG)),
         ]))
 
