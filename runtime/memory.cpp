@@ -65,21 +65,25 @@ string GetStackTraceString() {
   getline(raw_st_stream, line);
 
   ostringstream result_stream;
-  while (raw_st_stream) {
+  for (;;) {
     getline(raw_st_stream, line);
     // Split line by whitespaces.
     istringstream line_stream(line);
-    const string fn_name(vector<string>(
+    vector<string> columns {
         istream_iterator<string>(line_stream),
-        istream_iterator<string>()).back());
-    result_stream << fn_name;
-    if (fn_name == "main") {
+        istream_iterator<string>()
+    };
+    if (columns.empty()) {
       break;
-    } else {
-      result_stream << " ";
     }
+    const string fn_name(columns.back());
+    result_stream << fn_name << " ";
   }
-  return result_stream.str();
+  string result = result_stream.str();
+  if (!result.empty() && result.back() == ' ') {
+    result.resize(result.length() - 1);
+  }
+  return result;
 }
 
 }  // namespace
