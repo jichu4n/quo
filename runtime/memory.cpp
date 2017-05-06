@@ -136,7 +136,8 @@ void __quo_dec_refs(QObject* p) {
 
 void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode) {
   CHECK(ref_mode == STRONG_REF || ref_mode == WEAK_REF)
-      << "Invalid ref mode: " << ref_mode;
+      << "Invalid ref mode: " << ref_mode << " ["
+      << GetStackTraceString() << "]";
   if (ref_mode == STRONG_REF) {
     if (src != nullptr) {
       __quo_inc_refs(src);
