@@ -4,4 +4,5 @@ testdata/fib.quo
 testdata/fib
 testdata/assign
 testdata/string
+testdata/ref_mode
 

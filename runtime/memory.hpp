@@ -33,7 +33,7 @@ extern void __quo_inc_refs(QObject* ptr);
 // Decrement reference count, and dealloc if reference count becomes zero.
 extern void __quo_dec_refs(QObject* ptr);
 // Assign src to dest.
-extern void __quo_assign(QObject** dest, QObject* src);
+extern void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode);
 
 }
 

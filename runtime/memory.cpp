@@ -26,6 +26,7 @@
 #include <cstring>
 #include "gflags/gflags.h"
 #include "glog/logging.h"
+#include "ast/ast.pb.h"
 #include "runtime/basic_types.hpp"
 #include "runtime/descriptor.hpp"
 
@@ -47,6 +48,8 @@ extern void DumpStackTraceToString(string* stacktrace);
 }
 }
 using ::google::glog_internal_namespace_::DumpStackTraceToString;
+using ::quo::STRONG_REF;
+using ::quo::WEAK_REF;
 
 namespace {
 
@@ -127,12 +130,16 @@ void __quo_dec_refs(QObject* p) {
   }
 }
 
-void __quo_assign(QObject** dest, QObject* src) {
-  if (src != nullptr) {
-    __quo_inc_refs(src);
-  }
-  if (*dest != nullptr) {
-    __quo_dec_refs(*dest);
+void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode) {
+  CHECK(ref_mode == STRONG_REF || ref_mode == WEAK_REF)
+      << "Invalid ref mode: " << ref_mode;
+  if (ref_mode == STRONG_REF) {
+    if (src != nullptr) {
+      __quo_inc_refs(src);
+    }
+    if (*dest != nullptr) {
+      __quo_dec_refs(*dest);
+    }
   }
   *dest = src;
 }

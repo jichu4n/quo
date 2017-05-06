@@ -80,7 +80,8 @@ class ExprIRGenerator {
   ::llvm::Value* AssignObject(
       const TypeSpec& type_spec,
       ::llvm::Value* dest_ref_address,
-      ::llvm::Value* src_address);
+      ::llvm::Value* src_address,
+      RefMode ref_mode);
 
  private:
   ExprResult ProcessConstantExpr(const ConstantExpr& expr);
@@ -95,8 +96,6 @@ class ExprIRGenerator {
   ::llvm::Value* CreateObject(const TypeSpec& type_spec);
   ::llvm::Value* CreateObject(
       const TypeSpec& type_spec, ::llvm::Value* init_value);
-  ::llvm::Value* CloneObject(
-      const TypeSpec& type_spec, ::llvm::Value* src_address);
 
   ::llvm::LLVMContext& ctx_;
   ::llvm::Module* const module_;

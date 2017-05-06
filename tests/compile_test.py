@@ -70,6 +70,7 @@ fn Main() Int {
   COMPILE_TESTS = {
       'assign.quo': 94,
       'string.quo': 12,
+      'ref_mode.quo': 42,
   }
   def test_compile(self):
     for input_file, exit_code in self.COMPILE_TESTS.items():

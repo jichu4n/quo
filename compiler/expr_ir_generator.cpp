@@ -121,6 +121,7 @@ ExprResult ExprIRGenerator::ProcessVarExpr(
     result.ref_address = var->ref_address;
     result.address = ir_builder_->CreateLoad(
         var->ref_address, expr.name() + "_addr");
+    result.ref_mode = var->ref_mode;
     result.value = ir_builder_->CreateLoad(
         result.address, expr.name() + "_val");
     return result;
@@ -356,8 +357,7 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
                << expr.dest_expr().ShortDebugString();
   }
   ExprResult value_result = ProcessExpr(expr.value_expr());
-  if (dest_result.ref_mode == WEAK_REF &&
-      value_result.ref_address == nullptr) {
+  if (dest_result.ref_mode == WEAK_REF && value_result.ref_address == nullptr) {
     LOG(FATAL) << "Cannot assign temp value to weak reference: "
                << expr.ShortDebugString();
   }
@@ -365,7 +365,8 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   ::llvm::Value* dest_address = AssignObject(
       dest_result.type_spec,
       dest_result.ref_address,
-      value_result.address);
+      value_result.address,
+      dest_result.ref_mode);
   ExprResult result;
   result.type_spec = dest_result.type_spec;
   result.value = ir_builder_->CreateLoad(dest_address);
@@ -452,7 +453,8 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
 ::llvm::Value* ExprIRGenerator::AssignObject(
     const TypeSpec& type_spec,
     ::llvm::Value* dest_ref_address,
-    ::llvm::Value* src_address) {
+    ::llvm::Value* src_address,
+    RefMode ref_mode) {
   ir_builder_->CreateCall(
       builtins_->fns.quo_assign,
       {
@@ -462,14 +464,10 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
                 ::llvm::Type::getInt8PtrTy(ctx_))),
           ir_builder_->CreateBitCast(
               src_address, ::llvm::Type::getInt8PtrTy(ctx_)),
+          ::llvm::ConstantInt::get(
+              ::llvm::Type::getInt8Ty(ctx_), static_cast<int8_t>(ref_mode)),
       });
   return src_address;
-}
-
-::llvm::Value* ExprIRGenerator::CloneObject(
-    const TypeSpec& type_spec,
-    ::llvm::Value* src_address) {
-  return AssignObject(type_spec, CreateObject(type_spec), src_address);
 }
 
 }  // namespace quo

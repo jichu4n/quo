@@ -189,6 +189,7 @@ void Builtins::SetupBuiltinFunctions() {
           {
               ::llvm::PointerType::getUnqual(::llvm::Type::getInt8PtrTy(ctx_)),
               ::llvm::Type::getInt8PtrTy(ctx_),
+              ::llvm::Type::getInt8Ty(ctx_),
           },
           false));  // isVarArg
   fns.quo_alloc_string = module_->getOrInsertFunction(

@@ -231,8 +231,8 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
     }
     if (stmt.ref_mode() == WEAK_REF &&
         init_expr_result.ref_address == nullptr) {
-      LOG(FATAL) << "Cannot assign temp value to weak reference variable: "
-                 << stmt.ShortDebugString();
+        LOG(FATAL) << "Cannot assign temp value to weak reference variable: "
+                   << stmt.ShortDebugString();
     }
     expr_ir_generator_->EnsureAddress(&init_expr_result);
     type_spec = init_expr_result.type_spec;
@@ -251,7 +251,7 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
       var);
   if (stmt.has_init_expr()) {
     expr_ir_generator_->AssignObject(
-        type_spec, var, init_expr_result.address);
+        type_spec, var, init_expr_result.address, stmt.ref_mode());
   }
   symbols_->GetScope()->AddVar({
       stmt.name(),
