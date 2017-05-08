@@ -88,9 +88,13 @@ class ExprIRGenerator {
   ExprResult ProcessCallExpr(const CallExpr& expr);
   ExprResult ProcessBinaryOpExpr(const BinaryOpExpr& expr);
 
+  // Wraps an int32 value into a QInt32 value.
   ::llvm::Value* CreateInt32Value(::llvm::Value* raw_int32_value);
+  // Extracts an int32 value from a QInt32 value.
   ::llvm::Value* ExtractInt32Value(::llvm::Value* wrapped_int32_value);
+  // Wraps a bool (int8) value into a QBool value.
   ::llvm::Value* CreateBoolValue(::llvm::Value* raw_bool_value);
+  // Returns an object in memory (QObject*) for the given type.
   ::llvm::Value* CreateObject(const TypeSpec& type_spec);
   // Assigns the object at src_address to the variable referenced by
   // dest_ref_address.
