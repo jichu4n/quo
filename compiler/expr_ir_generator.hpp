@@ -92,8 +92,6 @@ class ExprIRGenerator {
   ::llvm::Value* ExtractInt32Value(::llvm::Value* wrapped_int32_value);
   ::llvm::Value* CreateBoolValue(::llvm::Value* raw_bool_value);
   ::llvm::Value* CreateObject(const TypeSpec& type_spec);
-  ::llvm::Value* CreateObject(
-      const TypeSpec& type_spec, ::llvm::Value* init_value);
   // Assigns the object at src_address to the variable referenced by
   // dest_ref_address.
   //

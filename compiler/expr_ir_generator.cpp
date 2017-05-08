@@ -428,7 +428,8 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
   if (result->address != nullptr) {
     return;
   }
-  result->address = CreateObject(result->type_spec, result->value);
+  result->address = CreateObject(result->type_spec);
+  ir_builder_->CreateStore(result->value, result->address);
   result->address->setName("temp");
   symbols_->GetScope()->AddTemp(result->address);
 }
@@ -447,14 +448,6 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
       ir_builder_->CreateCall(
           builtins_->fns.quo_alloc, { desc, value_size }),
       ::llvm::PointerType::getUnqual(ty));
-  return p;
-}
-
-::llvm::Value* ExprIRGenerator::CreateObject(
-    const TypeSpec& type_spec,
-    ::llvm::Value* init_value) {
-  ::llvm::Value* p = CreateObject(type_spec);
-  ir_builder_->CreateStore(init_value, p);
   return p;
 }
 
