@@ -28,6 +28,7 @@ namespace quo {
 
 class Builtins;
 class Symbols;
+class Var;
 
 // The result of IR generation for an expression. Only a subset of the fields
 // will be set for any given expression.
@@ -60,14 +61,39 @@ class ExprIRGenerator {
       const Builtins* builtins,
       Symbols* symbols);
 
-  // Run AST -> IR generation for an expression.
+  // Runs AST -> IR generation for an expression.
   ExprResult ProcessExpr(const Expr& expr);
+
+  // Generates IR for an assign expression.
+  //
+  // If var is nullptr, will assign result to expr.dest_expr. Otherwise,
+  // will generate code to allocate var and assign to it.
+  ExprResult ProcessAssignExpr(const AssignExpr& expr, const Var* var);
 
   // If "result' does not have a memory address, create a temporary variable and
   // copy the value there. Otherwise, do nothing.
   void EnsureAddress(ExprResult* result);
   // Extracts a bool (int8) value from a QBool value.
   ::llvm::Value* ExtractBoolValue(::llvm::Value* wrapped_bool_value);
+  // Creates a null-initialized local variable of the given type. The type
+  // should be a non-reference type (e.g. QObject). Returns the reference
+  // address of the local variable.
+  //
+  // Return type: QObject**.
+  ::llvm::Value* CreateLocalVar(::llvm::Type* ty, const ::std::string& name);
+
+ private:
+  ExprResult ProcessConstantExpr(const ConstantExpr& expr);
+  ExprResult ProcessVarExpr(const VarExpr& expr);
+  ExprResult ProcessCallExpr(const CallExpr& expr);
+  ExprResult ProcessBinaryOpExpr(const BinaryOpExpr& expr);
+
+  ::llvm::Value* CreateInt32Value(::llvm::Value* raw_int32_value);
+  ::llvm::Value* ExtractInt32Value(::llvm::Value* wrapped_int32_value);
+  ::llvm::Value* CreateBoolValue(::llvm::Value* raw_bool_value);
+  ::llvm::Value* CreateObject(const TypeSpec& type_spec);
+  ::llvm::Value* CreateObject(
+      const TypeSpec& type_spec, ::llvm::Value* init_value);
   // Assigns the object at src_address to the variable referenced by
   // dest_ref_address.
   //
@@ -78,24 +104,9 @@ class ExprIRGenerator {
   // Type of dest_ref_address: QObject**
   // Type of src_address: QObject*
   ::llvm::Value* AssignObject(
-      const TypeSpec& type_spec,
       ::llvm::Value* dest_ref_address,
       ::llvm::Value* src_address,
       RefMode ref_mode);
-
- private:
-  ExprResult ProcessConstantExpr(const ConstantExpr& expr);
-  ExprResult ProcessVarExpr(const VarExpr& expr);
-  ExprResult ProcessCallExpr(const CallExpr& expr);
-  ExprResult ProcessBinaryOpExpr(const BinaryOpExpr& expr);
-  ExprResult ProcessAssignExpr(const AssignExpr& expr);
-
-  ::llvm::Value* CreateInt32Value(::llvm::Value* raw_int32_value);
-  ::llvm::Value* ExtractInt32Value(::llvm::Value* wrapped_int32_value);
-  ::llvm::Value* CreateBoolValue(::llvm::Value* raw_bool_value);
-  ::llvm::Value* CreateObject(const TypeSpec& type_spec);
-  ::llvm::Value* CreateObject(
-      const TypeSpec& type_spec, ::llvm::Value* init_value);
 
   ::llvm::LLVMContext& ctx_;
   ::llvm::Module* const module_;

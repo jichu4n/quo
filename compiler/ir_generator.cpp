@@ -218,47 +218,31 @@ void IRGenerator::ProcessCondStmt(const CondStmt& stmt) {
 }
 
 void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
-  ::llvm::Value* var;
-  TypeSpec type_spec;
-  ::llvm::Type* ty;
-  ExprResult init_expr_result;
+  Var var;
+  var.name = stmt.name();
+  var.ref_mode = stmt.ref_mode();
   if (stmt.has_init_expr()) {
-    init_expr_result = expr_ir_generator_->ProcessExpr(stmt.init_expr());
+    AssignExpr assign_expr;
+    assign_expr.mutable_value_expr()->CopyFrom(stmt.init_expr());
+    ExprResult init_expr_result =
+        expr_ir_generator_->ProcessAssignExpr(assign_expr, &var);
     if (stmt.has_type_spec() &&
         stmt.type_spec().SerializeAsString() !=
         init_expr_result.type_spec.SerializeAsString()) {
-      LOG(FATAL) << "Invalid init expr in var decl: " << stmt.DebugString();
+      LOG(FATAL) << "Invalid init expr type in var decl: "
+                 << stmt.DebugString();
     }
-    if (stmt.ref_mode() == WEAK_REF &&
-        init_expr_result.ref_address == nullptr) {
-        LOG(FATAL) << "Cannot assign temp value to weak reference variable: "
-                   << stmt.ShortDebugString();
-    }
-    expr_ir_generator_->EnsureAddress(&init_expr_result);
-    type_spec = init_expr_result.type_spec;
-    ty = init_expr_result.value->getType();
+    var.type_spec = init_expr_result.type_spec;
+    var.ref_address = init_expr_result.ref_address;
   } else {
     if (!stmt.has_type_spec()) {
       LOG(FATAL) << "Missing type spec in var decl: " << stmt.DebugString();
     }
-    type_spec = stmt.type_spec();
-    ty = builtins_->LookupType(type_spec);
+    var.type_spec = stmt.type_spec();
+    var.ref_address = expr_ir_generator_->CreateLocalVar(
+        builtins_->LookupType(var.type_spec), stmt.name());
   }
-  var = ir_builder_->CreateAlloca(
-      ::llvm::PointerType::getUnqual(ty), nullptr, stmt.name());
-  ir_builder_->CreateStore(
-      ::llvm::ConstantPointerNull::get(::llvm::PointerType::getUnqual(ty)),
-      var);
-  if (stmt.has_init_expr()) {
-    expr_ir_generator_->AssignObject(
-        type_spec, var, init_expr_result.address, stmt.ref_mode());
-  }
-  symbols_->GetScope()->AddVar({
-      stmt.name(),
-      type_spec,
-      var,
-      stmt.ref_mode(),
-  });
+  symbols_->GetScope()->AddVar(var);
 }
 
 void IRGenerator::DestroyTemps() {

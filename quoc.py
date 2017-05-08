@@ -61,7 +61,7 @@ def compile_file(input_file, output_file=None):
   if not os.path.exists(quoc):
     print('Cannot find quoc at %s, exiting' % quoc, file=sys.stderr)
     return 1
-  bc_file = input_file_root + '.bc'
+  ll_file = input_file_root + '.ll'
   p1 = subprocess.run(
       [quoc],
       input=ast_str,
@@ -72,7 +72,7 @@ def compile_file(input_file, output_file=None):
     print(p1.stdout, file=sys.stdout)
     print(p1.stderr, file=sys.stderr)
     return p1.returncode
-  with open(bc_file, 'w') as file_obj:
+  with open(ll_file, 'w') as file_obj:
     file_obj.write(p1.stdout)
 
   # 3. Compile.

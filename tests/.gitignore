@@ -1,4 +1,4 @@
-testdata/*.bc
+testdata/*.ll
 testdata/*.s
 testdata/fib.quo
 testdata/fib

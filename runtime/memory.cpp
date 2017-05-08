@@ -115,7 +115,7 @@ void __quo_dec_refs(QObject* p) {
   const QClassDescriptor *dp = p->descriptor;
   --(p->refs);
   if (p->refs < 0) {
-    LOG(FATAL) << p << " " << dp->name << " INVALID REFS: " << p->refs << " ["
+    LOG(FATAL) << p << " INVALID REFS: " << p->refs << " ["
       << GetStackTraceString() << "]";
   } else if (p->refs == 0) {
     if (FLAGS_debug_mm) {
@@ -138,6 +138,9 @@ void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode) {
   CHECK(ref_mode == STRONG_REF || ref_mode == WEAK_REF)
       << "Invalid ref mode: " << ref_mode << " ["
       << GetStackTraceString() << "]";
+  if (*dest == src) {
+    return;
+  }
   if (ref_mode == STRONG_REF) {
     if (src != nullptr) {
       __quo_inc_refs(src);

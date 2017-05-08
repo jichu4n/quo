@@ -26,6 +26,7 @@
 namespace quo {
 
 using ::std::function;
+using ::std::string;
 using ::std::unordered_map;
 using ::std::vector;
 
@@ -58,7 +59,7 @@ ExprResult ExprIRGenerator::ProcessExpr(const Expr& expr) {
     case Expr::kBinaryOp:
       return ProcessBinaryOpExpr(expr.binary_op());
     case Expr::kAssign:
-      return ProcessAssignExpr(expr.assign());
+      return ProcessAssignExpr(expr.assign(), nullptr);
     default:
       LOG(FATAL) << "Unknown expression type:" << expr.type_case();
   }
@@ -350,20 +351,27 @@ ExprResult ExprIRGenerator::ProcessCallExpr(
 }
 
 ExprResult ExprIRGenerator::ProcessAssignExpr(
-    const AssignExpr& expr) {
-  ExprResult dest_result = ProcessExpr(expr.dest_expr());
-  if (dest_result.address == nullptr || dest_result.ref_address == nullptr) {
-    LOG(FATAL) << "Cannot assign to expression: "
-               << expr.dest_expr().ShortDebugString();
-  }
+    const AssignExpr& expr, const Var* var) {
   ExprResult value_result = ProcessExpr(expr.value_expr());
+  ExprResult dest_result;
+  if (var == nullptr) {
+    dest_result = ProcessExpr(expr.dest_expr());
+    if (dest_result.ref_address == nullptr) {
+      LOG(FATAL) << "Cannot assign to expression: "
+                 << expr.dest_expr().ShortDebugString();
+    }
+  } else {
+    dest_result.type_spec = value_result.type_spec;
+    dest_result.ref_address = CreateLocalVar(
+        value_result.value->getType(), var->name);
+    dest_result.ref_mode = var->ref_mode;
+  }
   if (dest_result.ref_mode == WEAK_REF && value_result.ref_address == nullptr) {
     LOG(FATAL) << "Cannot assign temp value to weak reference: "
                << expr.ShortDebugString();
   }
   EnsureAddress(&value_result);
   ::llvm::Value* dest_address = AssignObject(
-      dest_result.type_spec,
       dest_result.ref_address,
       value_result.address,
       dest_result.ref_mode);
@@ -451,7 +459,6 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
 }
 
 ::llvm::Value* ExprIRGenerator::AssignObject(
-    const TypeSpec& type_spec,
     ::llvm::Value* dest_ref_address,
     ::llvm::Value* src_address,
     RefMode ref_mode) {
@@ -468,6 +475,16 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
               ::llvm::Type::getInt8Ty(ctx_), static_cast<int8_t>(ref_mode)),
       });
   return src_address;
+}
+
+::llvm::Value* ExprIRGenerator::CreateLocalVar(
+    ::llvm::Type* ty, const string& name) {
+  ::llvm::Value* ref_address = ir_builder_->CreateAlloca(
+      ::llvm::PointerType::getUnqual(ty), nullptr, name);
+  ir_builder_->CreateStore(
+      ::llvm::ConstantPointerNull::get(::llvm::PointerType::getUnqual(ty)),
+      ref_address);
+  return ref_address;
 }
 
 }  // namespace quo
