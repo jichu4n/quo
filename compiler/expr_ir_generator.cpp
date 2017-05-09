@@ -435,9 +435,8 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
 }
 
 ::llvm::Value* ExprIRGenerator::CreateObject(const TypeSpec& type_spec) {
-  ::llvm::Type* const ty = builtins_->LookupType(type_spec);
-  ::llvm::Value* const desc =
-      builtins_->LookupDescriptor(type_spec);
+  ::llvm::Type* const ty = symbols_->LookupType(type_spec);
+  ::llvm::Value* const desc = symbols_->LookupDescriptor(type_spec);
   ::llvm::Value* value_size = ir_builder_->CreatePtrToInt(
       ir_builder_->CreateGEP(
         ::llvm::ConstantPointerNull::get(

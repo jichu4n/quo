@@ -33,6 +33,8 @@ using ::quo::IRGenerator;
 using ::quo::ModuleDef;
 
 int main(int argc, char* argv[]) {
+  ::google::InitGoogleLogging(argv[0]);
+
   IstreamInputStream input_stream(&cin);
   ModuleDef module_def;
   CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));

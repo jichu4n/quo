@@ -46,7 +46,7 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   module_ = module.get();
   module_def_ = &module_def;
   builtins_ = Builtins::Create(module_);
-  symbols_ = Symbols::Create(module_def);
+  symbols_ = Symbols::Create(module_, builtins_.get(), module_def);
   for (const auto& member : module_def.members()) {
     ProcessModuleMember(member);
   }
@@ -57,6 +57,8 @@ void IRGenerator::ProcessModuleMember(const ModuleDef::Member& member) {
   switch (member.type_case()) {
     case ModuleDef::Member::kFnDef:
       ProcessModuleFnDef(member.fn_def());
+      break;
+    case ModuleDef::Member::kClassDef:
       break;
     default:
       LOG(FATAL) << "Unsupported module member type: " << member.type_case();
@@ -72,10 +74,10 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
       param_tys.begin(),
       [this](const FnParam& param) {
         return ::llvm::PointerType::getUnqual(
-            builtins_->LookupType(param.type_spec()));
+            symbols_->LookupType(param.type_spec()));
       });
   ::llvm::Type* const raw_return_ty =
-      builtins_->LookupType(fn_def.return_type_spec());
+      symbols_->LookupType(fn_def.return_type_spec());
   ::llvm::Type* const return_ty = raw_return_ty->isVoidTy() ?
       raw_return_ty :
       ::llvm::PointerType::getUnqual(raw_return_ty);
@@ -240,7 +242,7 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
     }
     var.type_spec = stmt.type_spec();
     var.ref_address = expr_ir_generator_->CreateLocalVar(
-        builtins_->LookupType(var.type_spec), stmt.name());
+        symbols_->LookupType(var.type_spec), stmt.name());
   }
   symbols_->GetScope()->AddVar(var);
 }

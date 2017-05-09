@@ -30,11 +30,13 @@
 
 namespace quo {
 
+class Builtins;
+
 // Represents a local variable or function argument during IR generation.
 struct Var {
   // The name of the variable / argument.
   ::std::string name;
-  // Tye type of the variable.
+  // The type of the variable.
   TypeSpec type_spec;
   // The address of the variable, as returned by the alloca instruction.
   // Type: QObject**
@@ -67,11 +69,41 @@ struct Scope {
   const Var* Lookup(::llvm::Value* address) const;
 };
 
+// Represents a class during IR generation.
+struct ClassType {
+
+  // Represents a class's member field (instance variable).
+  struct Field {
+    // The name of the field.
+    ::std::string name;
+    // The type of the field.
+    TypeSpec type_spec;
+    // The reference mode of the field.
+    RefMode ref_mode;
+    // The index of the field within the class.
+    int index;
+  };
+
+  // Class definition in the AST.
+  const ClassDef* class_def;
+  // The LLVM IR type representation.
+  ::llvm::StructType* ty;
+  // Class descriptor object.
+  ::llvm::GlobalVariable* desc;
+  // Member fields (instance variables).
+  ::std::vector<Field> fields;
+  // Member fields, indexed by name.
+  ::std::unordered_map<::std::string, Field*> fields_by_name;
+};
+
 // Represents all symbols visible from a particular scope.
 class Symbols {
  public:
   // Creates a new symbol table for an AST module.
-  static ::std::unique_ptr<Symbols> Create(const ModuleDef& module_def);
+  static ::std::unique_ptr<Symbols> Create(
+      ::llvm::Module* module,
+      const Builtins* builtins,
+      const ModuleDef& module_def);
   // Pushes a new scope onto the stack.
   Scope* PushScope();
   // Pops off the top-most scope.
@@ -87,14 +119,27 @@ class Symbols {
   // Looks up a function definition by name.
   const FnDef* LookupFnDef(const ::std::string& name) const;
 
+  // Looks up the LLVM IR type representation for an AST type.
+  ::llvm::Type* LookupType(const TypeSpec& type_spec) const;
+  // Looks up the class descriptor for an AST type.
+  ::llvm::GlobalVariable* LookupDescriptor(const TypeSpec& type_spec) const;
+
  private:
-  Symbols();
+  Symbols(::llvm::Module* module, const Builtins* builtins);
+
   void SetupFnDefs(const ModuleDef& module_def);
+  void SetupClassDefs(const ModuleDef& module_def);
+
+  ::llvm::LLVMContext& ctx_;
+  ::llvm::Module* const module_;
+  const Builtins* builtins_;
 
   // Stack of scopes, from outermost to innermost.
   ::std::list<Scope> scopes_;
   // Global functions in the AST, by name.
   ::std::unordered_map<::std::string, const FnDef*> fn_defs_by_name_;
+  // Classes by name.
+  ::std::unordered_map<::std::string, ClassType> class_types_by_name_;
 };
 
 }  // namespace quo

@@ -36,10 +36,7 @@ unique_ptr<const Builtins> Builtins::Create(::llvm::Module* module) {
     return ::llvm::Type::getVoidTy(ctx_);
   }
   const auto it = types_map_.find(type_spec.SerializeAsString());
-  if (it == types_map_.end()) {
-    LOG(FATAL) << "Unknown type: " << type_spec.DebugString();
-  }
-  return it->second;
+  return it == types_map_.end() ? nullptr : it->second;
 }
 
 ::llvm::GlobalVariable* Builtins::LookupDescriptor(
