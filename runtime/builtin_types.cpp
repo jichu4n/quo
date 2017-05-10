@@ -16,7 +16,8 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "runtime/basic_types.hpp"
+#include "runtime/builtin_types.hpp"
+#include <cstdio>
 #include "runtime/memory.hpp"
 
 namespace {
@@ -40,18 +41,37 @@ void QStringCopy(QObject* dest, const QObject* src) {
 
 const QClassDescriptor __quo_ObjectDescriptor = {
   "Object",
+  {
+    0,
+    nullptr,
+  },
+  nullptr,
 };
 
 const QClassDescriptor __quo_Int32Descriptor = {
   "Int32",
+  {
+    0,
+    nullptr,
+  },
+  nullptr,
 };
 
 const QClassDescriptor __quo_BoolDescriptor = {
   "Bool",
+  {
+    0,
+    nullptr,
+  },
+  nullptr,
 };
 
 const QClassDescriptor __quo_StringDescriptor = {
   "String",
+  {
+    0,
+    nullptr,
+  },
   &QStringInit,
   &QStringDestroy,
   &QStringCopy,

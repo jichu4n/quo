@@ -22,14 +22,51 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <cstdint>
 
+struct QClassView;
+struct QFieldDescriptor;
 struct QObject;
 
+template <typename T>
+struct QConstArray {
+  int32_t size;
+  const T* array_ptr;
+
+  const T& operator[] (const int32_t index) const {
+    return array_ptr[index];
+  }
+};
+
+// Descriptor for a class.
 struct QClassDescriptor {
-  ::std::string name;
+  // Name of this class.
+  const char* name;
+  // Pointer to null-terminated array of QClassViews. Each QClassView defines
+  // how to access an object of this class as a superclass (or as itself).
+  const QConstArray<QClassView> views;
+
   ::std::function<void(QObject*)> init;
   ::std::function<void(QObject*)> destroy;
   ::std::function<void(QObject*, const QObject*)> copy;
+};
+
+// Defines how to access an object as a superclass (or as itself).
+struct QClassView {
+  // The superclass this view is defined for, or the target class itself.
+  QClassDescriptor* view_class;
+  // Array of field descriptors.
+  const QConstArray<QFieldDescriptor> fields;
+};
+
+// Descriptor for a field (instance variable).
+struct QFieldDescriptor {
+  // Index of this field within the object.
+  int32_t index;
+  // Name of this field.
+  const char* name;
+  // Type of this field.
+  QClassDescriptor* type;
 };
 
 #endif  // DESCRIPTOR_HPP_

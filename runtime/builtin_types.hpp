@@ -16,8 +16,8 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#ifndef BASIC_TYPES_HPP_
-#define BASIC_TYPES_HPP_
+#ifndef BUILTIN_TYPES_HPP_
+#define BUILTIN_TYPES_HPP_
 
 #include <string>
 #include <cstdint>
@@ -53,5 +53,5 @@ extern "C" QString* __quo_string_concat(QString* left, QString* right);
 // Basic printing.
 extern "C" QInt32* __quo_print(const QString* s);
 
-#endif  // BASIC_TYPES_HPP_
+#endif  // BUILTIN_TYPES_HPP_
 

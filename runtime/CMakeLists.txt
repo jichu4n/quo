@@ -19,7 +19,7 @@
 add_library(
   runtime
   STATIC
-  basic_types.cpp
+  builtin_types.cpp
   memory.cpp
   main.cpp)
 add_custom_command(

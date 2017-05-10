@@ -18,7 +18,7 @@
 
 #include "glog/logging.h"
 #include "gflags/gflags.h"
-#include "runtime/basic_types.hpp"
+#include "runtime/builtin_types.hpp"
 #include "runtime/memory.hpp"
 
 extern "C" QInt32* Main();

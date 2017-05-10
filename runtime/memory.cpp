@@ -27,7 +27,7 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "ast/ast.pb.h"
-#include "runtime/basic_types.hpp"
+#include "runtime/builtin_types.hpp"
 #include "runtime/descriptor.hpp"
 
 DEFINE_bool(
@@ -89,11 +89,10 @@ string GetStackTraceString() {
 }  // namespace
 
 QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
+  CHECK_NOTNULL(dp);
   QObject* p = static_cast<QObject*>(malloc(size));
-  if (FLAGS_debug_mm) {
-    LOG(INFO) << p << " " << dp->name << " ALLOC(" << size << ") ["
-        << GetStackTraceString() << "]";
-  }
+  LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " ALLOC(" << size
+      << ") [" << GetStackTraceString() << "]";
   p->descriptor = dp;
   p->refs = 1;
   if (dp->init) {
@@ -103,34 +102,27 @@ QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
 }
 
 void __quo_inc_refs(QObject* p) {
-  ++(p->refs);
-  if (FLAGS_debug_mm) {
-    const QClassDescriptor *dp = p->descriptor;
-    LOG(INFO) << p << " " << dp->name << " ++REF=" << p->refs << " ["
-        << GetStackTraceString() << "]";
-  }
+  ++(CHECK_NOTNULL(p)->refs);
+  const QClassDescriptor *dp = CHECK_NOTNULL(p->descriptor);
+  LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " ++REF=" << p->refs
+      << " [" << GetStackTraceString() << "]";
 }
 
 void __quo_dec_refs(QObject* p) {
-  const QClassDescriptor *dp = p->descriptor;
+  const QClassDescriptor *dp = CHECK_NOTNULL(CHECK_NOTNULL(p)->descriptor);
   --(p->refs);
-  if (p->refs < 0) {
-    LOG(FATAL) << p << " INVALID REFS: " << p->refs << " ["
-      << GetStackTraceString() << "]";
-  } else if (p->refs == 0) {
-    if (FLAGS_debug_mm) {
-      LOG(INFO) << p << " " << dp->name << " FREE " << " ["
-          << GetStackTraceString() << "]";
-    }
+  LOG_IF(FATAL, p->refs < 0) << p << " INVALID REFS: " << p->refs << " ["
+    << GetStackTraceString() << "]";
+  if (p->refs == 0) {
+    LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " FREE " << " ["
+        << GetStackTraceString() << "]";
     if (dp->destroy) {
       dp->destroy(p);
     }
     free(p);
   } else {
-    if (FLAGS_debug_mm) {
-      LOG(INFO) << p << " " << dp->name << " --REF=" << p->refs << " ["
-          << GetStackTraceString() << "]";
-    }
+    LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " --REF=" << p->refs
+        << " [" << GetStackTraceString() << "]";
   }
 }
 
@@ -150,5 +142,44 @@ void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode) {
     }
   }
   *dest = src;
+}
+
+QObject* __quo_get_field(
+    QObject* obj, QClassDescriptor* view_class, int32_t index) {
+  CHECK_GE(index, 0);
+  const QClassDescriptor* desc = CHECK_NOTNULL(CHECK_NOTNULL(obj)->descriptor);
+  CHECK_GT(desc->views.size, 0)
+      << "Attempting to access field " << index
+      << " in class " << view_class->name << "  (cast from "
+      << desc->name << "), but class " << desc->name
+      << " has no views";
+  const QClassView& self_view = desc->views[0];
+  CHECK_EQ(self_view.view_class, desc)
+      << "The first view in class " << desc->name
+      << " is for different class " << self_view.view_class->name;
+  for (int i = 0; i < desc->views.size; ++i) {
+    const QClassView& view = desc->views[i];
+    if (view.view_class == view_class) {
+      CHECK_GT(view.fields.size, index)
+          << "Attempting to access field " << index
+          << " of class " << view_class->name << " (cast from "
+          << desc->name << "), which has " << view.fields.size << " members";
+      int32_t index_in_obj = view.fields[index].index;
+      CHECK_GE(index_in_obj, 0)
+          << "Field " << view.fields[index].name << " in class "
+          << view_class->name << " (cast from "
+          << desc->name << ") has negative index in object "
+          << index_in_obj;
+      CHECK_LT(index_in_obj, self_view.fields.size)
+          << "Field " << view.fields[index].name << " in class "
+          << view_class->name << " (cast from "
+          << desc->name << ") has invalid index in object "
+          << index_in_obj << ", which only has " << self_view.fields.size
+          << " fields";
+      return reinterpret_cast<QCustomObject*>(obj)->fields[index_in_obj];
+    }
+  }
+  LOG(FATAL) << "Failed to cast object " << " at " << obj
+      << " of class " << desc->name << " to " << view_class->name;
 }
 

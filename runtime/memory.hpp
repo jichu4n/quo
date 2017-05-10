@@ -20,9 +20,13 @@
 #define MEMORY_HPP_
 
 #include <cstdint>
+#include "runtime/builtin_types.hpp"
 
-struct QObject;
-struct QClassDescriptor;
+// A user-defined class instance.
+struct QCustomObject : public QObject {
+  // Array of member fields.
+  QObject* fields[1];
+};
 
 extern "C" {
 
@@ -34,6 +38,14 @@ extern void __quo_inc_refs(QObject* ptr);
 extern void __quo_dec_refs(QObject* ptr);
 // Assign src to dest.
 extern void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode);
+
+// Object field access.
+//
+// First, this casts the object to the given class (via its class view table)
+// and return the address within the object of the index-th field of the given
+// class.
+extern QObject* __quo_get_field(
+    QObject* obj, QClassDescriptor* view_class, int32_t index);
 
 }
 
