@@ -59,9 +59,9 @@ class QuoParserTest(unittest.TestCase):
                         array_expr=Expr(member=MemberExpr(
                             parent_expr=Expr(var=VarExpr(name='b')),
                             member_name='foo')),
-                        index_expr=Expr(constant=ConstantExpr(intValue=0)))),
+                        index_expr=Expr(constant=ConstantExpr(int_value=0)))),
                     index_expr=Expr(
-                        constant=ConstantExpr(strValue='hello')))))),
+                        constant=ConstantExpr(str_value='hello')))))),
             member_name='bar')))
     self.assert_ast_match(
         '(((a)()(c,)(d()))(e.f()[1],g,h[i].j(),))',
@@ -82,7 +82,7 @@ class QuoParserTest(unittest.TestCase):
                         fn_expr=Expr(member=MemberExpr(
                             parent_expr=Expr(var=VarExpr(name='e')),
                             member_name='f')))),
-                    index_expr=Expr(constant=ConstantExpr(intValue=1)))),
+                    index_expr=Expr(constant=ConstantExpr(int_value=1)))),
                 Expr(var=VarExpr(name='g')),
                 Expr(call=CallExpr(
                     fn_expr=Expr(member=MemberExpr(
@@ -150,8 +150,8 @@ class QuoParserTest(unittest.TestCase):
                             right_expr=Expr(var=VarExpr(name='d')))))),
                     right_expr=Expr(unary_op=UnaryOpExpr(
                         op=UnaryOpExpr.NOT,
-                        expr=Expr(constant=ConstantExpr(boolValue=False)))))))),
-            right_expr=Expr(constant=ConstantExpr(boolValue=True)))))
+                        expr=Expr(constant=ConstantExpr(bool_value=False)))))))),
+            right_expr=Expr(constant=ConstantExpr(bool_value=True)))))
  
   def test_assign(self):
     self.assert_ast_match(
@@ -183,14 +183,14 @@ class QuoParserTest(unittest.TestCase):
             right_expr=Expr(var=VarExpr(name='b')))),
         true_block=Block(stmts=[
             Stmt(cond=CondStmt(
-                cond_expr=Expr(constant=ConstantExpr(intValue=3)),
+                cond_expr=Expr(constant=ConstantExpr(int_value=3)),
                 true_block=Block())),
             Stmt(cond=CondStmt(
-                cond_expr=Expr(constant=ConstantExpr(intValue=4)),
+                cond_expr=Expr(constant=ConstantExpr(int_value=4)),
                 true_block=Block()))
         ]),
         false_block=Block(stmts=[Stmt(cond=CondStmt(
-            cond_expr=Expr(constant=ConstantExpr(boolValue=True)),
+            cond_expr=Expr(constant=ConstantExpr(bool_value=True)),
             true_block=Block(stmts=[
                 Stmt(expr=ExprStmt(expr=Expr(var=VarExpr(name='hello')))),
             ]),
@@ -247,7 +247,7 @@ class QuoParserTest(unittest.TestCase):
             name='b',
             type_spec=TypeSpec(name='Int'),
             ref_mode=STRONG_REF,
-            init_expr=Expr(constant=ConstantExpr(intValue=3)))),
+            init_expr=Expr(constant=ConstantExpr(int_value=3)))),
         Stmt(var_decl=VarDeclStmt(
             name='c',
             type_spec=TypeSpec(name='Int'),
@@ -258,13 +258,13 @@ class QuoParserTest(unittest.TestCase):
             ref_mode=STRONG_REF,
             init_expr=Expr(binary_op=BinaryOpExpr(
                 op=BinaryOpExpr.ADD,
-                left_expr=Expr(constant=ConstantExpr(intValue=5)),
-                right_expr=Expr(constant=ConstantExpr(intValue=2)))))),
+                left_expr=Expr(constant=ConstantExpr(int_value=5)),
+                right_expr=Expr(constant=ConstantExpr(int_value=2)))))),
         Stmt(var_decl=VarDeclStmt(
             name='e',
             type_spec=TypeSpec(name='String'),
             ref_mode=STRONG_REF,
-            init_expr=Expr(constant=ConstantExpr(strValue='')))),
+            init_expr=Expr(constant=ConstantExpr(str_value='')))),
         Stmt(var_decl=VarDeclStmt(
             name='f',
             ref_mode=STRONG_REF)),
@@ -308,12 +308,12 @@ class QuoParserTest(unittest.TestCase):
             FnParam(
                 name='c',
                 ref_mode=STRONG_REF,
-                init_expr=Expr(constant=ConstantExpr(intValue=0))),
+                init_expr=Expr(constant=ConstantExpr(int_value=0))),
             FnParam(
                 name='d',
                 ref_mode=STRONG_REF,
                 type_spec=TypeSpec(name='Int'),
-                init_expr=Expr(constant=ConstantExpr(intValue=0))),
+                init_expr=Expr(constant=ConstantExpr(int_value=0))),
         ],
         cc=FnDef.DEFAULT,
         block=Block(stmts=[
@@ -383,7 +383,7 @@ class QuoParserTest(unittest.TestCase):
                 return_type_spec=TypeSpec(name='Int'),
                 cc=FnDef.DEFAULT,
                 block=Block(stmts=[Stmt(ret=RetStmt(
-                    expr=Expr(constant=ConstantExpr(intValue=42))))]))),
+                    expr=Expr(constant=ConstantExpr(int_value=42))))]))),
             ClassDef.Member(var_decl=VarDeclStmt(
                 name='b',
                 type_spec=TypeSpec(name='Int'),

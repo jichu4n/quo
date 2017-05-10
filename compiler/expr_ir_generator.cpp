@@ -72,12 +72,12 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
       result.type_spec = builtins_->types.int32_type.type_spec;
       result.value = CreateInt32Value(
           ::llvm::ConstantInt::getSigned(
-              ::llvm::Type::getInt32Ty(ctx_), expr.intvalue()));
+              ::llvm::Type::getInt32Ty(ctx_), expr.int_value()));
       break;
     case ConstantExpr::kBoolValue:
       result.type_spec = builtins_->types.bool_type.type_spec;
       result.value = CreateBoolValue(
-          expr.boolvalue() ?
+          expr.bool_value() ?
               ::llvm::ConstantInt::getTrue(ctx_) :
               ::llvm::ConstantInt::getFalse(ctx_));
       break;
@@ -85,7 +85,7 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
       result.type_spec = builtins_->types.string_type.type_spec;
       ::llvm::Constant* array = ::llvm::ConstantDataArray::getString(
           ctx_,
-          expr.strvalue(),
+          expr.str_value(),
           false);  // addNull
       ::llvm::GlobalVariable* array_var = new ::llvm::GlobalVariable(
           *module_,
@@ -100,7 +100,7 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
                   array_var,
                   ::llvm::Type::getInt8PtrTy(ctx_)),
               ::llvm::ConstantInt::getSigned(
-                  ::llvm::Type::getInt32Ty(ctx_), expr.strvalue().size()),
+                  ::llvm::Type::getInt32Ty(ctx_), expr.str_value().size()),
           });
       symbols_->GetScope()->AddTemp(result.address);
       result.value = ir_builder_->CreateLoad(result.address);

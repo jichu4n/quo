@@ -23,9 +23,9 @@ package quo;
 // A constant expression.
 message ConstantExpr {
   oneof value {
-    string strValue = 1;
-    int64 intValue = 2;
-    bool boolValue = 3;
+    string str_value = 1;
+    int64 int_value = 2;
+    bool bool_value = 3;
   }
 }
 

@@ -38,15 +38,15 @@ class QuoParser(object):
 
   def p_primary_constant_str(self, p):
     '''primary : STRING_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(strValue=p[1]))
+    p[0] = Expr(constant=ConstantExpr(str_value=p[1]))
 
   def p_primary_constant_int(self, p):
     '''primary : INTEGER_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(intValue=p[1]))
+    p[0] = Expr(constant=ConstantExpr(int_value=p[1]))
 
   def p_primary_constant_bool(self, p):
     '''primary : BOOLEAN_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(boolValue=p[1]))
+    p[0] = Expr(constant=ConstantExpr(bool_value=p[1]))
 
   def p_primary_var(self, p):
     '''primary : IDENTIFIER
