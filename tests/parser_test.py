@@ -28,16 +28,29 @@ class QuoParserTest(unittest.TestCase):
 
   maxDiff = None
 
+  def drop_lines(self, d):
+    if 'line' in d:
+      d.pop('line')
+    for v in d.values():
+      if isinstance(v, dict):
+        self.drop_lines(v)
+      elif isinstance(v, list):
+        for ve in v:
+          if isinstance(ve, dict):
+            self.drop_lines(ve)
+    return d
+
   def assert_ast_match(self, input_str, start, expected_ast):
     parse = parser.create_parser(start=start)
     actual_ast = parse.parse(input_str)
     if isinstance(actual_ast, list):
       actual_ast_serialized = [
-          json_format.MessageToDict(ast_node)
+          self.drop_lines(json_format.MessageToDict(ast_node))
           for ast_node in actual_ast
       ]
     else:
-      actual_ast_serialized = json_format.MessageToDict(actual_ast)
+      actual_ast_serialized = self.drop_lines(
+          json_format.MessageToDict(actual_ast))
     if isinstance(expected_ast, list):
       expected_ast_serialized = [
           json_format.MessageToDict(ast_node)

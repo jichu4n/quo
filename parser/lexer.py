@@ -227,7 +227,7 @@ class QuoLexer(object):
 
   def t_newline(self, t):
     r'\n+'
-    t.lexer.lineno += len(t.value)
+    t.lexer.lineno += len(t.value) // 2  # WTF?
 
   def t_error(self, t):
     """Report error."""

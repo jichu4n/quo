@@ -38,21 +38,21 @@ class QuoParser(object):
 
   def p_primary_constant_str(self, p):
     '''primary : STRING_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(str_value=p[1]))
+    p[0] = Expr(constant=ConstantExpr(str_value=p[1]), line=p.lineno(1))
 
   def p_primary_constant_int(self, p):
     '''primary : INTEGER_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(int_value=p[1]))
+    p[0] = Expr(constant=ConstantExpr(int_value=p[1]), line=p.lineno(1))
 
   def p_primary_constant_bool(self, p):
     '''primary : BOOLEAN_CONSTANT'''
-    p[0] = Expr(constant=ConstantExpr(bool_value=p[1]))
+    p[0] = Expr(constant=ConstantExpr(bool_value=p[1]), line=p.lineno(1))
 
   def p_primary_var(self, p):
     '''primary : IDENTIFIER
                | THIS
     '''
-    p[0] = Expr(var=VarExpr(name=p[1]))
+    p[0] = Expr(var=VarExpr(name=p[1]), line=p.lineno(1))
 
   def p_primary_paren(self, p):
     '''primary : L_PAREN expr R_PAREN'''
@@ -60,15 +60,21 @@ class QuoParser(object):
 
   def p_primary_member(self, p):
     '''primary : primary DOT IDENTIFIER'''
-    p[0] = Expr(member=MemberExpr(parent_expr=p[1], member_name=p[3]))
+    p[0] = Expr(
+        member=MemberExpr(parent_expr=p[1], member_name=p[3]),
+        line=p[1].line)
 
   def p_primary_index(self, p):
     '''primary : primary L_BRACKET expr R_BRACKET'''
-    p[0] = Expr(index=IndexExpr(array_expr=p[1], index_expr=p[3]))
+    p[0] = Expr(
+        index=IndexExpr(array_expr=p[1], index_expr=p[3]),
+        line=p[1].line)
 
   def p_primary_call(self, p):
     '''primary : primary L_PAREN expr_list R_PAREN'''
-    p[0] = Expr(call=CallExpr(fn_expr=p[1], arg_exprs=p[3]))
+    p[0] = Expr(
+        call=CallExpr(fn_expr=p[1], arg_exprs=p[3]),
+        line=p[1].line)
 
   def p_unary_arith_primary(self, p):
     '''unary_arith : primary'''
@@ -82,7 +88,9 @@ class QuoParser(object):
         '+': UnaryOpExpr.ADD,
         '-': UnaryOpExpr.SUB,
     }
-    p[0] = Expr(unary_op=UnaryOpExpr(op=getattr(UnaryOpExpr, p[1]), expr=p[2]))
+    p[0] = Expr(
+        unary_op=UnaryOpExpr(op=getattr(UnaryOpExpr, p[1]), expr=p[2]),
+        line=p.lineno(1))
 
   def p_binary_arith_unary_arith(self, p):
     '''binary_arith : unary_arith'''
@@ -101,8 +109,10 @@ class QuoParser(object):
                     | binary_arith LT binary_arith
                     | binary_arith LE binary_arith
     '''
-    p[0] = Expr(binary_op=BinaryOpExpr(
-      op=getattr(BinaryOpExpr, p[2]), left_expr=p[1], right_expr=p[3]))
+    p[0] = Expr(
+        binary_op=BinaryOpExpr(
+            op=getattr(BinaryOpExpr, p[2]), left_expr=p[1], right_expr=p[3]),
+        line=p[1].line)
 
   def p_unary_bool_binary_arith(self, p):
     '''unary_bool : binary_arith'''
@@ -110,7 +120,9 @@ class QuoParser(object):
 
   def p_unary_bool(self, p):
     '''unary_bool : NOT unary_bool'''
-    p[0] = Expr(unary_op=UnaryOpExpr(op=UnaryOpExpr.NOT, expr=p[2]))
+    p[0] = Expr(
+        unary_op=UnaryOpExpr(op=UnaryOpExpr.NOT, expr=p[2]),
+        line=p.lineno(1))
 
   def p_binary_bool_unary_bool(self, p):
     '''binary_bool : unary_bool'''
@@ -120,12 +132,16 @@ class QuoParser(object):
     '''binary_bool : binary_bool AND binary_bool
                    | binary_bool OR binary_bool
     '''
-    p[0] = Expr(binary_op=BinaryOpExpr(
-      op=getattr(BinaryOpExpr, p[2]), left_expr=p[1], right_expr=p[3]))
+    p[0] = Expr(
+        binary_op=BinaryOpExpr(
+            op=getattr(BinaryOpExpr, p[2]), left_expr=p[1], right_expr=p[3]),
+        line=p[1].line)
 
   def p_assign(self, p):
     '''assign : primary ASSIGN expr'''
-    p[0] = Expr(assign=AssignExpr(dest_expr=p[1], value_expr=p[3]))
+    p[0] = Expr(
+        assign=AssignExpr(dest_expr=p[1], value_expr=p[3]),
+        line=p[1].line)
 
   def p_assign_op(self, p):
     '''assign : primary ADD_ASSIGN expr
@@ -135,12 +151,14 @@ class QuoParser(object):
     '''
     # TODO: This is not technically correct as it would re-evaluate the dest
     # expr, which may have side effects.
-    p[0] = Expr(assign=AssignExpr(
-      dest_expr=p[1],
-      value_expr=Expr(binary_op=BinaryOpExpr(
-        op=getattr(BinaryOpExpr, p[2].split('_')[0]),
-        left_expr=p[1],
-        right_expr=p[3]))))
+    p[0] = Expr(
+        assign=AssignExpr(
+            dest_expr=p[1],
+            value_expr=Expr(binary_op=BinaryOpExpr(
+              op=getattr(BinaryOpExpr, p[2].split('_')[0]),
+              left_expr=p[1],
+              right_expr=p[3]))),
+        line=p[1].line)
 
   def p_expr(self, p):
     '''expr : binary_bool
@@ -201,27 +219,31 @@ class QuoParser(object):
   def p_var(self, p):
     '''var : IDENTIFIER'''
     p[0] = VarDeclStmt(name=p[1])
+    p.set_lineno(0, p.lineno(1))
 
   def p_var_init_expr(self, p):
     '''var : IDENTIFIER ASSIGN expr'''
     p[0] = VarDeclStmt(name=p[1], init_expr=p[3])
+    p.set_lineno(0, p.lineno(1))
 
   def p_var_list_one(self, p):
     '''var_list : var_mode var'''
     p[0] = [VarDeclStmt()]
     p[0][0].CopyFrom(p[2])
     p[0][0].ref_mode = p[1]
+    p.set_lineno(0, p.lineno(2))
 
   def p_var_list(self, p):
     '''var_list : var_mode var COMMA var_list'''
     p[0] = [VarDeclStmt()] + p[4]
     p[0][0].CopyFrom(p[2])
     p[0][0].ref_mode = p[1]
+    p.set_lineno(0, p.lineno(2))
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
     p[0] = [
-        Stmt(var_decl=var_decl)
+        Stmt(var_decl=var_decl, line=p.lineno(1))
         for var_decl in p[1]
     ]
 
@@ -235,7 +257,7 @@ class QuoParser(object):
           type_spec=p[2])
       if var_decl.HasField('init_expr'):
         var_decl_stmt.init_expr.CopyFrom(var_decl.init_expr)
-      p[0].append(Stmt(var_decl=var_decl_stmt))
+      p[0].append(Stmt(var_decl=var_decl_stmt, line=p.lineno(1)))
 
   def p_var_decls_list_empty(self, p):
     '''var_decls_list :'''
@@ -248,56 +270,68 @@ class QuoParser(object):
   def p_var_decls_stmts(self, p):
     '''var_decl_stmts : VAR var_decls'''
     p[0] = p[2]
+    p.set_lineno(0, p.lineno(1))
 
   def p_var_decls_stmts_block(self, p):
     '''var_decl_stmts : VAR L_BRACE var_decls_list R_BRACE'''
     p[0] = p[3]
+    p.set_lineno(0, p.lineno(1))
 
   def p_expr_stmt(self, p):
     '''expr_stmt : expr SEMICOLON'''
-    p[0] = Stmt(expr=ExprStmt(expr=p[1]))
+    p[0] = Stmt(
+        expr=ExprStmt(expr=p[1]),
+        line=p[1].line)
 
   def p_return_stmt(self, p):
     '''return_stmt : RETURN SEMICOLON'''
-    p[0] = Stmt(ret=RetStmt())
+    p[0] = Stmt(ret=RetStmt(), line=p.lineno(1))
 
   def p_return_stmt_with_value(self, p):
     '''return_stmt : RETURN expr SEMICOLON'''
-    p[0] = Stmt(ret=RetStmt(expr=p[2]))
+    p[0] = Stmt(ret=RetStmt(expr=p[2]), line=p.lineno(1))
 
   def p_break_stmt(self, p):
     '''break_stmt : BREAK SEMICOLON'''
-    p[0] = Stmt(brk=BrkStmt())
+    p[0] = Stmt(brk=BrkStmt(), line=p.lineno(1))
 
   def p_continue_stmt(self, p):
     '''continue_stmt : CONTINUE SEMICOLON'''
-    p[0] = Stmt(cont=ContStmt())
+    p[0] = Stmt(cont=ContStmt(), line=p.lineno(1))
 
   def p_cond_stmt_if(self, p):
     '''cond_stmt_if : IF expr L_BRACE stmts R_BRACE'''
-    p[0] = CondStmt(cond_expr=p[2], true_block=p[4])
+    p[0] = Stmt(
+        cond=CondStmt(cond_expr=p[2], true_block=p[4]),
+        line=p.lineno(1))
 
   def p_cond_stmt_cond_stmt_if(self, p):
     '''cond_stmt : cond_stmt_if'''
-    p[0] = Stmt(cond=p[1])
+    p[0] = p[1]
 
   def p_cond_stmt_if_else_if(self, p):
     '''cond_stmt : cond_stmt_if ELSE cond_stmt'''
-    p[0] = Stmt(cond=CondStmt(
-        cond_expr=p[1].cond_expr,
-        true_block=p[1].true_block,
-        false_block=Block(stmts=[p[3]])))
+    p[0] = Stmt(
+        cond=CondStmt(
+            cond_expr=p[1].cond.cond_expr,
+            true_block=p[1].cond.true_block,
+            false_block=Block(stmts=[p[3]])),
+        line=p[1].line)
 
   def p_cond_stmt_if_else(self, p):
     '''cond_stmt : cond_stmt_if ELSE L_BRACE stmts R_BRACE'''
-    p[0] = Stmt(cond=CondStmt(
-        cond_expr=p[1].cond_expr,
-        true_block=p[1].true_block,
-        false_block=p[4]))
+    p[0] = Stmt(
+        cond=CondStmt(
+            cond_expr=p[1].cond.cond_expr,
+            true_block=p[1].cond.true_block,
+            false_block=p[4]),
+        line=p[1].line)
 
   def p_cond_loop_stmt(self, p):
     '''cond_loop_stmt : WHILE expr L_BRACE stmts R_BRACE'''
-    p[0] = Stmt(cond_loop=CondLoopStmt(cond_expr=p[2], block=p[4]))
+    p[0] = Stmt(
+        cond_loop=CondLoopStmt(cond_expr=p[2], block=p[4]),
+        line=p.lineno(1))
 
   def p_stmt(self, p):
     '''stmt : expr_stmt
@@ -404,6 +438,7 @@ class QuoParser(object):
       p[0].return_type_spec.CopyFrom(p[7])
     if p[3]:
       p[0].type_params.extend(p[3])
+    p.set_lineno(0, p.lineno(1))
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''
@@ -420,17 +455,17 @@ class QuoParser(object):
   def p_class_members_var_decl_stmts(self, p):
     '''class_members : var_decl_stmts class_members'''
     p[0] = [
-        ClassDef.Member(var_decl=stmt.var_decl)
+        ClassDef.Member(var_decl=stmt.var_decl, line=stmt.line)
         for stmt in p[1]
     ] + p[2]
 
   def p_class_members_func(self, p):
     '''class_members : func class_members'''
-    p[0] = [ClassDef.Member(fn_def=p[1])] + p[2]
+    p[0] = [ClassDef.Member(fn_def=p[1], line=p.lineno(1))] + p[2]
 
   def p_class_members_class(self, p):
     '''class_members : class class_members'''
-    p[0] = [ClassDef.Member(class_def=p[1])] + p[2]
+    p[0] = [ClassDef.Member(class_def=p[1], line=p.lineno(1))] + p[2]
 
   def p_class(self, p):
     '''class : CLASS IDENTIFIER type_params super_classes \
@@ -441,6 +476,7 @@ class QuoParser(object):
         type_params=p[3],
         super_classes=p[4],
         members=p[6])
+    p.set_lineno(0, p.lineno(1))
 
   def p_extern_fn(self, p):
     '''extern_fn : EXTERN FUNCTION IDENTIFIER \
@@ -448,6 +484,7 @@ class QuoParser(object):
                    return_type_spec SEMICOLON
     '''
     p[0] = ExternFn(name=p[3], params=p[5], return_type_spec=p[7])
+    p.set_lineno(0, p.lineno(1))
 
   def p_func_cc_empty(self, p):
     '''func_cc :'''
@@ -462,6 +499,7 @@ class QuoParser(object):
     p[0] = FnDef()
     p[0].CopyFrom(p[2])
     p[0].cc = p[1]
+    p.set_lineno(0, p.lineno(2))
 
   def p_module_members_empty(self, p):
     '''module_members :'''
@@ -470,21 +508,21 @@ class QuoParser(object):
   def p_module_members_var_decl_stmts(self, p):
     '''module_members : var_decl_stmts module_members'''
     p[0] = [
-        ModuleDef.Member(var_decl=stmt.var_decl)
+        ModuleDef.Member(var_decl=stmt.var_decl, line=stmt.line)
         for stmt in p[1]
     ] + p[2]
 
   def p_module_members_func(self, p):
     '''module_members : module_func module_members'''
-    p[0] = [ModuleDef.Member(fn_def=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(fn_def=p[1], line=p.lineno(1))] + p[2]
 
   def p_module_members_extern_fn(self, p):
     '''module_members : extern_fn module_members'''
-    p[0] = [ModuleDef.Member(extern_fn=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(extern_fn=p[1], line=p.lineno(1))] + p[2]
 
   def p_module_members_class(self, p):
     '''module_members : class module_members'''
-    p[0] = [ModuleDef.Member(class_def=p[1])] + p[2]
+    p[0] = [ModuleDef.Member(class_def=p[1], line=p.lineno(1))] + p[2]
 
   def p_module(self, p):
     '''module : module_members'''

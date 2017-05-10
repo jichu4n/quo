@@ -109,6 +109,7 @@ message Expr {
     BinaryOpExpr binary_op = 7;
     AssignExpr assign = 8;
   }
+  int32 line = 1000;
 }
 
 // Expression statement.
@@ -161,6 +162,7 @@ message Stmt {
     CondLoopStmt cond_loop = 6;
     VarDeclStmt var_decl = 7;
   }
+  int32 line = 1000;
 }
 
 // A code block.
@@ -208,6 +210,7 @@ message ClassDef {
       FnDef fn_def = 2;
       VarDeclStmt var_decl = 3;
     }
+    int32 line = 1000;
   }
   repeated Member members = 4;
 }
@@ -222,6 +225,7 @@ message ModuleDef {
       VarDeclStmt var_decl = 3;
       ExternFn extern_fn = 4;
     }
+    int32 line = 1000;
   }
   repeated Member members = 2;
 }
