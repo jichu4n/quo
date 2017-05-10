@@ -24,7 +24,8 @@ add_executable(
   ir_generator.cpp
   expr_ir_generator.cpp
   symbols.cpp
-  builtins.cpp)
+  builtins.cpp
+  exceptions.cpp)
 target_link_libraries(quoc ast)
 llvm_config(quoc core)
 

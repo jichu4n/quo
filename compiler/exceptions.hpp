@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                           *
- *  Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          *
+ *  Copyright (C) 2017 Chuan Ji <ji@chu4n.com>                               *
  *                                                                           *
  *  Licensed under the Apache License, Version 2.0 (the "License");          *
  *  you may not use this file except in compliance with the License.         *
@@ -16,50 +16,34 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <cstdlib>
-#include <algorithm>
-#include <iostream>
+#ifndef EXCEPTIONS_HPP_
+#define EXCEPTIONS_HPP_
+
+#include <exception>
 #include <memory>
 #include <string>
-#include "glog/logging.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/text_format.h"
-#include "llvm/Support/raw_ostream.h"
-#include "compiler/ir_generator.hpp"
-#include "compiler/exceptions.hpp"
 
-using ::std::cerr;
-using ::std::cin;
-using ::std::endl;
-using ::std::unique_ptr;
-using ::google::protobuf::io::IstreamInputStream;
-using ::quo::Exception;
-using ::quo::IRGenerator;
-using ::quo::ModuleDef;
+namespace quo {
 
-int main(int argc, char* argv[]) {
-  ::google::InitGoogleLogging(argv[0]);
+struct Exception : public ::std::exception {
+  int line;
+  ::std::string message;
 
-  IstreamInputStream input_stream(&cin);
-  ModuleDef module_def;
-  CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
-  // LOG(INFO) << module_def.DebugString();
+  Exception(const Exception& e);
+  Exception(int line, const char* format, ...);
+  Exception(const char* format, ...);
 
-  IRGenerator ir_generator;
-  unique_ptr<::llvm::Module> module;
-  try {
-    module = ir_generator.ProcessModule(module_def);
-  } catch (const Exception& e) {
-     cerr << e.what() << endl;
-     return EXIT_FAILURE;
-  }
+  // Returns a copy of this exception with a default line number. If this
+  // exception already has a line number, the default line number is ignored and
+  // *this is returned.
+  Exception withDefault(int defaultLine) const;
 
-  module->print(
-      ::llvm::outs(),
-      nullptr,  // AssemblyAnnotationWriter
-      false,  // ShouldPreserveUseListOrder
-      true);  // IsForDebug
+  virtual const char* what() const throw();
 
-  return EXIT_SUCCESS;
-}
+ private:
+  ::std::unique_ptr<::std::string> what_;
+};
 
+}  // namespace quo
+
+#endif  // EXCEPTIONS_HPP_

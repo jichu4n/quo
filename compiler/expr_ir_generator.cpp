@@ -21,7 +21,9 @@
 #include <vector>
 #include "glog/logging.h"
 #include "compiler/builtins.hpp"
+#include "compiler/exceptions.hpp"
 #include "compiler/symbols.hpp"
+#include "compiler/utils.hpp"
 
 namespace quo {
 
@@ -49,19 +51,23 @@ ExprIRGenerator::ExprIRGenerator(
 
 
 ExprResult ExprIRGenerator::ProcessExpr(const Expr& expr) {
-  switch (expr.type_case()) {
-    case Expr::kConstant:
-      return ProcessConstantExpr(expr.constant());
-    case Expr::kVar:
-      return ProcessVarExpr(expr.var());
-    case Expr::kCall:
-      return ProcessCallExpr(expr.call());
-    case Expr::kBinaryOp:
-      return ProcessBinaryOpExpr(expr.binary_op());
-    case Expr::kAssign:
-      return ProcessAssignExpr(expr.assign(), nullptr);
-    default:
-      LOG(FATAL) << "Unknown expression type:" << expr.type_case();
+  try {
+    switch (expr.type_case()) {
+      case Expr::kConstant:
+        return ProcessConstantExpr(expr.constant());
+      case Expr::kVar:
+        return ProcessVarExpr(expr.var());
+      case Expr::kCall:
+        return ProcessCallExpr(expr.call());
+      case Expr::kBinaryOp:
+        return ProcessBinaryOpExpr(expr.binary_op());
+      case Expr::kAssign:
+        return ProcessAssignExpr(expr.assign(), nullptr);
+      default:
+        throw Exception("Unknown expression type: %d", expr.type_case());
+    }
+  } catch (const Exception& e) {
+    throw e.withDefault(expr.line());
   }
 }
 
@@ -107,7 +113,7 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
       break;
     }
     default:
-      LOG(FATAL) << "Unknown constant type:" << expr.value_case();
+      throw Exception("Unknown constant type: %d", expr.value_case());
   }
   return result;
 }
@@ -142,7 +148,7 @@ ExprResult ExprIRGenerator::ProcessVarExpr(
     return result;
   }
 
-  LOG(FATAL) << "Unknown variable: " << expr.name();
+  throw Exception("Unknown variable: %s", expr.name().c_str());
 }
 
 ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
@@ -262,8 +268,10 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
                 ExtractInt32Value(left_result.value),
                 ExtractInt32Value(right_result.value)));
       } else {
-        LOG(FATAL) << "Incompatible types for binary operation "
-          << BinaryOpExpr::Op_Name(expr.op());
+        throw Exception(
+                "Incompatible types for binary operation %s: %s",
+                BinaryOpExpr::Op_Name(expr.op()).c_str(),
+                expr.ShortDebugString().c_str());
       }
       break;
     case BinaryOpExpr::GT:
@@ -280,7 +288,10 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
                 ExtractInt32Value(left_result.value),
                 ExtractInt32Value(right_result.value)));
       } else {
-        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+        throw Exception(
+                "Incompatible types for binary operation %s: %s",
+                BinaryOpExpr::Op_Name(expr.op()).c_str(),
+                expr.ShortDebugString().c_str());
       }
       break;
     case BinaryOpExpr::EQ:
@@ -304,7 +315,10 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
                 ExtractBoolValue(left_result.value),
                 ExtractBoolValue(right_result.value)));
       } else {
-        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+        throw Exception(
+                "Incompatible types for binary operation %s: %s",
+                BinaryOpExpr::Op_Name(expr.op()).c_str(),
+                expr.ShortDebugString().c_str());
       }
       break;
     case BinaryOpExpr::AND:
@@ -319,12 +333,17 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
                 ExtractBoolValue(left_result.value),
                 ExtractBoolValue(right_result.value)));
       } else {
-        LOG(FATAL) << "Incompatible types for binary operation " << expr.op();
+        throw Exception(
+                "Incompatible types for binary operation %s: %s",
+                BinaryOpExpr::Op_Name(expr.op()).c_str(),
+                expr.ShortDebugString().c_str());
       }
       break;
     default:
-      LOG(FATAL) << "Unknown binary operator :"
-          << BinaryOpExpr::Op_Name(expr.op());
+        throw Exception(
+                "Unknown binary operator %s: %s",
+                BinaryOpExpr::Op_Name(expr.op()).c_str(),
+                expr.ShortDebugString().c_str());
   }
   return result;
 }
@@ -357,8 +376,9 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   if (var == nullptr) {
     dest_result = ProcessExpr(expr.dest_expr());
     if (dest_result.ref_address == nullptr) {
-      LOG(FATAL) << "Cannot assign to expression: "
-                 << expr.dest_expr().ShortDebugString();
+      throw Exception(
+          "Cannot assign to value expression: %s",
+          expr.dest_expr().ShortDebugString().c_str());
     }
   } else {
     dest_result.type_spec = value_result.type_spec;
@@ -367,8 +387,9 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
     dest_result.ref_mode = var->ref_mode;
   }
   if (dest_result.ref_mode == WEAK_REF && value_result.ref_address == nullptr) {
-    LOG(FATAL) << "Cannot assign temp value to weak reference: "
-               << expr.ShortDebugString();
+    throw Exception(
+        "Cannot assign temp value to weak reference: %s",
+        expr.ShortDebugString().c_str());
   }
   EnsureAddress(&value_result);
   ::llvm::Value* dest_address = AssignObject(

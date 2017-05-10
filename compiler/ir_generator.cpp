@@ -25,6 +25,7 @@
 #include <vector>
 #include "glog/logging.h"
 #include "llvm/Support/raw_ostream.h"
+#include "compiler/exceptions.hpp"
 
 namespace quo {
 
@@ -54,14 +55,20 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
 }
 
 void IRGenerator::ProcessModuleMember(const ModuleDef::Member& member) {
-  switch (member.type_case()) {
-    case ModuleDef::Member::kFnDef:
-      ProcessModuleFnDef(member.fn_def());
-      break;
-    case ModuleDef::Member::kClassDef:
-      break;
-    default:
-      LOG(FATAL) << "Unsupported module member type: " << member.type_case();
+  try {
+    switch (member.type_case()) {
+      case ModuleDef::Member::kFnDef:
+        ProcessModuleFnDef(member.fn_def());
+        break;
+      case ModuleDef::Member::kClassDef:
+        break;
+      default:
+        throw Exception(
+            "Unsupported module member type: %d",
+            member.type_case());
+    }
+  } catch (const Exception& e) {
+    throw e.withDefault(member.line());
   }
 }
 
@@ -148,21 +155,25 @@ void IRGenerator::ProcessBlock(
     symbols_->PushScope();
   }
   for (const Stmt& stmt : block.stmts()) {
-    switch (stmt.type_case()) {
-      case Stmt::kExpr:
-        expr_ir_generator_->ProcessExpr(stmt.expr().expr());
-        break;
-      case Stmt::kRet:
-        ProcessRetStmt(stmt.ret());
-        break;
-      case Stmt::kCond:
-        ProcessCondStmt(stmt.cond());
-        break;
-      case Stmt::kVarDecl:
-        ProcessVarDeclStmt(stmt.var_decl());
-        break;
-      default:
-        LOG(FATAL) << "Unknown statement type:" << stmt.type_case();
+    try {
+      switch (stmt.type_case()) {
+        case Stmt::kExpr:
+          expr_ir_generator_->ProcessExpr(stmt.expr().expr());
+          break;
+        case Stmt::kRet:
+          ProcessRetStmt(stmt.ret());
+          break;
+        case Stmt::kCond:
+          ProcessCondStmt(stmt.cond());
+          break;
+        case Stmt::kVarDecl:
+          ProcessVarDeclStmt(stmt.var_decl());
+          break;
+        default:
+          throw Exception("Unknown statement type: %d", stmt.type_case());
+      }
+    } catch (const Exception& e) {
+      throw e.withDefault(stmt.line());
     }
     if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
       DestroyTemps();
@@ -231,14 +242,17 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
     if (stmt.has_type_spec() &&
         stmt.type_spec().SerializeAsString() !=
         init_expr_result.type_spec.SerializeAsString()) {
-      LOG(FATAL) << "Invalid init expr type in var decl: "
-                 << stmt.DebugString();
+      throw Exception(
+          "Invalid init expr type in var decl: %s",
+          stmt.DebugString().c_str());
     }
     var.type_spec = init_expr_result.type_spec;
     var.ref_address = init_expr_result.ref_address;
   } else {
     if (!stmt.has_type_spec()) {
-      LOG(FATAL) << "Missing type spec in var decl: " << stmt.DebugString();
+      throw Exception(
+          "Missing type spec in var decl: %s",
+          stmt.DebugString().c_str());
     }
     var.type_spec = stmt.type_spec();
     var.ref_address = expr_ir_generator_->CreateLocalVar(

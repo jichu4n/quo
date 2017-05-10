@@ -19,6 +19,7 @@
 #include "compiler/symbols.hpp"
 #include "glog/logging.h"
 #include "compiler/builtins.hpp"
+#include "compiler/exceptions.hpp"
 
 namespace quo {
 
@@ -81,7 +82,9 @@ void Symbols::SetupClassDefs(const ModuleDef& module_def) {
   }
   for (const ClassDef* class_def : class_defs) {
     if (class_types_by_name_.count(class_def->name())) {
-      LOG(FATAL) << "Duplicate definition for class " << class_def->name();
+      throw Exception(
+          "Duplicate definition for class %s",
+          class_def->name().c_str());
     }
     class_types_by_name_[class_def->name()] = {
       class_def,
@@ -95,28 +98,41 @@ void Symbols::SetupClassDefs(const ModuleDef& module_def) {
     ClassType& class_type = class_types_by_name_.at(class_def->name());
     vector<::llvm::Type*> field_tys;
     for (const auto& class_member : class_def->members()) {
-      switch (class_member.type_case()) {
-        case ClassDef::Member::kVarDecl: {
-          const VarDeclStmt& var_decl = class_member.var_decl();
-          if (class_type.fields_by_name.count(var_decl.name())) {
-            LOG(FATAL) << "Duplicate member field '" << var_decl.name()
-                       << "' in class '" << class_def->name() << "'";
+      try {
+        switch (class_member.type_case()) {
+          case ClassDef::Member::kVarDecl: {
+            const VarDeclStmt& var_decl = class_member.var_decl();
+            if (class_type.fields_by_name.count(var_decl.name())) {
+              throw Exception(
+                  "Duplicate member field '%s' in class %s",
+                  var_decl.name().c_str(),
+                  class_def->name().c_str());
+            }
+            if (!var_decl.has_type_spec()) {
+              throw Exception(
+                  "Missing type spec in field decl: %s",
+                  var_decl.DebugString().c_str());
+            }
+            class_type.fields.push_back({
+                var_decl.name(),
+                var_decl.type_spec(),
+                var_decl.ref_mode(),
+                static_cast<int>(class_type.fields.size()),
+            });
+            class_type.fields_by_name[var_decl.name()] =
+                &class_type.fields.back();
+            field_tys.push_back(
+                ::llvm::PointerType::getUnqual(
+                    LookupType(var_decl.type_spec())));
+            break;
           }
-          class_type.fields.push_back({
-              var_decl.name(),
-              var_decl.type_spec(),
-              var_decl.ref_mode(),
-              static_cast<int>(class_type.fields.size()),
-          });
-          class_type.fields_by_name[var_decl.name()] =
-              &class_type.fields.back();
-          field_tys.push_back(
-              ::llvm::PointerType::getUnqual(LookupType(var_decl.type_spec())));
-          break;
+          default:
+            throw Exception(
+                "Unsupported class member type: %d",
+                class_member.type_case());
         }
-        default:
-          LOG(FATAL) << "Unsupported class member type: "
-                     << class_member.type_case();
+      } catch (const Exception& e) {
+        throw e.withDefault(class_member.line());
       }
     }
     class_type.ty->setBody(field_tys, false);
@@ -173,7 +189,8 @@ const FnDef* Symbols::LookupFnDef(const ::std::string& name) const {
   }
   const auto it = class_types_by_name_.find(type_spec.name());
   if (it == class_types_by_name_.end()) {
-    LOG(FATAL) << "Unknown type: " << type_spec.DebugString();
+    throw Exception(
+        "Unknown type %s", type_spec.ShortDebugString().c_str());
   }
   return it->second.ty;
 }

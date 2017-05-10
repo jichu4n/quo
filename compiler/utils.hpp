@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                           *
- *  Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          *
+ *  Copyright (C) 2017 Chuan Ji <ji@chu4n.com>                               *
  *                                                                           *
  *  Licensed under the Apache License, Version 2.0 (the "License");          *
  *  you may not use this file except in compliance with the License.         *
@@ -16,50 +16,29 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <cstdlib>
-#include <algorithm>
-#include <iostream>
-#include <memory>
+#ifndef UTILS_HPP_
+#define UTILS_HPP_
+
+#include <cstdarg>
 #include <string>
-#include "glog/logging.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/text_format.h"
-#include "llvm/Support/raw_ostream.h"
-#include "compiler/ir_generator.hpp"
-#include "compiler/exceptions.hpp"
 
-using ::std::cerr;
-using ::std::cin;
-using ::std::endl;
-using ::std::unique_ptr;
-using ::google::protobuf::io::IstreamInputStream;
-using ::quo::Exception;
-using ::quo::IRGenerator;
-using ::quo::ModuleDef;
+namespace google {
+namespace protobuf  {
 
-int main(int argc, char* argv[]) {
-  ::google::InitGoogleLogging(argv[0]);
+extern ::std::string StringPrintf(const char* format, ...);
+extern const ::std::string& SStringPrintf(
+    ::std::string* dst, const char* format, ...);
+extern void StringAppendV(::std::string* dst, const char* format, va_list ap);
 
-  IstreamInputStream input_stream(&cin);
-  ModuleDef module_def;
-  CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
-  // LOG(INFO) << module_def.DebugString();
+}  // namespace protobuf
+}  // namespace google
 
-  IRGenerator ir_generator;
-  unique_ptr<::llvm::Module> module;
-  try {
-    module = ir_generator.ProcessModule(module_def);
-  } catch (const Exception& e) {
-     cerr << e.what() << endl;
-     return EXIT_FAILURE;
-  }
+namespace quo {
 
-  module->print(
-      ::llvm::outs(),
-      nullptr,  // AssemblyAnnotationWriter
-      false,  // ShouldPreserveUseListOrder
-      true);  // IsForDebug
+using ::google::protobuf::StringPrintf;
+using ::google::protobuf::SStringPrintf;
+using ::google::protobuf::StringAppendV;
 
-  return EXIT_SUCCESS;
-}
+}  // namespace quo
 
+#endif  // UTILS_HPP_

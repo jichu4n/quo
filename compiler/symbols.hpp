@@ -71,7 +71,6 @@ struct Scope {
 
 // Represents a class during IR generation.
 struct ClassType {
-
   // Represents a class's member field (instance variable).
   struct Field {
     // The name of the field.

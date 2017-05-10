@@ -18,6 +18,7 @@
 
 #include "compiler/builtins.hpp"
 #include "glog/logging.h"
+#include "compiler/exceptions.hpp"
 
 namespace quo {
 
@@ -43,7 +44,8 @@ unique_ptr<const Builtins> Builtins::Create(::llvm::Module* module) {
     const TypeSpec& type_spec) const {
   const auto it = descs_map_.find(type_spec.SerializeAsString());
   if (it == descs_map_.end()) {
-    LOG(FATAL) << "Unknown type: " << type_spec.DebugString();
+    throw Exception(
+        "Unknown type %s", type_spec.ShortDebugString().c_str());
   }
   return it->second;
 }

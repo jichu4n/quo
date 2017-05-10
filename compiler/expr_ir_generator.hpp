@@ -19,6 +19,7 @@
 #ifndef EXPR_IR_GENERATOR_HPP_
 #define EXPR_IR_GENERATOR_HPP_
 
+#include <string>
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"

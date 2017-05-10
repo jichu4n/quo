@@ -1,6 +1,6 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *                                                                           *
- *  Copyright (C) 2016 Chuan Ji <jichu4n@gmail.com>                          *
+ *  Copyright (C) 2017 Chuan Ji <ji@chu4n.com>                               *
  *                                                                           *
  *  Licensed under the Apache License, Version 2.0 (the "License");          *
  *  you may not use this file except in compliance with the License.         *
@@ -16,50 +16,58 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include <cstdlib>
-#include <algorithm>
-#include <iostream>
-#include <memory>
-#include <string>
-#include "glog/logging.h"
-#include "google/protobuf/io/zero_copy_stream_impl.h"
-#include "google/protobuf/text_format.h"
-#include "llvm/Support/raw_ostream.h"
-#include "compiler/ir_generator.hpp"
 #include "compiler/exceptions.hpp"
+#include <cstdarg>
+#include <sstream>
+#include "compiler/utils.hpp"
 
-using ::std::cerr;
-using ::std::cin;
+namespace quo {
+
 using ::std::endl;
-using ::std::unique_ptr;
-using ::google::protobuf::io::IstreamInputStream;
-using ::quo::Exception;
-using ::quo::IRGenerator;
-using ::quo::ModuleDef;
+using ::std::ostringstream;
+using ::std::string;
 
-int main(int argc, char* argv[]) {
-  ::google::InitGoogleLogging(argv[0]);
-
-  IstreamInputStream input_stream(&cin);
-  ModuleDef module_def;
-  CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
-  // LOG(INFO) << module_def.DebugString();
-
-  IRGenerator ir_generator;
-  unique_ptr<::llvm::Module> module;
-  try {
-    module = ir_generator.ProcessModule(module_def);
-  } catch (const Exception& e) {
-     cerr << e.what() << endl;
-     return EXIT_FAILURE;
-  }
-
-  module->print(
-      ::llvm::outs(),
-      nullptr,  // AssemblyAnnotationWriter
-      false,  // ShouldPreserveUseListOrder
-      true);  // IsForDebug
-
-  return EXIT_SUCCESS;
+Exception::Exception(const Exception& e)
+    : line(e.line),
+      message(e.message),
+      what_(new string()) {
 }
 
+Exception::Exception(int line, const char* format, ...)
+    : line(line),
+      what_(new string()) {
+  va_list args;
+  va_start(args, format);
+  StringAppendV(&message, format, args);
+  va_end(args);
+}
+
+Exception::Exception(const char* format, ...)
+    : line(-1),
+      what_(new string()) {
+  va_list args;
+  va_start(args, format);
+  StringAppendV(&message, format, args);
+  va_end(args);
+}
+
+Exception Exception::withDefault(int defaultLine) const {
+  if (line > 0) {
+    return *this;
+  }
+  Exception e(*this);
+  e.line = defaultLine;
+  return e;
+}
+
+const char* Exception::what() const throw() {
+  ostringstream out;
+  if (line > 0) {
+    out << ":" << line << "] ";
+  }
+  out << message << endl;
+  what_->assign(out.str());
+  return what_->c_str();
+}
+
+}  // namespace quo
