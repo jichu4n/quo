@@ -92,7 +92,7 @@ struct ClassType {
   // Class descriptor object.
   ::llvm::GlobalVariable* desc;
   // Member fields (instance variables).
-  ::std::vector<Field> fields;
+  ::std::list<Field> fields;
   // Member fields, indexed by name.
   ::std::unordered_map<::std::string, Field*> fields_by_name;
 };
@@ -143,7 +143,7 @@ class Symbols {
   // Global functions in the AST, by name.
   ::std::unordered_map<::std::string, const FnDef*> fn_defs_by_name_;
   // User-defined classes.
-  ::std::vector<ClassType> class_types_;
+  ::std::list<ClassType> class_types_;
   // Classes by serialized type spec.
   ::std::unordered_map<::std::string, ClassType*> class_types_map_;
 };

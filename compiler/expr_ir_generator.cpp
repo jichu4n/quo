@@ -58,6 +58,8 @@ ExprResult ExprIRGenerator::ProcessExpr(const Expr& expr) {
         return ProcessConstantExpr(expr.constant());
       case Expr::kVar:
         return ProcessVarExpr(expr.var());
+      case Expr::kMember:
+        return ProcessMemberExpr(expr.member());
       case Expr::kCall:
         return ProcessCallExpr(expr.call());
       case Expr::kBinaryOp:
@@ -160,6 +162,48 @@ ExprResult ExprIRGenerator::ProcessVarExpr(
   }
 
   throw Exception("Unknown variable: %s", expr.name().c_str());
+}
+
+ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
+  ExprResult parent_result = ProcessExpr(expr.parent_expr());
+  EnsureAddress(&parent_result);
+  ClassType* parent_class_type = symbols_->LookupTypeOrDie(
+      parent_result.type_spec);
+  auto field_it = parent_class_type->fields_by_name.find(expr.member_name());
+  if (field_it == parent_class_type->fields_by_name.end()) {
+    throw Exception(
+        "Class %s does not have member field '%s'",
+        parent_result.type_spec.ShortDebugString().c_str(),
+        expr.member_name().c_str());
+  }
+  ClassType::Field* field = field_it->second;
+  const string& value_name = StringPrintf(
+      "%s_%s",
+      parent_result.type_spec.name().c_str(),
+      field->name.c_str());
+  ExprResult result;
+  result.type_spec = field->type_spec;
+  result.ref_address =
+      ir_builder_->CreateBitCast(
+          ir_builder_->CreateCall(
+              builtins_->fns.quo_get_field,
+              {
+                  ir_builder_->CreateBitCast(
+                      parent_result.address,
+                      ::llvm::Type::getInt8PtrTy(ctx_)),
+                  parent_class_type->desc,
+                  ::llvm::ConstantInt::getSigned(
+                      ::llvm::Type::getInt32Ty(ctx_), field->index),
+              }),
+          ::llvm::PointerType::getUnqual(
+              ::llvm::PointerType::getUnqual(
+                  symbols_->LookupTypeOrDie(field->type_spec)->ty)),
+          StringPrintf("%s_ref", value_name.c_str()));
+  result.address = ir_builder_->CreateLoad(
+      result.ref_address, StringPrintf("%s_addr", value_name.c_str()));
+  result.value = ir_builder_->CreateLoad(result.address, value_name);
+  result.ref_mode = field->ref_mode;
+  return result;
 }
 
 ExprResult ExprIRGenerator::ProcessBinaryOpExpr(

@@ -5,4 +5,5 @@ testdata/fib
 testdata/assign
 testdata/string
 testdata/ref_mode
+testdata/simple_class_fields
 

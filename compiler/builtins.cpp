@@ -44,6 +44,7 @@ void Builtins::SetupBuiltinTypes() {
     ::llvm::Type::getInt32Ty(ctx_),
     ::llvm::Type::getInt8PtrTy(ctx_),
     ::llvm::PointerType::getUnqual(types.class_desc_ty),
+    ::llvm::Type::getInt8Ty(ctx_),
   };
   types.field_desc_ty = ::llvm::StructType::create(
       ctx_, field_desc_fields, "__quo_FieldDescriptor");
@@ -163,6 +164,16 @@ void Builtins::SetupBuiltinFunctions() {
               ::llvm::PointerType::getUnqual(::llvm::Type::getInt8PtrTy(ctx_)),
               ::llvm::Type::getInt8PtrTy(ctx_),
               ::llvm::Type::getInt8Ty(ctx_),
+          },
+          false));  // isVarArg
+  fns.quo_get_field = module_->getOrInsertFunction(
+      "__quo_get_field",
+      ::llvm::FunctionType::get(
+          ::llvm::PointerType::getUnqual(::llvm::Type::getInt8PtrTy(ctx_)),
+          {
+              ::llvm::Type::getInt8PtrTy(ctx_),
+              ::llvm::PointerType::getUnqual(types.class_desc_ty),
+              ::llvm::Type::getInt32Ty(ctx_),
           },
           false));  // isVarArg
   fns.quo_alloc_string = module_->getOrInsertFunction(

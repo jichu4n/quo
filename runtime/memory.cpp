@@ -100,7 +100,9 @@ void QStringDestroy(QObject* o) {
 
 QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
   CHECK_NOTNULL(dp);
-  QObject* p = static_cast<QObject*>(malloc(size));
+  // The returned object is zeroed out, so that all field pointers have an
+  // initial value of nullptr.
+  QObject* p = static_cast<QObject*>(calloc(1, size));
   LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " ALLOC(" << size
       << ") [" << GetStackTraceString() << "]";
   p->descriptor = dp;
@@ -124,11 +126,21 @@ void __quo_dec_refs(QObject* p) {
   LOG_IF(FATAL, p->refs < 0) << p << " INVALID REFS: " << p->refs << " ["
     << GetStackTraceString() << "]";
   if (p->refs == 0) {
-    LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " FREE " << " ["
-        << GetStackTraceString() << "]";
-    if (dp == &__quo_StringDescriptor) {
+    if (dp->views.size > 0) {
+      const QClassView& identity_view = dp->views[0];
+      QCustomObject* cp = reinterpret_cast<QCustomObject*>(p);
+      for (int i = 0; i < identity_view.fields.size; ++i) {
+        const QFieldDescriptor& field_desc = identity_view.fields[i];
+        QObject* field_value = cp->fields[i];
+        if (field_desc.ref_mode == STRONG_REF && field_value != nullptr) {
+          __quo_dec_refs(field_value);
+        }
+      }
+    } else if (dp == &__quo_StringDescriptor) {
       QStringDestroy(p);
     }
+    LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " FREE " << " ["
+        << GetStackTraceString() << "]";
     free(p);
   } else {
     LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " --REF=" << p->refs
@@ -154,7 +166,7 @@ void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode) {
   *dest = src;
 }
 
-QObject* __quo_get_field(
+QObject** __quo_get_field(
     QObject* obj, QClassDescriptor* view_class, int32_t index) {
   CHECK_GE(index, 0);
   const QClassDescriptor* desc = CHECK_NOTNULL(CHECK_NOTNULL(obj)->descriptor);
@@ -186,7 +198,7 @@ QObject* __quo_get_field(
           << desc->name << ") has invalid index in object "
           << index_in_obj << ", which only has " << identity_view.fields.size
           << " fields";
-      return reinterpret_cast<QCustomObject*>(obj)->fields[index_in_obj];
+      return &(reinterpret_cast<QCustomObject*>(obj)->fields[index_in_obj]);
     }
   }
   LOG(FATAL) << "Failed to cast object " << " at " << obj

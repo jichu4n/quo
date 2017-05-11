@@ -44,7 +44,7 @@ extern void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode);
 // First, this casts the object to the given class (via its class view table)
 // and return the address within the object of the index-th field of the given
 // class.
-extern QObject* __quo_get_field(
+extern QObject** __quo_get_field(
     QObject* obj, QClassDescriptor* view_class, int32_t index);
 
 }

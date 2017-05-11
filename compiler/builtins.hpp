@@ -53,6 +53,7 @@ class Builtins {
     ::llvm::Constant* quo_inc_refs;
     ::llvm::Constant* quo_dec_refs;
     ::llvm::Constant* quo_assign;
+    ::llvm::Constant* quo_get_field;
     ::llvm::Constant* quo_alloc_string;
     ::llvm::Constant* quo_string_concat;
     FnDef quo_print_fn_def;

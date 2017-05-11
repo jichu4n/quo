@@ -1,0 +1,15 @@
+class Cat {
+  var x Int;
+  var &y Int;
+  var z Int;
+}
+
+fn Main() Int {
+  var c = Cat();
+  c.x = 42;
+  c.x += 1;
+  c.y = c.x;
+  c.z = c.y;
+  return c.z;
+}
+

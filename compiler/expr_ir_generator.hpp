@@ -89,6 +89,7 @@ class ExprIRGenerator {
  private:
   ExprResult ProcessConstantExpr(const ConstantExpr& expr);
   ExprResult ProcessVarExpr(const VarExpr& expr);
+  ExprResult ProcessMemberExpr(const MemberExpr& expr);
   ExprResult ProcessCallExpr(const CallExpr& expr);
   ExprResult ProcessBinaryOpExpr(const BinaryOpExpr& expr);
 

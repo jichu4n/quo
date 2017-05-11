@@ -201,6 +201,8 @@ void Symbols::SetupClassDef(ClassType* class_type, const ClassDef& class_def) {
                           false),  // isExternallyInitialized
                       ::llvm::Type::getInt8PtrTy(ctx_)),
                   LookupTypeOrDie(var_decl.type_spec())->desc,
+                  ::llvm::ConstantInt::getSigned(
+                      ::llvm::Type::getInt8Ty(ctx_), var_decl.ref_mode()),
                   nullptr));
           break;
         }

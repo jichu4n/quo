@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include "ast/ast.pb.h"
 
 struct QClassView;
 struct QFieldDescriptor;
@@ -63,6 +64,8 @@ struct QFieldDescriptor {
   const char* name;
   // Type of this field.
   QClassDescriptor* type;
+  // Reference mode of this field.
+  int8_t ref_mode;
 };
 
 #endif  // DESCRIPTOR_HPP_
