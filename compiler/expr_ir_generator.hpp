@@ -49,6 +49,7 @@ struct ExprResult {
   RefMode ref_mode;
   // A function reference. Only set if the expression resolves to a function.
   const FnDef* fn_def;
+  // A class reference. Only set if the expression resolves to a class.
 
   ExprResult();
 };

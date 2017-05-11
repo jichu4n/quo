@@ -51,18 +51,42 @@ const Var* Scope::Lookup(::llvm::Value* address) const {
 
 unique_ptr<Symbols> Symbols::Create(
     ::llvm::Module* module,
-    const Builtins* builtins,
+    Builtins* builtins,
     const ModuleDef& module_def) {
   unique_ptr<Symbols> symbols(new Symbols(module, builtins));
+  symbols->SetupBuiltinClassTypes();
   symbols->SetupFnDefs(module_def);
   symbols->SetupClassDefs(module_def);
   return symbols;
 }
 
-Symbols::Symbols(::llvm::Module* module, const Builtins* builtins)
+Symbols::Symbols(::llvm::Module* module, Builtins* builtins)
     : ctx_(module->getContext()),
       module_(module),
       builtins_(builtins) {}
+
+void Symbols::SetupBuiltinClassTypes() {
+  class_types_map_.insert({
+      builtins_->types.object_type.type_spec.SerializeAsString(),
+      &builtins_->types.object_type,
+  });
+  class_types_map_.insert({
+      builtins_->types.int32_type.type_spec.SerializeAsString(),
+      &builtins_->types.int32_type,
+  });
+  class_types_map_.insert({
+      builtins_->types.int_type.type_spec.SerializeAsString(),
+      &builtins_->types.int32_type,
+  });
+  class_types_map_.insert({
+      builtins_->types.bool_type.type_spec.SerializeAsString(),
+      &builtins_->types.bool_type,
+  });
+  class_types_map_.insert({
+      builtins_->types.string_type.type_spec.SerializeAsString(),
+      &builtins_->types.string_type,
+  });
+}
 
 void Symbols::SetupFnDefs(const ModuleDef& module_def) {
   for (const auto& member : module_def.members()) {
@@ -86,12 +110,15 @@ void Symbols::SetupClassDefs(const ModuleDef& module_def) {
   // class_types_by_name_, which will allow LookupDescriptor and LookupType to
   // work for all classes.
   for (const ClassDef* class_def : class_defs) {
-    if (class_types_by_name_.count(class_def->name())) {
+    TypeSpec type_spec;
+    type_spec.set_name(class_def->name());
+    if (LookupType(type_spec) != nullptr) {
       throw Exception(
           "Duplicate definition for class %s",
           class_def->name().c_str());
     }
-    class_types_by_name_[class_def->name()] = {
+    class_types_.push_back({
+      type_spec,
       class_def,
       ::llvm::StructType::create(ctx_, class_def->name()),
       new ::llvm::GlobalVariable(
@@ -107,11 +134,14 @@ void Symbols::SetupClassDefs(const ModuleDef& module_def) {
           false),  // isExternallyInitialized
       {},
       {},
-    };
+    });
+    class_types_map_[type_spec.SerializeAsString()] = &class_types_.back();
   }
   // 2. Actually populate class types in class_types_by_name_.
   for (const ClassDef* class_def : class_defs) {
-    SetupClassDef(&class_types_by_name_.at(class_def->name()), *class_def);
+    TypeSpec type_spec;
+    type_spec.set_name(class_def->name());
+    SetupClassDef(LookupType(type_spec), *class_def);
   }
 }
 
@@ -145,7 +175,7 @@ void Symbols::SetupClassDef(ClassType* class_type, const ClassDef& class_def) {
               &class_type->fields.back();
           field_tys.push_back(
               ::llvm::PointerType::getUnqual(
-                  LookupType(var_decl.type_spec())));
+                  LookupType(var_decl.type_spec())->ty));
           ::llvm::Constant* field_name_array =
               ::llvm::ConstantDataArray::getString(ctx_, var_decl.name());
           field_descs.push_back(
@@ -169,7 +199,7 @@ void Symbols::SetupClassDef(ClassType* class_type, const ClassDef& class_def) {
                           0,  // address space
                           false),  // isExternallyInitialized
                       ::llvm::Type::getInt8PtrTy(ctx_)),
-                  LookupDescriptor(var_decl.type_spec()),
+                  LookupType(var_decl.type_spec())->desc,
                   nullptr));
           break;
         }
@@ -299,31 +329,13 @@ const FnDef* Symbols::LookupFnDef(const ::std::string& name) const {
   return (it == fn_defs_by_name_.end()) ? nullptr : it->second;
 }
 
-::llvm::Type* Symbols::LookupType(const TypeSpec& type_spec) const {
-  ::llvm::Type* builtin_ty = builtins_->LookupType(type_spec);
-  if (builtin_ty != nullptr) {
-    return builtin_ty;
-  }
-  const auto it = class_types_by_name_.find(type_spec.name());
-  if (it == class_types_by_name_.end()) {
+ClassType* Symbols::LookupType(const TypeSpec& type_spec) const {
+  const auto it = class_types_map_.find(type_spec.SerializeAsString());
+  if (it == class_types_map_.end()) {
     throw Exception(
         "Unknown type %s", type_spec.ShortDebugString().c_str());
   }
-  return it->second.ty;
-}
-
-::llvm::GlobalVariable* Symbols::LookupDescriptor(const TypeSpec& type_spec)
-    const {
-  ::llvm::GlobalVariable* builtin_desc = builtins_->LookupDescriptor(type_spec);
-  if (builtin_desc != nullptr) {
-    return builtin_desc;
-  }
-  const auto it = class_types_by_name_.find(type_spec.name());
-  if (it == class_types_by_name_.end()) {
-    throw Exception(
-        "Unknown type %s", type_spec.ShortDebugString().c_str());
-  }
-  return it->second.desc;
+  return it->second;
 }
 
 }  // namespace quo

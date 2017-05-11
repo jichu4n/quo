@@ -69,7 +69,7 @@ class IRGenerator {
   // IR builder for the current function.
   ::llvm::IRBuilder<>* ir_builder_;
 
-  ::std::unique_ptr<const Builtins> builtins_;
+  ::std::unique_ptr<Builtins> builtins_;
   ::std::unique_ptr<Symbols> symbols_;
   ::std::unique_ptr<ExprIRGenerator> expr_ir_generator_;
 };

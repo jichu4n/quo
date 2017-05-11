@@ -410,10 +410,10 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtins_->types.int32_type.ty,
       ::llvm::ConstantStruct::get(
-        builtins_->types.object_type.ty,
-        builtins_->globals.int32_desc,
-        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
-        nullptr),
+          builtins_->types.object_type.ty,
+          builtins_->types.int32_type.desc,
+          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
+          nullptr),
       ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 0),
       nullptr);
   return ir_builder_->CreateInsertValue(
@@ -430,10 +430,10 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtins_->types.bool_type.ty,
       ::llvm::ConstantStruct::get(
-        builtins_->types.object_type.ty,
-        builtins_->globals.bool_desc,
-        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
-        nullptr),
+          builtins_->types.object_type.ty,
+          builtins_->types.bool_type.desc,
+          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
+          nullptr),
       ::llvm::ConstantInt::getSigned(::llvm::Type::getInt1Ty(ctx_), 0),
       nullptr);
   return ir_builder_->CreateInsertValue(
@@ -456,18 +456,17 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
 }
 
 ::llvm::Value* ExprIRGenerator::CreateObject(const TypeSpec& type_spec) {
-  ::llvm::Type* const ty = symbols_->LookupType(type_spec);
-  ::llvm::Value* const desc = symbols_->LookupDescriptor(type_spec);
+  ClassType* class_type = symbols_->LookupType(type_spec);
   ::llvm::Value* value_size = ir_builder_->CreatePtrToInt(
       ir_builder_->CreateGEP(
         ::llvm::ConstantPointerNull::get(
-          ::llvm::PointerType::getUnqual(ty)),
+          ::llvm::PointerType::getUnqual(class_type->ty)),
         ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
       ::llvm::Type::getInt32Ty(ctx_));
   ::llvm::Value* p = ir_builder_->CreatePointerCast(
       ir_builder_->CreateCall(
-          builtins_->fns.quo_alloc, { desc, value_size }),
-      ::llvm::PointerType::getUnqual(ty));
+          builtins_->fns.quo_alloc, { class_type->desc, value_size }),
+      ::llvm::PointerType::getUnqual(class_type->ty));
   return p;
 }
 

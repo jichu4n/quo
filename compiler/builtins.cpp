@@ -24,26 +24,11 @@ namespace quo {
 
 using ::std::unique_ptr;
 
-unique_ptr<const Builtins> Builtins::Create(::llvm::Module* module) {
+unique_ptr<Builtins> Builtins::Create(::llvm::Module* module) {
   Builtins* builtins = new Builtins(module);
   builtins->SetupBuiltinTypes();
-  builtins->SetupBuiltinGlobals();
   builtins->SetupBuiltinFunctions();
-  return unique_ptr<const Builtins>(builtins);
-}
-
-::llvm::Type* Builtins::LookupType(const TypeSpec& type_spec) const {
-  if (type_spec.name().empty()) {
-    return ::llvm::Type::getVoidTy(ctx_);
-  }
-  const auto it = types_map_.find(type_spec.SerializeAsString());
-  return it == types_map_.end() ? nullptr : it->second;
-}
-
-::llvm::GlobalVariable* Builtins::LookupDescriptor(
-    const TypeSpec& type_spec) const {
-  const auto it = descs_map_.find(type_spec.SerializeAsString());
-  return it == descs_map_.end() ? nullptr : it->second;
+  return unique_ptr<Builtins>(builtins);
 }
 
 Builtins::Builtins(::llvm::Module* module)
@@ -87,10 +72,6 @@ void Builtins::SetupBuiltinTypes() {
   };
   types.object_type.ty = ::llvm::StructType::create(
       ctx_, object_fields, types.object_type.type_spec.name());
-  types_map_.insert({
-      types.object_type.type_spec.SerializeAsString(),
-      types.object_type.ty,
-  });
 
   types.int32_type.type_spec.set_name("Int32");
   ::llvm::Type* const int32_fields[] = {
@@ -99,43 +80,7 @@ void Builtins::SetupBuiltinTypes() {
   };
   types.int32_type.ty = ::llvm::StructType::create(
       ctx_, int32_fields, types.int32_type.type_spec.name());
-  types_map_.insert({
-      types.int32_type.type_spec.SerializeAsString(),
-      types.int32_type.ty,
-  });
-  types.int_type.type_spec.set_name("Int");
-  types_map_.insert({
-      types.int_type.type_spec.SerializeAsString(),
-      types.int32_type.ty,
-  });
-
-  types.bool_type.type_spec.set_name("Bool");
-  ::llvm::Type* const bool_fields[] = {
-    types.object_type.ty,
-    ::llvm::Type::getInt1Ty(ctx_),
-  };
-  types.bool_type.ty = ::llvm::StructType::create(
-      ctx_, bool_fields, types.bool_type.type_spec.name());
-  types_map_.insert({
-      types.bool_type.type_spec.SerializeAsString(),
-      types.bool_type.ty,
-  });
-
-  types.string_type.type_spec.set_name("String");
-  ::llvm::Type* const string_fields[] = {
-    types.object_type.ty,
-    ::llvm::Type::getInt8PtrTy(ctx_),
-  };
-  types.string_type.ty = ::llvm::StructType::create(
-      ctx_, string_fields, types.string_type.type_spec.name());
-  types_map_.insert({
-      types.string_type.type_spec.SerializeAsString(),
-      types.string_type.ty,
-  });
-}
-
-void Builtins::SetupBuiltinGlobals() {
-  globals.int32_desc = new ::llvm::GlobalVariable(
+  types.int32_type.desc = new ::llvm::GlobalVariable(
       *module_,
       ::llvm::Type::getInt8Ty(ctx_),
       true,  // isConstant
@@ -146,15 +91,17 @@ void Builtins::SetupBuiltinGlobals() {
       ::llvm::GlobalVariable::NotThreadLocal,
       0,  // address space
       true);  // isExternallyInitialized
-  descs_map_.insert({
-      types.int32_type.type_spec.SerializeAsString(),
-      globals.int32_desc,
-  });
-  descs_map_.insert({
-      types.int_type.type_spec.SerializeAsString(),
-      globals.int32_desc,
-  });
-  globals.bool_desc = new ::llvm::GlobalVariable(
+  types.int_type = types.int32_type;
+  types.int_type.type_spec.set_name("Int");
+
+  types.bool_type.type_spec.set_name("Bool");
+  ::llvm::Type* const bool_fields[] = {
+    types.object_type.ty,
+    ::llvm::Type::getInt1Ty(ctx_),
+  };
+  types.bool_type.ty = ::llvm::StructType::create(
+      ctx_, bool_fields, types.bool_type.type_spec.name());
+  types.bool_type.desc = new ::llvm::GlobalVariable(
       *module_,
       ::llvm::Type::getInt8Ty(ctx_),
       true,  // isConstant
@@ -165,11 +112,15 @@ void Builtins::SetupBuiltinGlobals() {
       ::llvm::GlobalVariable::NotThreadLocal,
       0,  // address space
       true);  // isExternallyInitialized
-  descs_map_.insert({
-      types.bool_type.type_spec.SerializeAsString(),
-      globals.bool_desc,
-  });
-  globals.string_desc = new ::llvm::GlobalVariable(
+
+  types.string_type.type_spec.set_name("String");
+  ::llvm::Type* const string_fields[] = {
+    types.object_type.ty,
+    ::llvm::Type::getInt8PtrTy(ctx_),
+  };
+  types.string_type.ty = ::llvm::StructType::create(
+      ctx_, string_fields, types.string_type.type_spec.name());
+  types.string_type.desc = new ::llvm::GlobalVariable(
       *module_,
       ::llvm::Type::getInt8Ty(ctx_),
       true,  // isConstant
@@ -180,10 +131,6 @@ void Builtins::SetupBuiltinGlobals() {
       ::llvm::GlobalVariable::NotThreadLocal,
       0,  // address space
       true);  // isExternallyInitialized
-  descs_map_.insert({
-      types.string_type.type_spec.SerializeAsString(),
-      globals.string_desc,
-  });
 }
 
 void Builtins::SetupBuiltinFunctions() {

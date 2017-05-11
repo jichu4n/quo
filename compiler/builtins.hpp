@@ -25,35 +25,23 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Module.h"
 #include "ast/ast.pb.h"
+#include "compiler/symbols.hpp"
 
 namespace quo {
-
-// A built-in data type.
-struct BuiltinType {
-  // The AST type representation.
-  TypeSpec type_spec;
-  // The LLVM IR type representation.
-  ::llvm::StructType* ty;
-};
 
 // Encapsulates global built-in entities.
 class Builtins {
  public:
   // Constructs a Builtins instance for the given LLVM IR module.
-  static ::std::unique_ptr<const Builtins> Create(::llvm::Module* module);
-
-  // Looks up the LLVM IR type representation for an AST type.
-  ::llvm::Type* LookupType(const TypeSpec& type_spec) const;
-  // Looks up the class descriptor for an AST type.
-  ::llvm::GlobalVariable* LookupDescriptor(const TypeSpec& type_spec) const;
+  static ::std::unique_ptr<Builtins> Create(::llvm::Module* module);
 
   // Built-in data types.
   struct {
-    BuiltinType object_type;
-    BuiltinType int32_type;
-    BuiltinType int_type;
-    BuiltinType bool_type;
-    BuiltinType string_type;
+    ClassType object_type;
+    ClassType int32_type;
+    ClassType int_type;
+    ClassType bool_type;
+    ClassType string_type;
     ::llvm::StructType* class_desc_ty;
     ::llvm::StructType* class_view_ty;
     ::llvm::StructType* field_desc_ty;
@@ -71,18 +59,9 @@ class Builtins {
     ::llvm::Constant* quo_print;
   } fns;
 
-  // Built-in runtime library global variables.
-  struct {
-    // Data type class descriptors.
-    ::llvm::GlobalVariable* int32_desc;
-    ::llvm::GlobalVariable* bool_desc;
-    ::llvm::GlobalVariable* string_desc;
-  } globals;
-
  private:
   explicit Builtins(::llvm::Module* module);
   void SetupBuiltinTypes();
-  void SetupBuiltinGlobals();
   void SetupBuiltinFunctions();
 
   // LLVM context.
@@ -90,12 +69,8 @@ class Builtins {
   // LLVM IR module where the built-in entities are declared.
   ::llvm::Module* const module_;
 
-  // Serialized TypeSpec -> LLVM IR type.
-  ::std::unordered_map<::std::string, ::llvm::Type*> types_map_;
   // Function name -> runtime library function.
   ::std::unordered_map<::std::string, const FnDef*> fn_defs_by_name;
-  // Serialized TypeSpec -> runtime library global variable.
-  ::std::unordered_map<::std::string, ::llvm::GlobalVariable*> descs_map_;
 };
 
 }  // namespace quo

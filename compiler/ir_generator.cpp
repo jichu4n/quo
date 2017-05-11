@@ -81,10 +81,10 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
       param_tys.begin(),
       [this](const FnParam& param) {
         return ::llvm::PointerType::getUnqual(
-            symbols_->LookupType(param.type_spec()));
+            symbols_->LookupType(param.type_spec())->ty);
       });
   ::llvm::Type* const raw_return_ty =
-      symbols_->LookupType(fn_def.return_type_spec());
+      symbols_->LookupType(fn_def.return_type_spec())->ty;
   ::llvm::Type* const return_ty = raw_return_ty->isVoidTy() ?
       raw_return_ty :
       ::llvm::PointerType::getUnqual(raw_return_ty);
@@ -256,7 +256,7 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
     }
     var.type_spec = stmt.type_spec();
     var.ref_address = expr_ir_generator_->CreateLocalVar(
-        symbols_->LookupType(var.type_spec), stmt.name());
+        symbols_->LookupType(var.type_spec)->ty, stmt.name());
   }
   symbols_->GetScope()->AddVar(var);
 }
