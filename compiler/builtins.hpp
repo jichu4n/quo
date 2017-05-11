@@ -54,6 +54,9 @@ class Builtins {
     BuiltinType int_type;
     BuiltinType bool_type;
     BuiltinType string_type;
+    ::llvm::StructType* class_desc_ty;
+    ::llvm::StructType* class_view_ty;
+    ::llvm::StructType* field_desc_ty;
   } types;
 
   // Built-in runtime library functions.

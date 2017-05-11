@@ -153,10 +153,10 @@ QObject* __quo_get_field(
       << " in class " << view_class->name << "  (cast from "
       << desc->name << "), but class " << desc->name
       << " has no views";
-  const QClassView& self_view = desc->views[0];
-  CHECK_EQ(self_view.view_class, desc)
+  const QClassView& identity_view = desc->views[0];
+  CHECK_EQ(identity_view.view_class, desc)
       << "The first view in class " << desc->name
-      << " is for different class " << self_view.view_class->name;
+      << " is for different class " << identity_view.view_class->name;
   for (int i = 0; i < desc->views.size; ++i) {
     const QClassView& view = desc->views[i];
     if (view.view_class == view_class) {
@@ -170,11 +170,11 @@ QObject* __quo_get_field(
           << view_class->name << " (cast from "
           << desc->name << ") has negative index in object "
           << index_in_obj;
-      CHECK_LT(index_in_obj, self_view.fields.size)
+      CHECK_LT(index_in_obj, identity_view.fields.size)
           << "Field " << view.fields[index].name << " in class "
           << view_class->name << " (cast from "
           << desc->name << ") has invalid index in object "
-          << index_in_obj << ", which only has " << self_view.fields.size
+          << index_in_obj << ", which only has " << identity_view.fields.size
           << " fields";
       return reinterpret_cast<QCustomObject*>(obj)->fields[index_in_obj];
     }

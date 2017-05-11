@@ -43,11 +43,7 @@ unique_ptr<const Builtins> Builtins::Create(::llvm::Module* module) {
 ::llvm::GlobalVariable* Builtins::LookupDescriptor(
     const TypeSpec& type_spec) const {
   const auto it = descs_map_.find(type_spec.SerializeAsString());
-  if (it == descs_map_.end()) {
-    throw Exception(
-        "Unknown type %s", type_spec.ShortDebugString().c_str());
-  }
-  return it->second;
+  return it == descs_map_.end() ? nullptr : it->second;
 }
 
 Builtins::Builtins(::llvm::Module* module)
@@ -56,6 +52,34 @@ Builtins::Builtins(::llvm::Module* module)
 }
 
 void Builtins::SetupBuiltinTypes() {
+  types.class_desc_ty = ::llvm::StructType::create(
+      ctx_, "__quo_ClassDescriptor");
+
+  ::llvm::Type* const field_desc_fields[] = {
+    ::llvm::Type::getInt32Ty(ctx_),
+    ::llvm::Type::getInt8PtrTy(ctx_),
+    ::llvm::PointerType::getUnqual(types.class_desc_ty),
+  };
+  types.field_desc_ty = ::llvm::StructType::create(
+      ctx_, field_desc_fields, "__quo_FieldDescriptor");
+
+  ::llvm::Type* const class_view_fields[] = {
+    ::llvm::PointerType::getUnqual(types.class_desc_ty),
+    ::llvm::Type::getInt32Ty(ctx_),
+    ::llvm::PointerType::getUnqual(types.field_desc_ty),
+  };
+  types.class_view_ty = ::llvm::StructType::create(
+      ctx_, class_view_fields, "__quo_ClassView");
+
+  ::llvm::Type* const class_desc_fields[] = {
+    ::llvm::Type::getInt8PtrTy(ctx_),
+    ::llvm::Type::getInt32Ty(ctx_),
+    ::llvm::PointerType::getUnqual(types.class_view_ty),
+  };
+  types.class_desc_ty->setBody(
+      class_desc_fields,
+      false);  // isPacked
+
   types.object_type.type_spec.set_name("Object");
   ::llvm::Type* const object_fields[] = {
     ::llvm::Type::getInt8PtrTy(ctx_),

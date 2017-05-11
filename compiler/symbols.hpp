@@ -128,6 +128,7 @@ class Symbols {
 
   void SetupFnDefs(const ModuleDef& module_def);
   void SetupClassDefs(const ModuleDef& module_def);
+  void SetupClassDef(ClassType* class_type, const ClassDef& class_def);
 
   ::llvm::LLVMContext& ctx_;
   ::llvm::Module* const module_;
