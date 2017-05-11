@@ -36,7 +36,8 @@ ExprResult::ExprResult()
     : value(nullptr),
       address(nullptr),
       ref_address(nullptr),
-      fn_def(nullptr) {}
+      fn_def(nullptr),
+      class_type(nullptr) {}
 
 ExprIRGenerator::ExprIRGenerator(
     ::llvm::Module* module,
@@ -139,6 +140,16 @@ ExprResult ExprIRGenerator::ProcessVarExpr(
   if (fn != nullptr && fn_def != nullptr) {
     result.fn_def = fn_def;
     result.value = fn;
+    return result;
+  }
+
+  TypeSpec type_spec;
+  type_spec.set_name(expr.name());
+  ClassType* class_type = symbols_->LookupType(type_spec);
+  if (class_type != nullptr) {
+    result.type_spec = class_type->type_spec;
+    result.value = class_type->desc;
+    result.class_type = class_type;
     return result;
   }
 
@@ -362,9 +373,15 @@ ExprResult ExprIRGenerator::ProcessCallExpr(
         EnsureAddress(&arg_result);
         return arg_result.address;
       });
-  result.type_spec = CHECK_NOTNULL(fn_result.fn_def)->return_type_spec();
-  result.address = ir_builder_->CreateCall(fn_result.value, arg_results);
-  result.value = ir_builder_->CreateLoad(result.address);
+  if (fn_result.fn_def != nullptr) {
+    result.type_spec = CHECK_NOTNULL(fn_result.fn_def)->return_type_spec();
+    result.address = ir_builder_->CreateCall(fn_result.value, arg_results);
+    result.value = ir_builder_->CreateLoad(result.address);
+  } else if (fn_result.class_type != nullptr) {
+    result.type_spec = fn_result.type_spec;
+    result.address = CreateObject(fn_result.class_type);
+    result.value = ir_builder_->CreateLoad(result.address);
+  }
   symbols_->GetScope()->AddTemp(result.address);
   return result;
 }
@@ -449,14 +466,14 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
   if (result->address != nullptr) {
     return;
   }
-  result->address = CreateObject(result->type_spec);
+  result->address = CreateObject(symbols_->LookupTypeOrDie(result->type_spec));
   ir_builder_->CreateStore(result->value, result->address);
   result->address->setName("temp");
   symbols_->GetScope()->AddTemp(result->address);
 }
 
-::llvm::Value* ExprIRGenerator::CreateObject(const TypeSpec& type_spec) {
-  ClassType* class_type = symbols_->LookupType(type_spec);
+::llvm::Value* ExprIRGenerator::CreateObject(ClassType* class_type) {
+  CHECK_NOTNULL(class_type);
   ::llvm::Value* value_size = ir_builder_->CreatePtrToInt(
       ir_builder_->CreateGEP(
         ::llvm::ConstantPointerNull::get(
@@ -465,7 +482,11 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
       ::llvm::Type::getInt32Ty(ctx_));
   ::llvm::Value* p = ir_builder_->CreatePointerCast(
       ir_builder_->CreateCall(
-          builtins_->fns.quo_alloc, { class_type->desc, value_size }),
+          builtins_->fns.quo_alloc,
+          {
+              class_type->desc,
+              value_size,
+          }),
       ::llvm::PointerType::getUnqual(class_type->ty));
   return p;
 }

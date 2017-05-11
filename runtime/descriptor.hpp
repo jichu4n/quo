@@ -45,10 +45,6 @@ struct QClassDescriptor {
   // Pointer to null-terminated array of QClassViews. Each QClassView defines
   // how to access an object of this class as a superclass (or as itself).
   const QConstArray<QClassView> views;
-
-  ::std::function<void(QObject*)> init;
-  ::std::function<void(QObject*)> destroy;
-  ::std::function<void(QObject*, const QObject*)> copy;
 };
 
 // Defines how to access an object as a superclass (or as itself).

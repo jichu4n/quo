@@ -20,32 +20,12 @@
 #include <cstdio>
 #include "runtime/memory.hpp"
 
-namespace {
-
-void QStringInit(QObject* o) {
-  static_cast<QString*>(o)->value = new ::std::string();
-}
-
-void QStringDestroy(QObject* o) {
-  QString* s = static_cast<QString*>(o);
-  delete s->value;
-  s->value = nullptr;
-}
-
-void QStringCopy(QObject* dest, const QObject* src) {
-  *(static_cast<QString*>(dest)->value) =
-      *(static_cast<const QString*>(src)->value);
-}
-
-}  // namespace
-
 const QClassDescriptor __quo_ObjectDescriptor = {
   "Object",
   {
     0,
     nullptr,
   },
-  nullptr,
 };
 
 const QClassDescriptor __quo_Int32Descriptor = {
@@ -54,7 +34,6 @@ const QClassDescriptor __quo_Int32Descriptor = {
     0,
     nullptr,
   },
-  nullptr,
 };
 
 const QClassDescriptor __quo_BoolDescriptor = {
@@ -63,7 +42,6 @@ const QClassDescriptor __quo_BoolDescriptor = {
     0,
     nullptr,
   },
-  nullptr,
 };
 
 const QClassDescriptor __quo_StringDescriptor = {
@@ -72,9 +50,6 @@ const QClassDescriptor __quo_StringDescriptor = {
     0,
     nullptr,
   },
-  &QStringInit,
-  &QStringDestroy,
-  &QStringCopy,
 };
 
 QString* __quo_alloc_string(const char* value, int32_t length) {

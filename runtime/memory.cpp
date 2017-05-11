@@ -86,6 +86,16 @@ string GetStackTraceString() {
   return result;
 }
 
+void QStringInit(QObject* o) {
+  static_cast<QString*>(o)->value = new ::std::string();
+}
+
+void QStringDestroy(QObject* o) {
+  QString* s = static_cast<QString*>(o);
+  delete s->value;
+  s->value = nullptr;
+}
+
 }  // namespace
 
 QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
@@ -95,8 +105,8 @@ QObject* __quo_alloc(const QClassDescriptor* dp, int32_t size) {
       << ") [" << GetStackTraceString() << "]";
   p->descriptor = dp;
   p->refs = 1;
-  if (dp->init) {
-    dp->init(p);
+  if (dp == &__quo_StringDescriptor) {
+    QStringInit(p);
   }
   return p;
 }
@@ -116,8 +126,8 @@ void __quo_dec_refs(QObject* p) {
   if (p->refs == 0) {
     LOG_IF(INFO, FLAGS_debug_mm) << p << " " << dp->name << " FREE " << " ["
         << GetStackTraceString() << "]";
-    if (dp->destroy) {
-      dp->destroy(p);
+    if (dp == &__quo_StringDescriptor) {
+      QStringDestroy(p);
     }
     free(p);
   } else {

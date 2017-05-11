@@ -120,8 +120,11 @@ class Symbols {
   // Looks up a function definition by name.
   const FnDef* LookupFnDef(const ::std::string& name) const;
 
-  // Looks up the LLVM IR type representation for an AST type.
+  // Looks up the LLVM IR type representation for an AST type. Returns nullptr
+  // if the type could not be found.
   ClassType* LookupType(const TypeSpec& type_spec) const;
+  // Same as LookupType, but throws an exception if the type cannot be found.
+  ClassType* LookupTypeOrDie(const TypeSpec& type_spec) const;
 
  private:
   Symbols(::llvm::Module* module, Builtins* builtins);

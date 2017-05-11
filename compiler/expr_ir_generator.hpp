@@ -28,6 +28,7 @@
 namespace quo {
 
 class Builtins;
+class ClassType;
 class Symbols;
 class Var;
 
@@ -50,6 +51,7 @@ struct ExprResult {
   // A function reference. Only set if the expression resolves to a function.
   const FnDef* fn_def;
   // A class reference. Only set if the expression resolves to a class.
+  ClassType* class_type;
 
   ExprResult();
 };
@@ -97,7 +99,7 @@ class ExprIRGenerator {
   // Wraps a bool (int8) value into a QBool value.
   ::llvm::Value* CreateBoolValue(::llvm::Value* raw_bool_value);
   // Returns an object in memory (QObject*) for the given type.
-  ::llvm::Value* CreateObject(const TypeSpec& type_spec);
+  ::llvm::Value* CreateObject(ClassType* class_type);
   // Assigns the object at src_address to the variable referenced by
   // dest_ref_address.
   //

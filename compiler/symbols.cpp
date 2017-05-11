@@ -141,12 +141,13 @@ void Symbols::SetupClassDefs(const ModuleDef& module_def) {
   for (const ClassDef* class_def : class_defs) {
     TypeSpec type_spec;
     type_spec.set_name(class_def->name());
-    SetupClassDef(LookupType(type_spec), *class_def);
+    SetupClassDef(LookupTypeOrDie(type_spec), *class_def);
   }
 }
 
 void Symbols::SetupClassDef(ClassType* class_type, const ClassDef& class_def) {
   vector<::llvm::Type*> field_tys;
+  field_tys.push_back(builtins_->types.object_type.ty);
   vector<::llvm::Constant*> field_descs;
   for (const auto& class_member : class_def.members()) {
     try {
@@ -175,7 +176,7 @@ void Symbols::SetupClassDef(ClassType* class_type, const ClassDef& class_def) {
               &class_type->fields.back();
           field_tys.push_back(
               ::llvm::PointerType::getUnqual(
-                  LookupType(var_decl.type_spec())->ty));
+                  LookupTypeOrDie(var_decl.type_spec())->ty));
           ::llvm::Constant* field_name_array =
               ::llvm::ConstantDataArray::getString(ctx_, var_decl.name());
           field_descs.push_back(
@@ -199,7 +200,7 @@ void Symbols::SetupClassDef(ClassType* class_type, const ClassDef& class_def) {
                           0,  // address space
                           false),  // isExternallyInitialized
                       ::llvm::Type::getInt8PtrTy(ctx_)),
-                  LookupType(var_decl.type_spec())->desc,
+                  LookupTypeOrDie(var_decl.type_spec())->desc,
                   nullptr));
           break;
         }
@@ -332,10 +333,18 @@ const FnDef* Symbols::LookupFnDef(const ::std::string& name) const {
 ClassType* Symbols::LookupType(const TypeSpec& type_spec) const {
   const auto it = class_types_map_.find(type_spec.SerializeAsString());
   if (it == class_types_map_.end()) {
+    return nullptr;
+  }
+  return it->second;
+}
+
+ClassType* Symbols::LookupTypeOrDie(const TypeSpec& type_spec) const {
+  ClassType* class_type = LookupType(type_spec);
+  if (class_type == nullptr) {
     throw Exception(
         "Unknown type %s", type_spec.ShortDebugString().c_str());
   }
-  return it->second;
+  return class_type;
 }
 
 }  // namespace quo

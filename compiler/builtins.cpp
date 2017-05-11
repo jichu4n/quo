@@ -67,7 +67,7 @@ void Builtins::SetupBuiltinTypes() {
 
   types.object_type.type_spec.set_name("Object");
   ::llvm::Type* const object_fields[] = {
-    ::llvm::Type::getInt8PtrTy(ctx_),
+    ::llvm::PointerType::getUnqual(types.class_desc_ty),
     ::llvm::Type::getInt32Ty(ctx_),
   };
   types.object_type.ty = ::llvm::StructType::create(
@@ -82,7 +82,7 @@ void Builtins::SetupBuiltinTypes() {
       ctx_, int32_fields, types.int32_type.type_spec.name());
   types.int32_type.desc = new ::llvm::GlobalVariable(
       *module_,
-      ::llvm::Type::getInt8Ty(ctx_),
+      types.class_desc_ty,
       true,  // isConstant
       ::llvm::GlobalVariable::ExternalLinkage,
       nullptr,  // initializer,
@@ -103,7 +103,7 @@ void Builtins::SetupBuiltinTypes() {
       ctx_, bool_fields, types.bool_type.type_spec.name());
   types.bool_type.desc = new ::llvm::GlobalVariable(
       *module_,
-      ::llvm::Type::getInt8Ty(ctx_),
+      types.class_desc_ty,
       true,  // isConstant
       ::llvm::GlobalVariable::ExternalLinkage,
       nullptr,  // initializer,
@@ -122,7 +122,7 @@ void Builtins::SetupBuiltinTypes() {
       ctx_, string_fields, types.string_type.type_spec.name());
   types.string_type.desc = new ::llvm::GlobalVariable(
       *module_,
-      ::llvm::Type::getInt8Ty(ctx_),
+      types.class_desc_ty,
       true,  // isConstant
       ::llvm::GlobalVariable::ExternalLinkage,
       nullptr,  // initializer,
@@ -138,7 +138,10 @@ void Builtins::SetupBuiltinFunctions() {
       "__quo_alloc",
       ::llvm::FunctionType::get(
           ::llvm::Type::getInt8PtrTy(ctx_),
-          { ::llvm::Type::getInt8PtrTy(ctx_), ::llvm::Type::getInt32Ty(ctx_) },
+          {
+              ::llvm::PointerType::getUnqual(types.class_desc_ty),
+              ::llvm::Type::getInt32Ty(ctx_),
+          },
           false));  // isVarArg
   fns.quo_inc_refs = module_->getOrInsertFunction(
       "__quo_inc_refs",
