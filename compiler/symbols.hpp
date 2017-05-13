@@ -69,19 +69,32 @@ struct Scope {
   const Var* Lookup(::llvm::Value* address) const;
 };
 
+// Represents a member field (instance variable).
+struct FieldType {
+  // The name of the field.
+  ::std::string name;
+  // The type of the field.
+  TypeSpec type_spec;
+  // The reference mode of the field.
+  RefMode ref_mode;
+  // The index of the field within the class.
+  int index;
+};
+
+// Represents a function or method.
+struct FnType {
+  // The name of the method.
+  ::std::string name;
+  // The function's definition.
+  const FnDef* fn_def;
+  // The function's type signature.
+  ::llvm::FunctionType* fn_ty;
+  // The function's address.
+  ::llvm::Function* fn;
+};
+
 // Represents a class during IR generation.
 struct ClassType {
-  // Represents a class's member field (instance variable).
-  struct Field {
-    // The name of the field.
-    ::std::string name;
-    // The type of the field.
-    TypeSpec type_spec;
-    // The reference mode of the field.
-    RefMode ref_mode;
-    // The index of the field within the class.
-    int index;
-  };
 
   // Class type spec.
   TypeSpec type_spec;
@@ -92,9 +105,19 @@ struct ClassType {
   // Class descriptor object.
   ::llvm::GlobalVariable* desc;
   // Member fields (instance variables).
-  ::std::list<Field> fields;
+  ::std::list<FieldType> fields;
   // Member fields, indexed by name.
-  ::std::unordered_map<::std::string, Field*> fields_by_name;
+  ::std::unordered_map<::std::string, FieldType*> fields_by_name;
+  // Methods.
+  ::std::list<FnType> methods;
+  // Methods, indexed by name.
+  ::std::unordered_map<::std::string, FnType*> methods_by_name;
+
+  // Looks up a field by name, and throws an exception if not found.
+  FieldType* LookupFieldOrThrow(const ::std::string& name);
+
+  // Looks up a method by name, and throws an exception if not found.
+  FnType* LookupMethodOrThrow(const ::std::string& name);
 };
 
 // Represents all symbols visible from a particular scope.
@@ -118,7 +141,9 @@ class Symbols {
   // Looks up a variable in the scope stack by name.
   const Var* LookupVar(const ::std::string& name) const;
   // Looks up a function definition by name.
-  const FnDef* LookupFnDef(const ::std::string& name) const;
+  const FnType* LookupFn(const ::std::string& name) const;
+  // Same as LookupFn, but throws an exception if the function cannot be found.
+  const FnType* LookupFnOrThrow(const ::std::string& name) const;
 
   // Looks up the LLVM IR type representation for an AST type. Returns nullptr
   // if the type could not be found.
@@ -131,8 +156,10 @@ class Symbols {
 
   void SetupBuiltinClassTypes();
   void SetupFnDefs(const ModuleDef& module_def);
-  void SetupClassDefs(const ModuleDef& module_def);
-  void SetupClassDef(ClassType* class_type, const ClassDef& class_def);
+  void SetupFnType(FnType* fn_type, const FnDef& fn_def, ClassType* class_type);
+  void SetupClassTypes(const ModuleDef& module_def);
+  void SetupClassFields(ClassType* class_type, const ClassDef& class_def);
+  void SetupClassMethods(ClassType* class_type, const ClassDef& class_def);
 
   ::llvm::LLVMContext& ctx_;
   ::llvm::Module* const module_;
@@ -140,8 +167,10 @@ class Symbols {
 
   // Stack of scopes, from outermost to innermost.
   ::std::list<Scope> scopes_;
-  // Global functions in the AST, by name.
-  ::std::unordered_map<::std::string, const FnDef*> fn_defs_by_name_;
+  // Global functions.
+  ::std::list<FnType> fn_types_;
+  // Global functions, by name.
+  ::std::unordered_map<::std::string, FnType*> fn_types_by_name_;
   // User-defined classes.
   ::std::list<ClassType> class_types_;
   // Classes by serialized type spec.

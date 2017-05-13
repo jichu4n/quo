@@ -30,6 +30,7 @@ using ::std::string;
 Exception::Exception(const Exception& e)
     : line(e.line),
       message(e.message),
+      stacktrace(e.stacktrace),
       what_(new string()) {
 }
 
@@ -40,6 +41,7 @@ Exception::Exception(int line, const char* format, ...)
   va_start(args, format);
   StringAppendV(&message, format, args);
   va_end(args);
+  DumpStackTraceToString(&stacktrace);
 }
 
 Exception::Exception(const char* format, ...)
@@ -49,6 +51,7 @@ Exception::Exception(const char* format, ...)
   va_start(args, format);
   StringAppendV(&message, format, args);
   va_end(args);
+  DumpStackTraceToString(&stacktrace);
 }
 
 Exception Exception::withDefault(int defaultLine) const {
@@ -65,7 +68,7 @@ const char* Exception::what() const throw() {
   if (line > 0) {
     out << ":" << line << "] ";
   }
-  out << message << endl;
+  out << message << endl << stacktrace;
   what_->assign(out.str());
   return what_->c_str();
 }

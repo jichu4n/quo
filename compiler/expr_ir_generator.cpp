@@ -137,11 +137,10 @@ ExprResult ExprIRGenerator::ProcessVarExpr(
     return result;
   }
 
-  ::llvm::Function* fn = module_->getFunction(expr.name());
-  const FnDef* fn_def = symbols_->LookupFnDef(expr.name());
-  if (fn != nullptr && fn_def != nullptr) {
-    result.fn_def = fn_def;
-    result.value = fn;
+  const FnType* fn_type = symbols_->LookupFn(expr.name());
+  if (fn_type != nullptr) {
+    result.fn_def = fn_type->fn_def;
+    result.value = fn_type->fn;
     return result;
   }
 
@@ -169,20 +168,14 @@ ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
   EnsureAddress(&parent_result);
   ClassType* parent_class_type = symbols_->LookupTypeOrDie(
       parent_result.type_spec);
-  auto field_it = parent_class_type->fields_by_name.find(expr.member_name());
-  if (field_it == parent_class_type->fields_by_name.end()) {
-    throw Exception(
-        "Class %s does not have member field '%s'",
-        parent_result.type_spec.ShortDebugString().c_str(),
-        expr.member_name().c_str());
-  }
-  ClassType::Field* field = field_it->second;
+  FieldType* field_type =
+      parent_class_type->LookupFieldOrThrow(expr.member_name());
   const string& value_name = StringPrintf(
       "%s_%s",
       parent_result.type_spec.name().c_str(),
-      field->name.c_str());
+      field_type->name.c_str());
   ExprResult result;
-  result.type_spec = field->type_spec;
+  result.type_spec = field_type->type_spec;
   result.ref_address =
       ir_builder_->CreateBitCast(
           ir_builder_->CreateCall(
@@ -193,16 +186,16 @@ ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
                       ::llvm::Type::getInt8PtrTy(ctx_)),
                   parent_class_type->desc,
                   ::llvm::ConstantInt::getSigned(
-                      ::llvm::Type::getInt32Ty(ctx_), field->index),
+                      ::llvm::Type::getInt32Ty(ctx_), field_type->index),
               }),
           ::llvm::PointerType::getUnqual(
               ::llvm::PointerType::getUnqual(
-                  symbols_->LookupTypeOrDie(field->type_spec)->ty)),
+                  symbols_->LookupTypeOrDie(field_type->type_spec)->ty)),
           StringPrintf("%s_ref", value_name.c_str()));
   result.address = ir_builder_->CreateLoad(
       result.ref_address, StringPrintf("%s_addr", value_name.c_str()));
   result.value = ir_builder_->CreateLoad(result.address, value_name);
-  result.ref_mode = field->ref_mode;
+  result.ref_mode = field_type->ref_mode;
   return result;
 }
 

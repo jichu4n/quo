@@ -28,6 +28,7 @@ namespace quo {
 struct Exception : public ::std::exception {
   int line;
   ::std::string message;
+  ::std::string stacktrace;
 
   Exception(const Exception& e);
   Exception(int line, const char* format, ...);

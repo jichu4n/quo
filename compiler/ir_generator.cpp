@@ -73,35 +73,12 @@ void IRGenerator::ProcessModuleMember(const ModuleDef::Member& member) {
 }
 
 void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
+  const FnType* fn_type = symbols_->LookupFnOrThrow(fn_def.name());
   fn_def_ = &fn_def;
-  vector<::llvm::Type*> param_tys(fn_def.params_size());
-  transform(
-      fn_def.params().begin(),
-      fn_def.params().end(),
-      param_tys.begin(),
-      [this](const FnParam& param) {
-        return ::llvm::PointerType::getUnqual(
-            symbols_->LookupTypeOrDie(param.type_spec())->ty);
-      });
-  ::llvm::Type* const raw_return_ty =
-      symbols_->LookupTypeOrDie(fn_def.return_type_spec())->ty;
-  ::llvm::Type* const return_ty = raw_return_ty->isVoidTy() ?
-      raw_return_ty :
-      ::llvm::PointerType::getUnqual(raw_return_ty);
-  ::llvm::FunctionType* fn_ty = ::llvm::FunctionType::get(
-      return_ty,
-      param_tys,
-      false /* isVarArg */);
-  fn_ty_ = fn_ty;
-  ::llvm::Function* fn = ::llvm::Function::Create(
-      fn_ty, ::llvm::Function::ExternalLinkage, fn_def.name(), module_);
-  int i = 0;
-  for (::llvm::Argument& arg : fn->args()) {
-    arg.setName(fn_def.params(i++).name());
-  }
-  fn_ = fn;
+  fn_ty_ = fn_type->fn_ty;
+  fn_ = fn_type->fn;
 
-  ::llvm::BasicBlock* bb = ::llvm::BasicBlock::Create(ctx_, "", fn);
+  ::llvm::BasicBlock* bb = ::llvm::BasicBlock::Create(ctx_, "", fn_);
   ::llvm::IRBuilder<> builder(ctx_);
   builder.SetInsertPoint(bb);
   ir_builder_ = &builder;
@@ -116,8 +93,8 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
   Scope* fn_scope = symbols_->PushScope();
   fn_scope->is_fn_scope = true;
   vector<::llvm::Argument*> args;
-  i = 0;
-  for (::llvm::Argument& arg : fn->args()) {
+  int i = 0;
+  for (::llvm::Argument& arg : fn_->args()) {
     const FnParam& param = fn_def.params(i++);
     ::llvm::Value* arg_var = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
@@ -142,7 +119,7 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
 
   ProcessBlock(fn_def.block(), true);
 
-  if (fn_ty->getReturnType()->isVoidTy()) {
+  if (fn_ty_->getReturnType()->isVoidTy()) {
     builder.CreateRetVoid();
   } else {
     builder.CreateUnreachable();

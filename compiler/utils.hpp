@@ -23,6 +23,7 @@
 #include <string>
 
 namespace google {
+
 namespace protobuf  {
 
 extern ::std::string StringPrintf(const char* format, ...);
@@ -31,6 +32,13 @@ extern const ::std::string& SStringPrintf(
 extern void StringAppendV(::std::string* dst, const char* format, va_list ap);
 
 }  // namespace protobuf
+
+namespace glog_internal_namespace_ {
+
+extern void DumpStackTraceToString(::std::string* stacktrace);
+
+}  // namespace glog_internal_namespace_
+
 }  // namespace google
 
 namespace quo {
@@ -38,6 +46,7 @@ namespace quo {
 using ::google::protobuf::StringPrintf;
 using ::google::protobuf::SStringPrintf;
 using ::google::protobuf::StringAppendV;
+using ::google::glog_internal_namespace_::DumpStackTraceToString;
 
 }  // namespace quo
 
