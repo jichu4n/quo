@@ -189,7 +189,8 @@ message FnDef {
   repeated FnParam params = 3;
   TypeSpec return_type_spec = 4;
   CC cc = 5;
-  Block block = 6;
+  bool is_override = 6;
+  Block block = 7;
 }
 
 // An external (C/C++) function declaration.

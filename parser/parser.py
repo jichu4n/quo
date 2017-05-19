@@ -424,21 +424,30 @@ class QuoParser(object):
     '''return_type_spec : type_spec'''
     p[0] = p[1]
 
+  def p_override_empty(self, p):
+    '''override :'''
+    p[0] = False
+
+  def p_override(self, p):
+    '''override : OVERRIDE'''
+    p[0] = True
+
   def p_func(self, p):
-    '''func : FUNCTION IDENTIFIER type_params \
+    '''func : override FUNCTION IDENTIFIER type_params \
               L_PAREN fn_param_list R_PAREN \
               return_type_spec \
               L_BRACE stmts R_BRACE'''
     p[0] = FnDef(
-        name=p[2],
-        params=p[5],
+        name=p[3],
+        params=p[6],
         cc=FnDef.DEFAULT,
-        block=p[9])
-    if p[7] is not None:
-      p[0].return_type_spec.CopyFrom(p[7])
-    if p[3]:
-      p[0].type_params.extend(p[3])
-    p.set_lineno(0, p.lineno(1))
+        is_override=p[1],
+        block=p[10])
+    if p[8] is not None:
+      p[0].return_type_spec.CopyFrom(p[8])
+    if p[4]:
+      p[0].type_params.extend(p[4])
+    p.set_lineno(0, p.lineno(2))
 
   def p_super_classes_empty(self, p):
     '''super_classes :'''

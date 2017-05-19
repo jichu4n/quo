@@ -45,6 +45,7 @@ class QuoLexer(object):
       'FUNCTION',
       'EXTERN',
       'EXPORT',
+      'OVERRIDE',
       # Control structures.
       'IF',
       'ELSE',
@@ -98,6 +99,7 @@ class QuoLexer(object):
       'fn': ('FUNCTION', None),
       'extern': ('EXTERN', None),
       'export': ('EXPORT', None),
+      'override': ('OVERRIDE', None),
       'if': ('IF', None),
       'else': ('ELSE', None),
       'for': ('FOR', None),
