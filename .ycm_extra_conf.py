@@ -51,6 +51,10 @@ def GetLLVMConfig():
 
 LLVM_CONFIG = GetLLVMConfig()
 LLVM_CXXFLAGS = subprocess.check_output([LLVM_CONFIG, '--cxxflags']).split()
+try:
+  LLVM_CXXFLAGS.remove('-fno-exceptions')
+except ValueError:
+  pass
 FLAGS = LLVM_CXXFLAGS + EXTRA_FLAGS
 
 
