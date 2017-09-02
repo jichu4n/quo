@@ -29,6 +29,7 @@ namespace quo {
 
 class Builtins;
 class ClassType;
+class FieldType;
 class Symbols;
 class Var;
 
@@ -85,6 +86,13 @@ class ExprIRGenerator {
   //
   // Return type: QObject**.
   ::llvm::Value* CreateLocalVar(::llvm::Type* ty, const ::std::string& name);
+  // Generates code to load a particular field in an object (QObject*).
+  //
+  // Return type: QObject**.
+  ::llvm::Value* GetFieldRefAddress(
+      const ClassType* parent_class_type,
+      const FieldType* field_type,
+      ::llvm::Value* object_address);
 
  private:
   ExprResult ProcessConstantExpr(const ConstantExpr& expr);

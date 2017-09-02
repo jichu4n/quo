@@ -1,0 +1,19 @@
+class Cat {
+  var x, y Int;
+  fn meow() Int {
+    return x + y;
+  }
+}
+
+fn f() Int { return 1; }
+
+fn Main() Int {
+  var c1 = Cat();
+  c1.x = 55;
+  c1.y = 145;
+  var c2 = Cat();
+  c2.x = 21;
+  c2.y = 80;
+  return c1.meow() - c2.meow();
+}
+

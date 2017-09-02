@@ -73,6 +73,22 @@ FnType* ClassType::LookupMethodOrThrow(const string& name) {
   return method_it->second;
 }
 
+ClassType::MemberType ClassType::LookupMemberOrThrow(
+    const ::std::string& name) {
+  auto field_it = fields_by_name.find(name);
+  if (field_it != fields_by_name.end()) {
+    return {ClassDef::Member::kVarDecl, field_it->second, nullptr};
+  }
+  auto method_it = methods_by_name.find(name);
+  if (method_it != methods_by_name.end()) {
+    return {ClassDef::Member::kFnDef, nullptr, method_it->second};
+  }
+  throw Exception(
+      "Class %s does not have member field or method '%s'",
+      type_spec.ShortDebugString().c_str(),
+      name.c_str());
+}
+
 unique_ptr<Symbols> Symbols::Create(
     ::llvm::Module* module,
     Builtins* builtins,
@@ -113,7 +129,7 @@ void Symbols::SetupBuiltinClassTypes() {
 }
 
 void Symbols::SetupFnDefs(const ModuleDef& module_def) {
-  for (const auto& member : module_def.members()) {
+  for (const ModuleDef::Member& member : module_def.members()) {
     // TODO(cji): Handle extern fns.
     if (member.type_case() != ModuleDef::Member::kFnDef) {
       continue;
@@ -144,7 +160,8 @@ void Symbols::SetupFnType(
   fn_type->name = fn_def.name();
   vector<::llvm::Type*> param_tys;
   if (class_type != nullptr) {
-    param_tys.push_back(class_type->ty);
+    param_tys.push_back(
+        ::llvm::PointerType::getUnqual(class_type->ty));
   }
   for (const FnParam& param : fn_def.params()) {
     param_tys.push_back(

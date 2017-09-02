@@ -95,7 +95,6 @@ struct FnType {
 
 // Represents a class during IR generation.
 struct ClassType {
-
   // Class type spec.
   TypeSpec type_spec;
   // Class definition in the AST.
@@ -115,9 +114,15 @@ struct ClassType {
 
   // Looks up a field by name, and throws an exception if not found.
   FieldType* LookupFieldOrThrow(const ::std::string& name);
-
   // Looks up a method by name, and throws an exception if not found.
   FnType* LookupMethodOrThrow(const ::std::string& name);
+
+  struct MemberType {
+    ClassDef::Member::TypeCase type_case;
+    FieldType* field_type;
+    FnType* method_type;
+  };
+  MemberType LookupMemberOrThrow(const ::std::string& name);
 };
 
 // Represents all symbols visible from a particular scope.

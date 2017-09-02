@@ -168,34 +168,31 @@ ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
   EnsureAddress(&parent_result);
   ClassType* parent_class_type = symbols_->LookupTypeOrDie(
       parent_result.type_spec);
-  FieldType* field_type =
-      parent_class_type->LookupFieldOrThrow(expr.member_name());
-  const string& value_name = StringPrintf(
-      "%s_%s",
-      parent_result.type_spec.name().c_str(),
-      field_type->name.c_str());
+  ClassType::MemberType member_type = parent_class_type->LookupMemberOrThrow(
+      expr.member_name());
   ExprResult result;
-  result.type_spec = field_type->type_spec;
-  result.ref_address =
-      ir_builder_->CreateBitCast(
-          ir_builder_->CreateCall(
-              builtins_->fns.quo_get_field,
-              {
-                  ir_builder_->CreateBitCast(
-                      parent_result.address,
-                      ::llvm::Type::getInt8PtrTy(ctx_)),
-                  parent_class_type->desc,
-                  ::llvm::ConstantInt::getSigned(
-                      ::llvm::Type::getInt32Ty(ctx_), field_type->index),
-              }),
-          ::llvm::PointerType::getUnqual(
-              ::llvm::PointerType::getUnqual(
-                  symbols_->LookupTypeOrDie(field_type->type_spec)->ty)),
-          StringPrintf("%s_ref", value_name.c_str()));
-  result.address = ir_builder_->CreateLoad(
-      result.ref_address, StringPrintf("%s_addr", value_name.c_str()));
-  result.value = ir_builder_->CreateLoad(result.address, value_name);
-  result.ref_mode = field_type->ref_mode;
+  if (member_type.type_case == ClassDef::Member::kVarDecl) {
+    FieldType* field_type = member_type.field_type;
+    const string& value_name = StringPrintf(
+        "%s_%s",
+        parent_result.type_spec.name().c_str(),
+        field_type->name.c_str());
+    result.type_spec = field_type->type_spec;
+    result.ref_address = GetFieldRefAddress(
+        parent_class_type, field_type, parent_result.address);
+    result.address = ir_builder_->CreateLoad(
+        result.ref_address, StringPrintf("%s_addr", value_name.c_str()));
+    result.value = ir_builder_->CreateLoad(result.address, value_name);
+    result.ref_mode = field_type->ref_mode;
+  } else if (member_type.type_case == ClassDef::Member::kFnDef) {
+    FnType* fn_type = member_type.method_type;
+    result.fn_def = fn_type->fn_def;
+    result.value = fn_type->fn;
+    result.address = parent_result.address;
+    return result;
+  } else {
+    throw Exception("Unknown class member type: %d", member_type.type_case);
+  }
   return result;
 }
 
@@ -213,6 +210,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
       {
           static_cast<int>(BinaryOpExpr::SUB),
           [this](::llvm::Value* l, ::llvm::Value* r) {
+            ir_builder_->CreateSub(l, r);
             return ir_builder_->CreateSub(l, r);
           }
       },
@@ -411,7 +409,11 @@ ExprResult ExprIRGenerator::ProcessCallExpr(
         return arg_result.address;
       });
   if (fn_result.fn_def != nullptr) {
-    result.type_spec = CHECK_NOTNULL(fn_result.fn_def)->return_type_spec();
+    if (fn_result.address != nullptr) {
+      // Insert "this" argument.
+      arg_results.insert(arg_results.begin(), fn_result.address);
+    }
+    result.type_spec = fn_result.fn_def->return_type_spec();
     result.address = ir_builder_->CreateCall(fn_result.value, arg_results);
     result.value = ir_builder_->CreateLoad(result.address);
   } else if (fn_result.class_type != nullptr) {
@@ -555,6 +557,30 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
       ::llvm::ConstantPointerNull::get(::llvm::PointerType::getUnqual(ty)),
       ref_address);
   return ref_address;
+}
+
+::llvm::Value* ExprIRGenerator::GetFieldRefAddress(
+    const ClassType* parent_class_type,
+    const FieldType* field_type,
+    ::llvm::Value* object_address) {
+  return ir_builder_->CreateBitCast(
+      ir_builder_->CreateCall(
+          builtins_->fns.quo_get_field,
+          {
+              ir_builder_->CreateBitCast(
+                  object_address,
+                  ::llvm::Type::getInt8PtrTy(ctx_)),
+              parent_class_type->desc,
+              ::llvm::ConstantInt::getSigned(
+                  ::llvm::Type::getInt32Ty(ctx_), field_type->index),
+          }),
+        ::llvm::PointerType::getUnqual(
+            ::llvm::PointerType::getUnqual(
+                symbols_->LookupTypeOrDie(field_type->type_spec)->ty)),
+        StringPrintf(
+            "%s_%s_ref",
+            parent_class_type->class_def->name().c_str(),
+            field_type->name.c_str()));
 }
 
 }  // namespace quo

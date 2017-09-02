@@ -52,6 +52,9 @@ def compile_file(input_file, output_file=None):
   lex = lexer.create_lexer()
   ast = parse.parse('\n'.join(lines), lexer=lex)
   ast_str = str(ast)
+  ast_file = input_file_root + '.asciiproto'
+  with open(ast_file, 'w') as file_obj:
+    file_obj.write(ast_str)
 
   # 2. Convert AST into LLVM IR.
   build_dir = os.path.join(

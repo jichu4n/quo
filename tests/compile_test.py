@@ -72,6 +72,7 @@ fn Main() Int {
       'string.quo': 12,
       'ref_mode.quo': 42,
       'simple_class_fields.quo': 43,
+      'methods.quo': 99,
   }
   def test_compile(self):
     for input_file, exit_code in self.COMPILE_TESTS.items():

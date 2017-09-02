@@ -58,9 +58,10 @@ void IRGenerator::ProcessModuleMember(const ModuleDef::Member& member) {
   try {
     switch (member.type_case()) {
       case ModuleDef::Member::kFnDef:
-        ProcessModuleFnDef(member.fn_def());
+        ProcessFnDef(member.fn_def(), nullptr);
         break;
       case ModuleDef::Member::kClassDef:
+        ProcessClassDef(member.class_def());
         break;
       default:
         throw Exception(
@@ -72,8 +73,27 @@ void IRGenerator::ProcessModuleMember(const ModuleDef::Member& member) {
   }
 }
 
-void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
-  const FnType* fn_type = symbols_->LookupFnOrThrow(fn_def.name());
+void IRGenerator::ProcessClassDef(const ClassDef& class_def) {
+  for (const ClassDef::Member& member : class_def.members()) {
+    if (member.type_case() == ClassDef::Member::kFnDef) {
+      ProcessFnDef(member.fn_def(), &class_def);
+    }
+  }
+}
+
+void IRGenerator::ProcessFnDef(
+    const FnDef& fn_def, const ClassDef* parent_class_def) {
+  ClassType* parent_class_type;
+  const FnType* fn_type;
+  if (parent_class_def == nullptr) {
+    parent_class_type = nullptr;
+    fn_type = symbols_->LookupFnOrThrow(fn_def.name());
+  } else {
+    TypeSpec type_spec;
+    type_spec.set_name(parent_class_def->name());
+    parent_class_type = symbols_->LookupTypeOrDie(type_spec);
+    fn_type = parent_class_type->LookupMethodOrThrow(fn_def.name());
+  }
   fn_def_ = &fn_def;
   fn_ty_ = fn_type->fn_ty;
   fn_ = fn_type->fn;
@@ -89,13 +109,33 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
           builtins_.get(),
           symbols_.get()));
 
+  // Object scope.
+  Scope* object_scope;
+  Scope* fn_scope;
+  if (parent_class_def == nullptr) {
+    object_scope = nullptr;
+    fn_scope = symbols_->PushScope();
+    fn_scope->is_fn_scope = true;
+  } else {
+    object_scope = symbols_->PushScope();
+    object_scope->is_fn_scope = true;
+    fn_scope = symbols_->PushScope();
+  }
+
   // Add args to scope.
-  Scope* fn_scope = symbols_->PushScope();
-  fn_scope->is_fn_scope = true;
   vector<::llvm::Argument*> args;
+  vector<FnParam> params;
+  if (parent_class_def != nullptr) {
+    FnParam this_param;
+    this_param.set_name("this");
+    this_param.set_ref_mode(STRONG_REF);
+    this_param.mutable_type_spec()->set_name(parent_class_def->name());
+    params.push_back(this_param);
+  }
+  params.insert(params.end(), fn_def.params().begin(), fn_def.params().end());
   int i = 0;
   for (::llvm::Argument& arg : fn_->args()) {
-    const FnParam& param = fn_def.params(i++);
+    const FnParam& param = params[i++];
     ::llvm::Value* arg_var = builder.CreateAlloca(
         arg.getType(), nullptr, arg.getName());
     // Store args in scope and increment ref counts.
@@ -108,7 +148,7 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
                   &arg, ::llvm::Type::getInt8PtrTy(ctx_)),
           });
     }
-    symbols_->GetScope()->AddVar({
+    fn_scope->AddVar({
         arg.getName(),
         param.type_spec(),
         arg_var,
@@ -117,7 +157,25 @@ void IRGenerator::ProcessModuleFnDef(const FnDef& fn_def) {
     args.push_back(&arg);
   }
 
+  if (parent_class_def != nullptr) {
+    for (const FieldType& field_type : parent_class_type->fields) {
+      object_scope->AddVar({
+          field_type.name,
+          field_type.type_spec,
+          expr_ir_generator_->GetFieldRefAddress(
+              parent_class_type,
+              &field_type,
+              ir_builder_->CreateLoad(
+                  fn_scope->vars.front().ref_address)),
+          WEAK_REF,
+      });
+    }
+  }
+
   ProcessBlock(fn_def.block(), true);
+  if (parent_class_def != nullptr) {
+    symbols_->PopScope();
+  }
 
   if (fn_ty_->getReturnType()->isVoidTy()) {
     builder.CreateRetVoid();

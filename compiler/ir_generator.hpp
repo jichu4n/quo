@@ -42,7 +42,8 @@ class IRGenerator {
  private:
   void ProcessModuleMember(
       const ModuleDef::Member& member);
-  void ProcessModuleFnDef(const FnDef& fn_def);
+  void ProcessClassDef(const ClassDef& class_def);
+  void ProcessFnDef(const FnDef& fn_def, const ClassDef* parent_class_def);
   void ProcessBlock(
       const Block& block, bool manage_parent_scope = false);
   void ProcessRetStmt(const RetStmt& stmt);
