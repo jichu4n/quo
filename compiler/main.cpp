@@ -16,11 +16,14 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+#include <fcntl.h>
+#include <unistd.h>
 #include <cstdlib>
 #include <algorithm>
 #include <iostream>
 #include <memory>
 #include <string>
+#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
@@ -33,16 +36,25 @@ using ::std::cin;
 using ::std::endl;
 using ::std::unique_ptr;
 using ::google::protobuf::io::IstreamInputStream;
+using ::google::protobuf::io::FileInputStream;
 using ::quo::Exception;
 using ::quo::IRGenerator;
 using ::quo::ModuleDef;
 
 int main(int argc, char* argv[]) {
+  ::gflags::ParseCommandLineFlags(&argc, &argv, true);
   ::google::InitGoogleLogging(argv[0]);
 
-  IstreamInputStream input_stream(&cin);
   ModuleDef module_def;
-  CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
+  if (argc > 1) {
+    int fd = open(argv[1], O_RDONLY);
+    FileInputStream input_stream(fd);
+    CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
+    close(fd);
+  } else {
+    IstreamInputStream input_stream(&cin);
+    CHECK(::google::protobuf::TextFormat::Parse(&input_stream, &module_def));
+  }
   // LOG(INFO) << module_def.DebugString();
 
   IRGenerator ir_generator;
