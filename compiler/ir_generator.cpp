@@ -185,8 +185,8 @@ void IRGenerator::ProcessFnDef(
 }
 
 void IRGenerator::ProcessBlock(
-    const Block& block, bool manage_parent_scope) {
-  if (!manage_parent_scope) {
+    const Block& block, bool is_fn_body_block) {
+  if (!is_fn_body_block) {
     symbols_->PushScope();
   }
   for (const Stmt& stmt : block.stmts()) {
@@ -200,6 +200,9 @@ void IRGenerator::ProcessBlock(
           break;
         case Stmt::kCond:
           ProcessCondStmt(stmt.cond());
+          break;
+        case Stmt::kCondLoop:
+          ProcessCondLoopStmt(stmt.cond_loop());
           break;
         case Stmt::kVarDecl:
           ProcessVarDeclStmt(stmt.var_decl());
@@ -215,8 +218,12 @@ void IRGenerator::ProcessBlock(
     }
     symbols_->GetScope()->temps.clear();
   }
-  if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
-    DestroyFnScopes();
+  if (is_fn_body_block) {
+    if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
+      DestroyFnScopes();
+    }
+  } else {
+    DestroyScope();
   }
   symbols_->PopScope();
 }
@@ -245,8 +252,9 @@ void IRGenerator::ProcessCondStmt(const CondStmt& stmt) {
   ::llvm::BasicBlock* merge_bb = ::llvm::BasicBlock::Create(ctx_, "endif");
 
   ir_builder_->CreateCondBr(
-      expr_ir_generator_->ExtractBoolValue(
-          cond_expr_result.value), true_bb, false_bb);
+      expr_ir_generator_->ExtractBoolValue(cond_expr_result.value),
+      true_bb,
+      false_bb);
 
   ir_builder_->SetInsertPoint(true_bb);
   ProcessBlock(stmt.true_block());
@@ -259,6 +267,32 @@ void IRGenerator::ProcessCondStmt(const CondStmt& stmt) {
   ProcessBlock(stmt.false_block());
   if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
     ir_builder_->CreateBr(merge_bb);
+  }
+
+  merge_bb->insertInto(fn_);
+  ir_builder_->SetInsertPoint(merge_bb);
+}
+
+void IRGenerator::ProcessCondLoopStmt(const CondLoopStmt& stmt) {
+  ::llvm::BasicBlock* loop_cond_bb = ::llvm::BasicBlock::Create(
+      ctx_, "while", fn_);
+  ::llvm::BasicBlock* loop_body_bb = ::llvm::BasicBlock::Create(ctx_, "do");
+  ::llvm::BasicBlock* merge_bb = ::llvm::BasicBlock::Create(ctx_, "endwhile");
+
+  ir_builder_->CreateBr(loop_cond_bb);
+  ir_builder_->SetInsertPoint(loop_cond_bb);
+  ExprResult cond_expr_result =
+      expr_ir_generator_->ProcessExpr(stmt.cond_expr());
+  ir_builder_->CreateCondBr(
+      expr_ir_generator_->ExtractBoolValue(cond_expr_result.value),
+      loop_body_bb,
+      merge_bb);
+
+  loop_body_bb->insertInto(fn_);
+  ir_builder_->SetInsertPoint(loop_body_bb);
+  ProcessBlock(stmt.block());
+  if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
+    ir_builder_->CreateBr(loop_cond_bb);
   }
 
   merge_bb->insertInto(fn_);
@@ -308,21 +342,28 @@ void IRGenerator::DestroyTemps() {
   }
 }
 
+void IRGenerator::DestroyScope(Scope* scope) {
+  if (scope == nullptr) {
+    scope = symbols_->GetScope();
+  }
+  for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
+    if (it->ref_mode == STRONG_REF) {
+      ir_builder_->CreateCall(
+          builtins_->fns.quo_dec_refs,
+          {
+          ir_builder_->CreateBitCast(
+              ir_builder_->CreateLoad(
+                it->ref_address,
+                it->name + "_addr"),
+              ::llvm::Type::getInt8PtrTy(ctx_)),
+          });
+    }
+  }
+}
+
 void IRGenerator::DestroyFnScopes() {
   for (Scope* scope : symbols_->GetScopesInFn()) {
-    for (auto it = scope->vars.rbegin(); it != scope->vars.rend(); ++it) {
-      if (it->ref_mode == STRONG_REF) {
-        ir_builder_->CreateCall(
-            builtins_->fns.quo_dec_refs,
-            {
-                ir_builder_->CreateBitCast(
-                    ir_builder_->CreateLoad(
-                        it->ref_address,
-                        it->name + "_addr"),
-                    ::llvm::Type::getInt8PtrTy(ctx_)),
-            });
-      }
-    }
+    DestroyScope(scope);
   }
 }
 

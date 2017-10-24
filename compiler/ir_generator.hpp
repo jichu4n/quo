@@ -45,13 +45,16 @@ class IRGenerator {
   void ProcessClassDef(const ClassDef& class_def);
   void ProcessFnDef(const FnDef& fn_def, const ClassDef* parent_class_def);
   void ProcessBlock(
-      const Block& block, bool manage_parent_scope = false);
+      const Block& block, bool is_fn_body_block = false);
   void ProcessRetStmt(const RetStmt& stmt);
   void ProcessCondStmt(const CondStmt& stmt);
+  void ProcessCondLoopStmt(const CondLoopStmt& stmt);
   void ProcessVarDeclStmt(const VarDeclStmt& stmt);
 
   // Generates code to deallocate temps in a scope.
   void DestroyTemps();
+  // Generates code to deallocate variables in a scope.
+  void DestroyScope(Scope* scope = nullptr);
   // Generates code to deallocate variables in all scopes up to and including
   // the function's root scope. Does NOT pop off the scopes.
   void DestroyFnScopes();
