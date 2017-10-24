@@ -9,4 +9,5 @@ testdata/ref_mode
 testdata/simple_class_fields
 testdata/methods
 testdata/loop
+testdata/break
 

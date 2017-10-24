@@ -19,8 +19,8 @@
 #ifndef IR_GENERATOR_HPP_
 #define IR_GENERATOR_HPP_
 
-#include <list>
 #include <memory>
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include "llvm/IR/IRBuilder.h"
@@ -45,8 +45,9 @@ class IRGenerator {
   void ProcessClassDef(const ClassDef& class_def);
   void ProcessFnDef(const FnDef& fn_def, const ClassDef* parent_class_def);
   void ProcessBlock(
-      const Block& block, bool is_fn_body_block = false);
+      const Block& block, bool is_fn_body = false);
   void ProcessRetStmt(const RetStmt& stmt);
+  void ProcessBrkStmt(const BrkStmt& stmt);
   void ProcessCondStmt(const CondStmt& stmt);
   void ProcessCondLoopStmt(const CondLoopStmt& stmt);
   void ProcessVarDeclStmt(const VarDeclStmt& stmt);
@@ -72,6 +73,8 @@ class IRGenerator {
   const FnDef* fn_def_;
   // IR builder for the current function.
   ::llvm::IRBuilder<>* ir_builder_;
+  // Stack of loop termination basic blocks.
+  ::std::stack<::llvm::BasicBlock*> loop_end_bb_stack_;
 
   ::std::unique_ptr<Builtins> builtins_;
   ::std::unique_ptr<Symbols> symbols_;

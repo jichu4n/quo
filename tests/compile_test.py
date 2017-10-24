@@ -74,6 +74,7 @@ fn Main() Int {
       'simple_class_fields.quo': 43,
       'methods.quo': 99,
       'loop.quo': 165,
+      'break.quo': 123,
   }
   def test_compile(self):
     for input_file, exit_code in self.COMPILE_TESTS.items():

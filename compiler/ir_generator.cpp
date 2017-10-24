@@ -185,8 +185,8 @@ void IRGenerator::ProcessFnDef(
 }
 
 void IRGenerator::ProcessBlock(
-    const Block& block, bool is_fn_body_block) {
-  if (!is_fn_body_block) {
+    const Block& block, bool is_fn_body) {
+  if (!is_fn_body) {
     symbols_->PushScope();
   }
   for (const Stmt& stmt : block.stmts()) {
@@ -197,6 +197,9 @@ void IRGenerator::ProcessBlock(
           break;
         case Stmt::kRet:
           ProcessRetStmt(stmt.ret());
+          break;
+        case Stmt::kBrk:
+          ProcessBrkStmt(stmt.brk());
           break;
         case Stmt::kCond:
           ProcessCondStmt(stmt.cond());
@@ -218,7 +221,7 @@ void IRGenerator::ProcessBlock(
     }
     symbols_->GetScope()->temps.clear();
   }
-  if (is_fn_body_block) {
+  if (is_fn_body) {
     if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
       DestroyFnScopes();
     }
@@ -241,6 +244,15 @@ void IRGenerator::ProcessRetStmt(const RetStmt& stmt) {
   DestroyTemps();
   DestroyFnScopes();
   ir_builder_->CreateRet(ret_address);
+}
+
+void IRGenerator::ProcessBrkStmt(const BrkStmt& stmt) {
+  if (loop_end_bb_stack_.empty()) {
+    throw Exception("Break statement with no corresponding loop");
+  }
+  DestroyTemps();
+  DestroyScope();
+  ir_builder_->CreateBr(loop_end_bb_stack_.top());
 }
 
 void IRGenerator::ProcessCondStmt(const CondStmt& stmt) {
@@ -277,7 +289,8 @@ void IRGenerator::ProcessCondLoopStmt(const CondLoopStmt& stmt) {
   ::llvm::BasicBlock* loop_cond_bb = ::llvm::BasicBlock::Create(
       ctx_, "while", fn_);
   ::llvm::BasicBlock* loop_body_bb = ::llvm::BasicBlock::Create(ctx_, "do");
-  ::llvm::BasicBlock* merge_bb = ::llvm::BasicBlock::Create(ctx_, "endwhile");
+  ::llvm::BasicBlock* loop_end_bb =
+      ::llvm::BasicBlock::Create(ctx_, "endwhile");
 
   ir_builder_->CreateBr(loop_cond_bb);
   ir_builder_->SetInsertPoint(loop_cond_bb);
@@ -286,17 +299,19 @@ void IRGenerator::ProcessCondLoopStmt(const CondLoopStmt& stmt) {
   ir_builder_->CreateCondBr(
       expr_ir_generator_->ExtractBoolValue(cond_expr_result.value),
       loop_body_bb,
-      merge_bb);
+      loop_end_bb);
 
   loop_body_bb->insertInto(fn_);
   ir_builder_->SetInsertPoint(loop_body_bb);
+  loop_end_bb_stack_.push(loop_end_bb);
   ProcessBlock(stmt.block());
+  loop_end_bb_stack_.pop();
   if (ir_builder_->GetInsertBlock()->getTerminator() == nullptr) {
     ir_builder_->CreateBr(loop_cond_bb);
   }
 
-  merge_bb->insertInto(fn_);
-  ir_builder_->SetInsertPoint(merge_bb);
+  loop_end_bb->insertInto(fn_);
+  ir_builder_->SetInsertPoint(loop_end_bb);
 }
 
 void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {

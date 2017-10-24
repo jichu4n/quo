@@ -1,0 +1,12 @@
+fn Main() Int {
+  var i = 0;
+  while i < 123 {
+    while true {
+      i += 1;
+      if (i >= 99) {
+        break;
+      }
+    }
+  }
+  return i;
+}
