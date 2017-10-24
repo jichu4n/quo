@@ -198,89 +198,36 @@ ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
 
 ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
     const BinaryOpExpr& expr) {
+# define BINARY_INT_OP(op, fn) { \
+      static_cast<int>(BinaryOpExpr::op), \
+      []( \
+          ::llvm::IRBuilder<>* ir_builder, \
+          ::llvm::Value* l, \
+          ::llvm::Value* r) { \
+        return ir_builder->fn(l, r); \
+      } \
+  }
   static const unordered_map<
-      int,
-      function<::llvm::Value*(::llvm::Value*, ::llvm::Value*)>> kIntOps = {
-      {
-          static_cast<int>(BinaryOpExpr::ADD),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateAdd(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::SUB),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            ir_builder_->CreateSub(l, r);
-            return ir_builder_->CreateSub(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::MUL),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateMul(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::DIV),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateSDiv(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::MOD),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateSRem(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::EQ),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateICmpEQ(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::NE),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateICmpNE(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::GT),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateICmpSGT(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::GE),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateICmpSGE(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::LT),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateICmpSLT(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::LE),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateICmpSLE(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::AND),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateAnd(l, r);
-          }
-      },
-      {
-          static_cast<int>(BinaryOpExpr::OR),
-          [this](::llvm::Value* l, ::llvm::Value* r) {
-            return ir_builder_->CreateOr(l, r);
-          }
-      },
-  };
+    int,
+    function<::llvm::Value*(
+        ::llvm::IRBuilder<>* ir_builder,
+        ::llvm::Value*,
+        ::llvm::Value*)>> kIntOps = {
+        BINARY_INT_OP(ADD, CreateAdd),
+        BINARY_INT_OP(SUB, CreateSub),
+        BINARY_INT_OP(MUL, CreateMul),
+        BINARY_INT_OP(DIV, CreateSDiv),
+        BINARY_INT_OP(MOD, CreateSRem),
+        BINARY_INT_OP(EQ, CreateICmpEQ),
+        BINARY_INT_OP(NE, CreateICmpNE),
+        BINARY_INT_OP(GT, CreateICmpSGT),
+        BINARY_INT_OP(GE, CreateICmpSGE),
+        BINARY_INT_OP(LT, CreateICmpSLT),
+        BINARY_INT_OP(LE, CreateICmpSLE),
+        BINARY_INT_OP(AND, CreateAnd),
+        BINARY_INT_OP(OR, CreateOr),
+    };
+# undef BINARY_INT_OP
 
   ExprResult result;
   ExprResult left_result = ProcessExpr(expr.left_expr());
@@ -311,6 +258,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
         result.type_spec = builtins_->types.int32_type.type_spec;
         result.value = CreateInt32Value(
             kIntOps.at(expr.op())(
+                ir_builder_,
                 ExtractInt32Value(left_result.value),
                 ExtractInt32Value(right_result.value)));
       } else {
@@ -331,6 +279,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
         result.type_spec = builtins_->types.bool_type.type_spec;
         result.value = CreateBoolValue(
             kIntOps.at(expr.op())(
+                ir_builder_,
                 ExtractInt32Value(left_result.value),
                 ExtractInt32Value(right_result.value)));
       } else {
@@ -349,6 +298,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
         result.type_spec = builtins_->types.bool_type.type_spec;
         result.value = CreateBoolValue(
             kIntOps.at(expr.op())(
+                ir_builder_,
                 ExtractInt32Value(left_result.value),
                 ExtractInt32Value(right_result.value)));
       } else if (left_result.value->getType() ==
@@ -358,6 +308,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
         result.type_spec = builtins_->types.bool_type.type_spec;
         result.value = CreateBoolValue(
             kIntOps.at(expr.op())(
+                ir_builder_,
                 ExtractBoolValue(left_result.value),
                 ExtractBoolValue(right_result.value)));
       } else {
@@ -376,6 +327,7 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
         result.type_spec = builtins_->types.bool_type.type_spec;
         result.value = CreateBoolValue(
             kIntOps.at(expr.op())(
+                ir_builder_,
                 ExtractBoolValue(left_result.value),
                 ExtractBoolValue(right_result.value)));
       } else {
