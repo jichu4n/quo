@@ -34,11 +34,11 @@
 #     - llvm: LLVM libraries and binaries.
 #     - glog: Google logging library.
 
-PROTOBUF_CPP_URL='https://github.com/google/protobuf/releases/download/v3.1.0/protobuf-cpp-3.1.0.tar.gz'
-GLOG_URL='https://github.com/google/glog/archive/v0.3.4.tar.gz'
-GFLAGS_URL='https://github.com/gflags/gflags/archive/v2.1.2.tar.gz'
-CMAKE_URL='https://cmake.org/files/v3.6/cmake-3.6.2.tar.gz'
-LLVM_URL='http://llvm.org/releases/3.9.0/llvm-3.9.0.src.tar.xz'
+PROTOBUF_CPP_URL='https://github.com/google/protobuf/releases/download/v3.4.1/protobuf-cpp-3.4.1.tar.gz'
+GLOG_URL='https://github.com/google/glog/archive/v0.3.5.tar.gz'
+GFLAGS_URL='https://github.com/gflags/gflags/archive/v2.2.1.tar.gz'
+CMAKE_URL='https://cmake.org/files/v3.9/cmake-3.9.4.tar.gz'
+LLVM_URL='http://llvm.org/releases/5.0.0/llvm-5.0.0.src.tar.xz'
 
 cd "$(dirname $0)"
 prefix="$PWD/deps"
@@ -132,7 +132,7 @@ function install_cmake() {
     cd "$cmake_src"
     tar -xvz --strip-components=1 -f "$cmake_archive"
   fi
-  ./bootstrap --prefix="$prefix" --parallel=4
+  CC=gcc ./bootstrap --prefix="$prefix" --parallel=4
   make -j4
   make install
 }
