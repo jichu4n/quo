@@ -26,6 +26,6 @@ add_executable(
   symbols.cpp
   builtins.cpp
   exceptions.cpp)
-target_link_libraries(quoc ast)
+target_link_libraries(quoc PRIVATE ast)
 llvm_config(quoc core)
 

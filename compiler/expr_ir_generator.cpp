@@ -417,13 +417,13 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
     ::llvm::Value* raw_int32_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtins_->types.int32_type.ty,
-      ::llvm::ConstantStruct::get(
-          builtins_->types.object_type.ty,
+      {
+        ::llvm::ConstantStruct::get(builtins_->types.object_type.ty, {
           builtins_->types.int32_type.desc,
           ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
-          nullptr),
-      ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 0),
-      nullptr);
+        }),
+        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 0),
+      });
   return ir_builder_->CreateInsertValue(
       init_value, raw_int32_value, {1});
 }
@@ -437,13 +437,13 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
     ::llvm::Value* raw_bool_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtins_->types.bool_type.ty,
-      ::llvm::ConstantStruct::get(
-          builtins_->types.object_type.ty,
-          builtins_->types.bool_type.desc,
-          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
-          nullptr),
-      ::llvm::ConstantInt::getSigned(::llvm::Type::getInt1Ty(ctx_), 0),
-      nullptr);
+      {
+        ::llvm::ConstantStruct::get(builtins_->types.object_type.ty, {
+            builtins_->types.bool_type.desc,
+            ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
+          }),
+        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt1Ty(ctx_), 0),
+      });
   return ir_builder_->CreateInsertValue(
       init_value, raw_bool_value, {1});
 }

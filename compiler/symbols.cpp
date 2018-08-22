@@ -289,28 +289,29 @@ void Symbols::SetupClassFields(
       field_descs.push_back(
           ::llvm::ConstantStruct::get(
               builtins_->types.field_desc_ty,
-              ::llvm::ConstantInt::getSigned(
-                  ::llvm::Type::getInt32Ty(ctx_), field_index),
-              ::llvm::ConstantExpr::getPointerCast(
-                  new ::llvm::GlobalVariable(
-                      *module_,
-                      field_name_array->getType(),
-                      true,  // isConstant
-                      ::llvm::GlobalVariable::PrivateLinkage,
-                      field_name_array,
-                      StringPrintf(
-                        "__%s_FieldName_%s",
-                        class_type->class_def->name().c_str(),
-                        var_decl.name().c_str()),
-                      nullptr,  // insertBefore
-                      ::llvm::GlobalVariable::NotThreadLocal,
-                      0,  // address space
-                      false),  // isExternallyInitialized
-                  ::llvm::Type::getInt8PtrTy(ctx_)),
-              LookupTypeOrDie(var_decl.type_spec())->desc,
-              ::llvm::ConstantInt::getSigned(
-                  ::llvm::Type::getInt8Ty(ctx_), var_decl.ref_mode()),
-              nullptr));
+              {
+                ::llvm::ConstantInt::getSigned(
+                    ::llvm::Type::getInt32Ty(ctx_), field_index),
+                ::llvm::ConstantExpr::getPointerCast(
+                    new ::llvm::GlobalVariable(
+                        *module_,
+                        field_name_array->getType(),
+                        true,  // isConstant
+                        ::llvm::GlobalVariable::PrivateLinkage,
+                        field_name_array,
+                        StringPrintf(
+                          "__%s_FieldName_%s",
+                          class_type->class_def->name().c_str(),
+                          var_decl.name().c_str()),
+                        nullptr,  // insertBefore
+                        ::llvm::GlobalVariable::NotThreadLocal,
+                        0,  // address space
+                        false),  // isExternallyInitialized
+                    ::llvm::Type::getInt8PtrTy(ctx_)),
+                LookupTypeOrDie(var_decl.type_spec())->desc,
+                ::llvm::ConstantInt::getSigned(
+                    ::llvm::Type::getInt8Ty(ctx_), var_decl.ref_mode()),
+              }));
     } catch (const Exception& e) {
       throw e.withDefault(class_member.line());
     }
@@ -346,14 +347,15 @@ void Symbols::SetupClassFields(
               {
                   ::llvm::ConstantStruct::get(
                       builtins_->types.class_view_ty,
-                      class_type->desc,
-                      ::llvm::ConstantInt::getSigned(
-                          ::llvm::Type::getInt32Ty(ctx_), field_descs.size()),
-                      ::llvm::ConstantExpr::getPointerCast(
-                          field_desc_array,
-                          ::llvm::PointerType::getUnqual(
-                              builtins_->types.field_desc_ty)),
-                      nullptr),
+                      {
+                        class_type->desc,
+                        ::llvm::ConstantInt::getSigned(
+                            ::llvm::Type::getInt32Ty(ctx_), field_descs.size()),
+                        ::llvm::ConstantExpr::getPointerCast(
+                            field_desc_array,
+                            ::llvm::PointerType::getUnqual(
+                                builtins_->types.field_desc_ty)),
+                      }),
               }),
           StringPrintf(
             "__%s_View", class_type->class_def->name().c_str()),
@@ -366,27 +368,28 @@ void Symbols::SetupClassFields(
   class_type->desc->setInitializer(
       ::llvm::ConstantStruct::get(
           builtins_->types.class_desc_ty,
-          ::llvm::ConstantExpr::getPointerCast(
-              new ::llvm::GlobalVariable(
-                  *module_,
-                  class_name_array->getType(),
-                  true,  // isConstant
-                  ::llvm::GlobalVariable::PrivateLinkage,
-                  class_name_array,
-                  StringPrintf(
-                    "__%s_ClassName", class_type->class_def->name().c_str()),
-                  nullptr,  // insertBefore
-                  ::llvm::GlobalVariable::NotThreadLocal,
-                  0,  // address space
-                  false),  // isExternallyInitialized
-              ::llvm::Type::getInt8PtrTy(ctx_)),
-          ::llvm::ConstantInt::getSigned(
-              ::llvm::Type::getInt32Ty(ctx_), 1),
-          ::llvm::ConstantExpr::getPointerCast(
-              view_array,
-              ::llvm::PointerType::getUnqual(
-                  builtins_->types.class_view_ty)),
-          nullptr));
+          {
+            ::llvm::ConstantExpr::getPointerCast(
+                new ::llvm::GlobalVariable(
+                    *module_,
+                    class_name_array->getType(),
+                    true,  // isConstant
+                    ::llvm::GlobalVariable::PrivateLinkage,
+                    class_name_array,
+                    StringPrintf(
+                      "__%s_ClassName", class_type->class_def->name().c_str()),
+                    nullptr,  // insertBefore
+                    ::llvm::GlobalVariable::NotThreadLocal,
+                    0,  // address space
+                    false),  // isExternallyInitialized
+                ::llvm::Type::getInt8PtrTy(ctx_)),
+            ::llvm::ConstantInt::getSigned(
+                ::llvm::Type::getInt32Ty(ctx_), 1),
+            ::llvm::ConstantExpr::getPointerCast(
+                view_array,
+                ::llvm::PointerType::getUnqual(
+                    builtins_->types.class_view_ty)),
+          }));
 }
 
 void Symbols::SetupClassMethods(

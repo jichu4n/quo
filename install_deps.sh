@@ -32,6 +32,7 @@
 #     - protobuf: The Protocol Buffer compiler and C++ libs.
 #     - cmake: CMake.
 #     - llvm: LLVM libraries and binaries.
+#     - libunwind: Library for stack unwinding (required by glog).
 #     - glog: Google logging library.
 
 PROTOBUF_CPP_URL='https://github.com/google/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz'
@@ -39,7 +40,7 @@ LIBUNWIND_URL='http://download.savannah.nongnu.org/releases/libunwind/libunwind-
 GLOG_URL='https://github.com/google/glog/archive/v0.3.5.tar.gz'
 GFLAGS_URL='https://github.com/gflags/gflags/archive/v2.2.1.tar.gz'
 CMAKE_URL='https://cmake.org/files/v3.12/cmake-3.12.1.tar.gz'
-LLVM_URL='http://llvm.org/releases/3.9.1/llvm-3.9.1.src.tar.xz'
+LLVM_URL='http://llvm.org/releases/6.0.1/llvm-6.0.1.src.tar.xz'
 
 cd "$(dirname $0)"
 prefix="$PWD/deps"
