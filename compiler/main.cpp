@@ -18,28 +18,28 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <cstdlib>
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <string>
+#include "compiler/exceptions.hpp"
+#include "compiler/ir_generator.hpp"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "google/protobuf/io/zero_copy_stream_impl.h"
 #include "google/protobuf/text_format.h"
 #include "llvm/Support/raw_ostream.h"
-#include "compiler/ir_generator.hpp"
-#include "compiler/exceptions.hpp"
 
+using ::google::protobuf::io::FileInputStream;
+using ::google::protobuf::io::IstreamInputStream;
+using ::quo::Exception;
+using ::quo::IRGenerator;
+using ::quo::ModuleDef;
 using ::std::cerr;
 using ::std::cin;
 using ::std::endl;
 using ::std::unique_ptr;
-using ::google::protobuf::io::IstreamInputStream;
-using ::google::protobuf::io::FileInputStream;
-using ::quo::Exception;
-using ::quo::IRGenerator;
-using ::quo::ModuleDef;
 
 int main(int argc, char* argv[]) {
   ::gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -62,16 +62,15 @@ int main(int argc, char* argv[]) {
   try {
     module = ir_generator.ProcessModule(module_def);
   } catch (const Exception& e) {
-     cerr << e.what() << endl;
-     return EXIT_FAILURE;
+    cerr << e.what() << endl;
+    return EXIT_FAILURE;
   }
 
   module->print(
       ::llvm::outs(),
       nullptr,  // AssemblyAnnotationWriter
-      false,  // ShouldPreserveUseListOrder
-      true);  // IsForDebug
+      false,    // ShouldPreserveUseListOrder
+      true);    // IsForDebug
 
   return EXIT_SUCCESS;
 }
-

@@ -19,8 +19,8 @@
 #ifndef BUILTIN_TYPES_HPP_
 #define BUILTIN_TYPES_HPP_
 
-#include <string>
 #include <cstdint>
+#include <string>
 #include "runtime/descriptor.hpp"
 
 // Base class for Quo objects.
@@ -54,4 +54,3 @@ extern "C" QString* __quo_string_concat(QString* left, QString* right);
 extern "C" QInt32* __quo_print(const QString* s);
 
 #endif  // BUILTIN_TYPES_HPP_
-

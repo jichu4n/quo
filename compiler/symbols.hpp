@@ -20,13 +20,13 @@
 #define SYMBOLS_HPP_
 
 #include <list>
-#include <string>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
+#include "ast/ast.pb.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-#include "ast/ast.pb.h"
 
 namespace quo {
 
@@ -130,9 +130,7 @@ class Symbols {
  public:
   // Creates a new symbol table for an AST module.
   static ::std::unique_ptr<Symbols> Create(
-      ::llvm::Module* module,
-      Builtins* builtins,
-      const ModuleDef& module_def);
+      ::llvm::Module* module, Builtins* builtins, const ModuleDef& module_def);
   // Pushes a new scope onto the stack.
   Scope* PushScope();
   // Pops off the top-most scope.

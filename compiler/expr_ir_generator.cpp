@@ -19,11 +19,11 @@
 #include "compiler/expr_ir_generator.hpp"
 #include <functional>
 #include <vector>
-#include "glog/logging.h"
 #include "compiler/builtins.hpp"
 #include "compiler/exceptions.hpp"
 #include "compiler/symbols.hpp"
 #include "compiler/utils.hpp"
+#include "glog/logging.h"
 
 namespace quo {
 
@@ -40,16 +40,13 @@ ExprResult::ExprResult()
       class_type(nullptr) {}
 
 ExprIRGenerator::ExprIRGenerator(
-    ::llvm::Module* module,
-    ::llvm::IRBuilder<>* ir_builder,
-    const Builtins* builtins,
-    Symbols* symbols)
+    ::llvm::Module* module, ::llvm::IRBuilder<>* ir_builder,
+    const Builtins* builtins, Symbols* symbols)
     : ctx_(module->getContext()),
       module_(module),
       ir_builder_(ir_builder),
       builtins_(builtins),
       symbols_(symbols) {}
-
 
 ExprResult ExprIRGenerator::ProcessExpr(const Expr& expr) {
   try {
@@ -79,35 +76,29 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
   switch (expr.value_case()) {
     case ConstantExpr::kIntValue:
       result.type_spec = builtins_->types.int32_type.type_spec;
-      result.value = CreateInt32Value(
-          ::llvm::ConstantInt::getSigned(
-              ::llvm::Type::getInt32Ty(ctx_), expr.int_value()));
+      result.value = CreateInt32Value(::llvm::ConstantInt::getSigned(
+          ::llvm::Type::getInt32Ty(ctx_), expr.int_value()));
       break;
     case ConstantExpr::kBoolValue:
       result.type_spec = builtins_->types.bool_type.type_spec;
       result.value = CreateBoolValue(
-          expr.bool_value() ?
-              ::llvm::ConstantInt::getTrue(ctx_) :
-              ::llvm::ConstantInt::getFalse(ctx_));
+          expr.bool_value() ? ::llvm::ConstantInt::getTrue(ctx_)
+                            : ::llvm::ConstantInt::getFalse(ctx_));
       break;
     case ConstantExpr::kStrValue: {
       result.type_spec = builtins_->types.string_type.type_spec;
       ::llvm::Constant* array = ::llvm::ConstantDataArray::getString(
-          ctx_,
-          expr.str_value(),
+          ctx_, expr.str_value(),
           false);  // addNull
       ::llvm::GlobalVariable* array_var = new ::llvm::GlobalVariable(
-          *module_,
-          array->getType(),
+          *module_, array->getType(),
           true,  // isConstant
-          ::llvm::GlobalValue::PrivateLinkage,
-          array);
+          ::llvm::GlobalValue::PrivateLinkage, array);
       result.address = ir_builder_->CreateCall(
           builtins_->fns.quo_alloc_string,
           {
               ir_builder_->CreateBitCast(
-                  array_var,
-                  ::llvm::Type::getInt8PtrTy(ctx_)),
+                  array_var, ::llvm::Type::getInt8PtrTy(ctx_)),
               ::llvm::ConstantInt::getSigned(
                   ::llvm::Type::getInt32Ty(ctx_), expr.str_value().size()),
           });
@@ -121,19 +112,18 @@ ExprResult ExprIRGenerator::ProcessConstantExpr(const ConstantExpr& expr) {
   return result;
 }
 
-ExprResult ExprIRGenerator::ProcessVarExpr(
-    const VarExpr& expr) {
+ExprResult ExprIRGenerator::ProcessVarExpr(const VarExpr& expr) {
   ExprResult result;
 
   const Var* var = symbols_->LookupVar(expr.name());
   if (var != nullptr) {
     result.type_spec = var->type_spec;
     result.ref_address = var->ref_address;
-    result.address = ir_builder_->CreateLoad(
-        var->ref_address, expr.name() + "_addr");
+    result.address =
+        ir_builder_->CreateLoad(var->ref_address, expr.name() + "_addr");
     result.ref_mode = var->ref_mode;
-    result.value = ir_builder_->CreateLoad(
-        result.address, expr.name() + "_val");
+    result.value =
+        ir_builder_->CreateLoad(result.address, expr.name() + "_val");
     return result;
   }
 
@@ -166,16 +156,15 @@ ExprResult ExprIRGenerator::ProcessVarExpr(
 ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
   ExprResult parent_result = ProcessExpr(expr.parent_expr());
   EnsureAddress(&parent_result);
-  ClassType* parent_class_type = symbols_->LookupTypeOrDie(
-      parent_result.type_spec);
-  ClassType::MemberType member_type = parent_class_type->LookupMemberOrThrow(
-      expr.member_name());
+  ClassType* parent_class_type =
+      symbols_->LookupTypeOrDie(parent_result.type_spec);
+  ClassType::MemberType member_type =
+      parent_class_type->LookupMemberOrThrow(expr.member_name());
   ExprResult result;
   if (member_type.type_case == ClassDef::Member::kVarDecl) {
     FieldType* field_type = member_type.field_type;
     const string& value_name = StringPrintf(
-        "%s_%s",
-        parent_result.type_spec.name().c_str(),
+        "%s_%s", parent_result.type_spec.name().c_str(),
         field_type->name.c_str());
     result.type_spec = field_type->type_spec;
     result.ref_address = GetFieldRefAddress(
@@ -196,52 +185,39 @@ ExprResult ExprIRGenerator::ProcessMemberExpr(const MemberExpr& expr) {
   return result;
 }
 
-ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
-    const BinaryOpExpr& expr) {
-# define BINARY_INT_OP(op, fn) { \
-      static_cast<int>(BinaryOpExpr::op), \
-      []( \
-          ::llvm::IRBuilder<>* ir_builder, \
-          ::llvm::Value* l, \
-          ::llvm::Value* r) { \
-        return ir_builder->fn(l, r); \
-      } \
+ExprResult ExprIRGenerator::ProcessBinaryOpExpr(const BinaryOpExpr& expr) {
+#define BINARY_INT_OP(op, fn)                                 \
+  {                                                           \
+    static_cast<int>(BinaryOpExpr::op),                       \
+        [](::llvm::IRBuilder<>* ir_builder, ::llvm::Value* l, \
+           ::llvm::Value* r) { return ir_builder->fn(l, r); } \
   }
   static const unordered_map<
-    int,
-    function<::llvm::Value*(
-        ::llvm::IRBuilder<>* ir_builder,
-        ::llvm::Value*,
-        ::llvm::Value*)>> kIntOps = {
-        BINARY_INT_OP(ADD, CreateAdd),
-        BINARY_INT_OP(SUB, CreateSub),
-        BINARY_INT_OP(MUL, CreateMul),
-        BINARY_INT_OP(DIV, CreateSDiv),
-        BINARY_INT_OP(MOD, CreateSRem),
-        BINARY_INT_OP(EQ, CreateICmpEQ),
-        BINARY_INT_OP(NE, CreateICmpNE),
-        BINARY_INT_OP(GT, CreateICmpSGT),
-        BINARY_INT_OP(GE, CreateICmpSGE),
-        BINARY_INT_OP(LT, CreateICmpSLT),
-        BINARY_INT_OP(LE, CreateICmpSLE),
-        BINARY_INT_OP(AND, CreateAnd),
-        BINARY_INT_OP(OR, CreateOr),
-    };
-# undef BINARY_INT_OP
+      int,
+      function<::llvm::Value*(
+          ::llvm::IRBuilder<> * ir_builder, ::llvm::Value*, ::llvm::Value*)>>
+      kIntOps = {
+          BINARY_INT_OP(ADD, CreateAdd),    BINARY_INT_OP(SUB, CreateSub),
+          BINARY_INT_OP(MUL, CreateMul),    BINARY_INT_OP(DIV, CreateSDiv),
+          BINARY_INT_OP(MOD, CreateSRem),   BINARY_INT_OP(EQ, CreateICmpEQ),
+          BINARY_INT_OP(NE, CreateICmpNE),  BINARY_INT_OP(GT, CreateICmpSGT),
+          BINARY_INT_OP(GE, CreateICmpSGE), BINARY_INT_OP(LT, CreateICmpSLT),
+          BINARY_INT_OP(LE, CreateICmpSLE), BINARY_INT_OP(AND, CreateAnd),
+          BINARY_INT_OP(OR, CreateOr),
+      };
+#undef BINARY_INT_OP
 
   ExprResult result;
   ExprResult left_result = ProcessExpr(expr.left_expr());
   ExprResult right_result = ProcessExpr(expr.right_expr());
   switch (expr.op()) {
     case BinaryOpExpr::ADD:
-      if (left_result.value->getType() ==
-          builtins_->types.string_type.ty &&
-          right_result.value->getType() ==
-          builtins_->types.string_type.ty) {
+      if (left_result.value->getType() == builtins_->types.string_type.ty &&
+          right_result.value->getType() == builtins_->types.string_type.ty) {
         result.type_spec = builtins_->types.string_type.type_spec;
         result.address = ir_builder_->CreateCall(
             builtins_->fns.quo_string_concat,
-            { left_result.address, right_result.address });
+            {left_result.address, right_result.address});
         symbols_->GetScope()->AddTemp(result.address);
         result.value = ir_builder_->CreateLoad(result.address);
         break;
@@ -251,110 +227,88 @@ ExprResult ExprIRGenerator::ProcessBinaryOpExpr(
     case BinaryOpExpr::MUL:
     case BinaryOpExpr::DIV:
     case BinaryOpExpr::MOD:
-      if (left_result.value->getType() ==
-          builtins_->types.int32_type.ty &&
-          right_result.value->getType() ==
-          builtins_->types.int32_type.ty) {
+      if (left_result.value->getType() == builtins_->types.int32_type.ty &&
+          right_result.value->getType() == builtins_->types.int32_type.ty) {
         result.type_spec = builtins_->types.int32_type.type_spec;
-        result.value = CreateInt32Value(
-            kIntOps.at(expr.op())(
-                ir_builder_,
-                ExtractInt32Value(left_result.value),
-                ExtractInt32Value(right_result.value)));
+        result.value = CreateInt32Value(kIntOps.at(expr.op())(
+            ir_builder_, ExtractInt32Value(left_result.value),
+            ExtractInt32Value(right_result.value)));
       } else {
         throw Exception(
-                "Incompatible types for binary operation %s: %s",
-                BinaryOpExpr::Op_Name(expr.op()).c_str(),
-                expr.ShortDebugString().c_str());
+            "Incompatible types for binary operation %s: %s",
+            BinaryOpExpr::Op_Name(expr.op()).c_str(),
+            expr.ShortDebugString().c_str());
       }
       break;
     case BinaryOpExpr::GT:
     case BinaryOpExpr::GE:
     case BinaryOpExpr::LT:
     case BinaryOpExpr::LE:
-      if (left_result.value->getType() ==
-          builtins_->types.int32_type.ty &&
-          right_result.value->getType() ==
-          builtins_->types.int32_type.ty) {
+      if (left_result.value->getType() == builtins_->types.int32_type.ty &&
+          right_result.value->getType() == builtins_->types.int32_type.ty) {
         result.type_spec = builtins_->types.bool_type.type_spec;
-        result.value = CreateBoolValue(
-            kIntOps.at(expr.op())(
-                ir_builder_,
-                ExtractInt32Value(left_result.value),
-                ExtractInt32Value(right_result.value)));
+        result.value = CreateBoolValue(kIntOps.at(expr.op())(
+            ir_builder_, ExtractInt32Value(left_result.value),
+            ExtractInt32Value(right_result.value)));
       } else {
         throw Exception(
-                "Incompatible types for binary operation %s: %s",
-                BinaryOpExpr::Op_Name(expr.op()).c_str(),
-                expr.ShortDebugString().c_str());
+            "Incompatible types for binary operation %s: %s",
+            BinaryOpExpr::Op_Name(expr.op()).c_str(),
+            expr.ShortDebugString().c_str());
       }
       break;
     case BinaryOpExpr::EQ:
     case BinaryOpExpr::NE:
-      if (left_result.value->getType() ==
-          builtins_->types.int32_type.ty &&
-          right_result.value->getType() ==
-          builtins_->types.int32_type.ty) {
+      if (left_result.value->getType() == builtins_->types.int32_type.ty &&
+          right_result.value->getType() == builtins_->types.int32_type.ty) {
         result.type_spec = builtins_->types.bool_type.type_spec;
-        result.value = CreateBoolValue(
-            kIntOps.at(expr.op())(
-                ir_builder_,
-                ExtractInt32Value(left_result.value),
-                ExtractInt32Value(right_result.value)));
-      } else if (left_result.value->getType() ==
-          builtins_->types.bool_type.ty &&
-          right_result.value->getType() ==
-          builtins_->types.bool_type.ty) {
+        result.value = CreateBoolValue(kIntOps.at(expr.op())(
+            ir_builder_, ExtractInt32Value(left_result.value),
+            ExtractInt32Value(right_result.value)));
+      } else if (
+          left_result.value->getType() == builtins_->types.bool_type.ty &&
+          right_result.value->getType() == builtins_->types.bool_type.ty) {
         result.type_spec = builtins_->types.bool_type.type_spec;
-        result.value = CreateBoolValue(
-            kIntOps.at(expr.op())(
-                ir_builder_,
-                ExtractBoolValue(left_result.value),
-                ExtractBoolValue(right_result.value)));
+        result.value = CreateBoolValue(kIntOps.at(expr.op())(
+            ir_builder_, ExtractBoolValue(left_result.value),
+            ExtractBoolValue(right_result.value)));
       } else {
         throw Exception(
-                "Incompatible types for binary operation %s: %s",
-                BinaryOpExpr::Op_Name(expr.op()).c_str(),
-                expr.ShortDebugString().c_str());
+            "Incompatible types for binary operation %s: %s",
+            BinaryOpExpr::Op_Name(expr.op()).c_str(),
+            expr.ShortDebugString().c_str());
       }
       break;
     case BinaryOpExpr::AND:
     case BinaryOpExpr::OR:
-      if (left_result.value->getType() ==
-          builtins_->types.bool_type.ty &&
-          right_result.value->getType() ==
-          builtins_->types.bool_type.ty) {
+      if (left_result.value->getType() == builtins_->types.bool_type.ty &&
+          right_result.value->getType() == builtins_->types.bool_type.ty) {
         result.type_spec = builtins_->types.bool_type.type_spec;
-        result.value = CreateBoolValue(
-            kIntOps.at(expr.op())(
-                ir_builder_,
-                ExtractBoolValue(left_result.value),
-                ExtractBoolValue(right_result.value)));
+        result.value = CreateBoolValue(kIntOps.at(expr.op())(
+            ir_builder_, ExtractBoolValue(left_result.value),
+            ExtractBoolValue(right_result.value)));
       } else {
         throw Exception(
-                "Incompatible types for binary operation %s: %s",
-                BinaryOpExpr::Op_Name(expr.op()).c_str(),
-                expr.ShortDebugString().c_str());
+            "Incompatible types for binary operation %s: %s",
+            BinaryOpExpr::Op_Name(expr.op()).c_str(),
+            expr.ShortDebugString().c_str());
       }
       break;
     default:
-        throw Exception(
-                "Unknown binary operator %s: %s",
-                BinaryOpExpr::Op_Name(expr.op()).c_str(),
-                expr.ShortDebugString().c_str());
+      throw Exception(
+          "Unknown binary operator %s: %s",
+          BinaryOpExpr::Op_Name(expr.op()).c_str(),
+          expr.ShortDebugString().c_str());
   }
   return result;
 }
 
-ExprResult ExprIRGenerator::ProcessCallExpr(
-    const CallExpr& expr) {
+ExprResult ExprIRGenerator::ProcessCallExpr(const CallExpr& expr) {
   ExprResult result;
   ExprResult fn_result = ProcessExpr(expr.fn_expr());
   vector<::llvm::Value*> arg_results(expr.arg_exprs_size());
   transform(
-      expr.arg_exprs().begin(),
-      expr.arg_exprs().end(),
-      arg_results.begin(),
+      expr.arg_exprs().begin(), expr.arg_exprs().end(), arg_results.begin(),
       [this](Expr e) {
         ExprResult arg_result = ProcessExpr(e);
         EnsureAddress(&arg_result);
@@ -390,8 +344,8 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
     }
   } else {
     dest_result.type_spec = value_result.type_spec;
-    dest_result.ref_address = CreateLocalVar(
-        value_result.value->getType(), var->name);
+    dest_result.ref_address =
+        CreateLocalVar(value_result.value->getType(), var->name);
     dest_result.ref_mode = var->ref_mode;
   }
   if (dest_result.ref_mode == WEAK_REF && value_result.ref_address == nullptr) {
@@ -401,9 +355,7 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   }
   EnsureAddress(&value_result);
   ::llvm::Value* dest_address = AssignObject(
-      dest_result.ref_address,
-      value_result.address,
-      dest_result.ref_mode);
+      dest_result.ref_address, value_result.address, dest_result.ref_mode);
   ExprResult result;
   result.type_spec = dest_result.type_spec;
   result.value = ir_builder_->CreateLoad(dest_address);
@@ -418,14 +370,16 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtins_->types.int32_type.ty,
       {
-        ::llvm::ConstantStruct::get(builtins_->types.object_type.ty, {
-          builtins_->types.int32_type.desc,
-          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
-        }),
-        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 0),
+          ::llvm::ConstantStruct::get(
+              builtins_->types.object_type.ty,
+              {
+                  builtins_->types.int32_type.desc,
+                  ::llvm::ConstantInt::getSigned(
+                      ::llvm::Type::getInt32Ty(ctx_), 1),
+              }),
+          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 0),
       });
-  return ir_builder_->CreateInsertValue(
-      init_value, raw_int32_value, {1});
+  return ir_builder_->CreateInsertValue(init_value, raw_int32_value, {1});
 }
 
 ::llvm::Value* ExprIRGenerator::ExtractInt32Value(
@@ -433,19 +387,20 @@ ExprResult ExprIRGenerator::ProcessAssignExpr(
   return ir_builder_->CreateExtractValue(wrapped_int32_value, {1});
 }
 
-::llvm::Value* ExprIRGenerator::CreateBoolValue(
-    ::llvm::Value* raw_bool_value) {
+::llvm::Value* ExprIRGenerator::CreateBoolValue(::llvm::Value* raw_bool_value) {
   ::llvm::Value* init_value = ::llvm::ConstantStruct::get(
       builtins_->types.bool_type.ty,
       {
-        ::llvm::ConstantStruct::get(builtins_->types.object_type.ty, {
-            builtins_->types.bool_type.desc,
-            ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
-          }),
-        ::llvm::ConstantInt::getSigned(::llvm::Type::getInt1Ty(ctx_), 0),
+          ::llvm::ConstantStruct::get(
+              builtins_->types.object_type.ty,
+              {
+                  builtins_->types.bool_type.desc,
+                  ::llvm::ConstantInt::getSigned(
+                      ::llvm::Type::getInt32Ty(ctx_), 1),
+              }),
+          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt1Ty(ctx_), 0),
       });
-  return ir_builder_->CreateInsertValue(
-      init_value, raw_bool_value, {1});
+  return ir_builder_->CreateInsertValue(init_value, raw_bool_value, {1});
 }
 
 ::llvm::Value* ExprIRGenerator::ExtractBoolValue(
@@ -467,9 +422,9 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
   CHECK_NOTNULL(class_type);
   ::llvm::Value* value_size = ir_builder_->CreatePtrToInt(
       ir_builder_->CreateGEP(
-        ::llvm::ConstantPointerNull::get(
-          ::llvm::PointerType::getUnqual(class_type->ty)),
-        ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
+          ::llvm::ConstantPointerNull::get(
+              ::llvm::PointerType::getUnqual(class_type->ty)),
+          ::llvm::ConstantInt::get(::llvm::Type::getInt32Ty(ctx_), 1)),
       ::llvm::Type::getInt32Ty(ctx_));
   ::llvm::Value* p = ir_builder_->CreatePointerCast(
       ir_builder_->CreateCall(
@@ -483,16 +438,14 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
 }
 
 ::llvm::Value* ExprIRGenerator::AssignObject(
-    ::llvm::Value* dest_ref_address,
-    ::llvm::Value* src_address,
+    ::llvm::Value* dest_ref_address, ::llvm::Value* src_address,
     RefMode ref_mode) {
   ir_builder_->CreateCall(
       builtins_->fns.quo_assign,
       {
           ir_builder_->CreateBitCast(
               dest_ref_address,
-              ::llvm::PointerType::getUnqual(
-                ::llvm::Type::getInt8PtrTy(ctx_))),
+              ::llvm::PointerType::getUnqual(::llvm::Type::getInt8PtrTy(ctx_))),
           ir_builder_->CreateBitCast(
               src_address, ::llvm::Type::getInt8PtrTy(ctx_)),
           ::llvm::ConstantInt::get(
@@ -512,28 +465,23 @@ void ExprIRGenerator::EnsureAddress(ExprResult* result) {
 }
 
 ::llvm::Value* ExprIRGenerator::GetFieldRefAddress(
-    const ClassType* parent_class_type,
-    const FieldType* field_type,
+    const ClassType* parent_class_type, const FieldType* field_type,
     ::llvm::Value* object_address) {
   return ir_builder_->CreateBitCast(
       ir_builder_->CreateCall(
           builtins_->fns.quo_get_field,
           {
               ir_builder_->CreateBitCast(
-                  object_address,
-                  ::llvm::Type::getInt8PtrTy(ctx_)),
+                  object_address, ::llvm::Type::getInt8PtrTy(ctx_)),
               parent_class_type->desc,
               ::llvm::ConstantInt::getSigned(
                   ::llvm::Type::getInt32Ty(ctx_), field_type->index),
           }),
-        ::llvm::PointerType::getUnqual(
-            ::llvm::PointerType::getUnqual(
-                symbols_->LookupTypeOrDie(field_type->type_spec)->ty)),
-        StringPrintf(
-            "%s_%s_ref",
-            parent_class_type->class_def->name().c_str(),
-            field_type->name.c_str()));
+      ::llvm::PointerType::getUnqual(::llvm::PointerType::getUnqual(
+          symbols_->LookupTypeOrDie(field_type->type_spec)->ty)),
+      StringPrintf(
+          "%s_%s_ref", parent_class_type->class_def->name().c_str(),
+          field_type->name.c_str()));
 }
 
 }  // namespace quo
-

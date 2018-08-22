@@ -16,8 +16,8 @@
  *                                                                           *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-#include "glog/logging.h"
 #include "gflags/gflags.h"
+#include "glog/logging.h"
 #include "runtime/builtin_types.hpp"
 #include "runtime/memory.hpp"
 
@@ -32,4 +32,3 @@ int main(int argc, char* argv[]) {
   __quo_dec_refs(r);
   return r_value;
 }
-

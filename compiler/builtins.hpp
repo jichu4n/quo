@@ -22,10 +22,10 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/Module.h"
 #include "ast/ast.pb.h"
 #include "compiler/symbols.hpp"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Module.h"
 
 namespace quo {
 

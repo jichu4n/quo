@@ -24,7 +24,7 @@
 
 namespace google {
 
-namespace protobuf  {
+namespace protobuf {
 
 extern ::std::string StringPrintf(const char* format, ...);
 extern const ::std::string& SStringPrintf(
@@ -43,10 +43,10 @@ extern void DumpStackTraceToString(::std::string* stacktrace);
 
 namespace quo {
 
-using ::google::protobuf::StringPrintf;
+using ::google::glog_internal_namespace_::DumpStackTraceToString;
 using ::google::protobuf::SStringPrintf;
 using ::google::protobuf::StringAppendV;
-using ::google::glog_internal_namespace_::DumpStackTraceToString;
+using ::google::protobuf::StringPrintf;
 
 }  // namespace quo
 

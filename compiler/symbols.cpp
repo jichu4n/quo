@@ -17,29 +17,27 @@
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 #include "compiler/symbols.hpp"
-#include "glog/logging.h"
-#include "llvm/IR/Constants.h"
 #include "compiler/builtins.hpp"
 #include "compiler/exceptions.hpp"
 #include "compiler/utils.hpp"
+#include "glog/logging.h"
+#include "llvm/IR/Constants.h"
 
 namespace quo {
 
 using ::std::string;
-using ::std::vector;
 using ::std::unique_ptr;
 using ::std::unordered_map;
+using ::std::vector;
 
 void Scope::AddVar(const Var& var) {
   vars.push_back(var);
   Var* varp = &vars.back();
-  vars_by_name.insert({ var.name, varp});
-  vars_by_ref_address.insert({ var.ref_address, varp });
+  vars_by_name.insert({var.name, varp});
+  vars_by_ref_address.insert({var.ref_address, varp});
 }
 
-void Scope::AddTemp(::llvm::Value* address) {
-  temps.push_back(address);
-}
+void Scope::AddTemp(::llvm::Value* address) { temps.push_back(address); }
 
 const Var* Scope::Lookup(const string& name) const {
   auto it = vars_by_name.find(name);
@@ -56,8 +54,7 @@ FieldType* ClassType::LookupFieldOrThrow(const string& name) {
   if (field_it == fields_by_name.end()) {
     throw Exception(
         "Class %s does not have member field '%s'",
-        type_spec.ShortDebugString().c_str(),
-        name.c_str());
+        type_spec.ShortDebugString().c_str(), name.c_str());
   }
   return field_it->second;
 }
@@ -67,8 +64,7 @@ FnType* ClassType::LookupMethodOrThrow(const string& name) {
   if (method_it == methods_by_name.end()) {
     throw Exception(
         "Class %s does not have method '%s'",
-        type_spec.ShortDebugString().c_str(),
-        name.c_str());
+        type_spec.ShortDebugString().c_str(), name.c_str());
   }
   return method_it->second;
 }
@@ -85,14 +81,11 @@ ClassType::MemberType ClassType::LookupMemberOrThrow(
   }
   throw Exception(
       "Class %s does not have member field or method '%s'",
-      type_spec.ShortDebugString().c_str(),
-      name.c_str());
+      type_spec.ShortDebugString().c_str(), name.c_str());
 }
 
 unique_ptr<Symbols> Symbols::Create(
-    ::llvm::Module* module,
-    Builtins* builtins,
-    const ModuleDef& module_def) {
+    ::llvm::Module* module, Builtins* builtins, const ModuleDef& module_def) {
   unique_ptr<Symbols> symbols(new Symbols(module, builtins));
   symbols->SetupBuiltinClassTypes();
   symbols->SetupFnDefs(module_def);
@@ -101,9 +94,7 @@ unique_ptr<Symbols> Symbols::Create(
 }
 
 Symbols::Symbols(::llvm::Module* module, Builtins* builtins)
-    : ctx_(module->getContext()),
-      module_(module),
-      builtins_(builtins) {}
+    : ctx_(module->getContext()), module_(module), builtins_(builtins) {}
 
 void Symbols::SetupBuiltinClassTypes() {
   class_types_map_.insert({
@@ -141,8 +132,7 @@ void Symbols::SetupFnDefs(const ModuleDef& module_def) {
       if (fn_types_by_name_.count(fn_def.name()) +
           class_types_map_.count(type_spec.SerializeAsString())) {
         throw Exception(
-            "Duplicate function or class '%s'",
-            fn_def.name().c_str());
+            "Duplicate function or class '%s'", fn_def.name().c_str());
       }
       fn_types_.emplace_back();
       FnType* fn_type = &fn_types_.back();
@@ -160,27 +150,21 @@ void Symbols::SetupFnType(
   fn_type->name = fn_def.name();
   vector<::llvm::Type*> param_tys;
   if (class_type != nullptr) {
-    param_tys.push_back(
-        ::llvm::PointerType::getUnqual(class_type->ty));
+    param_tys.push_back(::llvm::PointerType::getUnqual(class_type->ty));
   }
   for (const FnParam& param : fn_def.params()) {
     param_tys.push_back(
-        ::llvm::PointerType::getUnqual(
-            LookupTypeOrDie(param.type_spec())->ty));
+        ::llvm::PointerType::getUnqual(LookupTypeOrDie(param.type_spec())->ty));
   }
   ::llvm::Type* const raw_return_ty =
       LookupTypeOrDie(fn_def.return_type_spec())->ty;
-  ::llvm::Type* const return_ty = raw_return_ty->isVoidTy() ?
-      raw_return_ty :
-      ::llvm::PointerType::getUnqual(raw_return_ty);
-  fn_type->fn_ty = ::llvm::FunctionType::get(
-      return_ty,
-      param_tys,
-      false /* isVarArg */);
+  ::llvm::Type* const return_ty =
+      raw_return_ty->isVoidTy() ? raw_return_ty
+                                : ::llvm::PointerType::getUnqual(raw_return_ty);
+  fn_type->fn_ty =
+      ::llvm::FunctionType::get(return_ty, param_tys, false /* isVarArg */);
   fn_type->fn = ::llvm::Function::Create(
-      fn_type->fn_ty,
-      ::llvm::Function::ExternalLinkage,
-      fn_type->name,
+      fn_type->fn_ty, ::llvm::Function::ExternalLinkage, fn_type->name,
       module_);
   int i = 0;
   auto fn_params_it = fn_def.params().begin();
@@ -205,8 +189,7 @@ void Symbols::SetupClassTypes(const ModuleDef& module_def) {
       const string& key = type_spec.SerializeAsString();
       if (class_defs.count(key) + fn_types_by_name_.count(class_def->name())) {
         throw Exception(
-            member.line(),
-            "Duplicate function or class '%s'",
+            member.line(), "Duplicate function or class '%s'",
             class_def->name().c_str());
       }
       class_defs[key] = class_def;
@@ -220,24 +203,23 @@ void Symbols::SetupClassTypes(const ModuleDef& module_def) {
     type_spec.ParseFromString(it.first);
     const ClassDef* class_def = it.second;
     class_types_.push_back({
-      type_spec,
-      class_def,
-      ::llvm::StructType::create(ctx_, class_def->name()),
-      new ::llvm::GlobalVariable(
-          *module_,
-          builtins_->types.class_desc_ty,
-          true,  // isConstant
-          ::llvm::GlobalVariable::ExternalLinkage,
-          nullptr,  // initializer,
-          StringPrintf("__%s_Descriptor", class_def->name().c_str()),
-          nullptr,  // insertBefore
-          ::llvm::GlobalVariable::NotThreadLocal,
-          0,  // address space
-          false),  // isExternallyInitialized
-      {},
-      {},
-      {},
-      {},
+        type_spec,
+        class_def,
+        ::llvm::StructType::create(ctx_, class_def->name()),
+        new ::llvm::GlobalVariable(
+            *module_, builtins_->types.class_desc_ty,
+            true,  // isConstant
+            ::llvm::GlobalVariable::ExternalLinkage,
+            nullptr,  // initializer,
+            StringPrintf("__%s_Descriptor", class_def->name().c_str()),
+            nullptr,  // insertBefore
+            ::llvm::GlobalVariable::NotThreadLocal,
+            0,       // address space
+            false),  // isExternallyInitialized
+        {},
+        {},
+        {},
+        {},
     });
     class_types_map_[it.first] = &class_types_.back();
   }
@@ -264,8 +246,7 @@ void Symbols::SetupClassFields(
           class_type->methods_by_name.count(var_decl.name())) {
         throw Exception(
             "Duplicate member field or method '%s' in class %s",
-            var_decl.name().c_str(),
-            class_def.name().c_str());
+            var_decl.name().c_str(), class_def.name().c_str());
       }
       if (!var_decl.has_type_spec()) {
         throw Exception(
@@ -279,117 +260,100 @@ void Symbols::SetupClassFields(
           var_decl.ref_mode(),
           static_cast<int>(field_index),
       });
-      class_type->fields_by_name[var_decl.name()] =
-          &class_type->fields.back();
-      field_tys.push_back(
-          ::llvm::PointerType::getUnqual(
-              LookupTypeOrDie(var_decl.type_spec())->ty));
+      class_type->fields_by_name[var_decl.name()] = &class_type->fields.back();
+      field_tys.push_back(::llvm::PointerType::getUnqual(
+          LookupTypeOrDie(var_decl.type_spec())->ty));
       ::llvm::Constant* field_name_array =
           ::llvm::ConstantDataArray::getString(ctx_, var_decl.name());
-      field_descs.push_back(
-          ::llvm::ConstantStruct::get(
-              builtins_->types.field_desc_ty,
-              {
-                ::llvm::ConstantInt::getSigned(
-                    ::llvm::Type::getInt32Ty(ctx_), field_index),
-                ::llvm::ConstantExpr::getPointerCast(
-                    new ::llvm::GlobalVariable(
-                        *module_,
-                        field_name_array->getType(),
-                        true,  // isConstant
-                        ::llvm::GlobalVariable::PrivateLinkage,
-                        field_name_array,
-                        StringPrintf(
+      field_descs.push_back(::llvm::ConstantStruct::get(
+          builtins_->types.field_desc_ty,
+          {
+              ::llvm::ConstantInt::getSigned(
+                  ::llvm::Type::getInt32Ty(ctx_), field_index),
+              ::llvm::ConstantExpr::getPointerCast(
+                  new ::llvm::GlobalVariable(
+                      *module_, field_name_array->getType(),
+                      true,  // isConstant
+                      ::llvm::GlobalVariable::PrivateLinkage, field_name_array,
+                      StringPrintf(
                           "__%s_FieldName_%s",
                           class_type->class_def->name().c_str(),
                           var_decl.name().c_str()),
-                        nullptr,  // insertBefore
-                        ::llvm::GlobalVariable::NotThreadLocal,
-                        0,  // address space
-                        false),  // isExternallyInitialized
-                    ::llvm::Type::getInt8PtrTy(ctx_)),
-                LookupTypeOrDie(var_decl.type_spec())->desc,
-                ::llvm::ConstantInt::getSigned(
-                    ::llvm::Type::getInt8Ty(ctx_), var_decl.ref_mode()),
-              }));
+                      nullptr,  // insertBefore
+                      ::llvm::GlobalVariable::NotThreadLocal,
+                      0,       // address space
+                      false),  // isExternallyInitialized
+                  ::llvm::Type::getInt8PtrTy(ctx_)),
+              LookupTypeOrDie(var_decl.type_spec())->desc,
+              ::llvm::ConstantInt::getSigned(
+                  ::llvm::Type::getInt8Ty(ctx_), var_decl.ref_mode()),
+          }));
     } catch (const Exception& e) {
       throw e.withDefault(class_member.line());
     }
   }
   class_type->ty->setBody(field_tys, false);
-  ::llvm::ArrayType* field_desc_array_ty =
-      ::llvm::ArrayType::get(
-          builtins_->types.field_desc_ty, field_descs.size());
-  ::llvm::GlobalVariable* field_desc_array =
-      new ::llvm::GlobalVariable(
-          *module_,
-          field_desc_array_ty,
-          true,  // isConstant
-          ::llvm::GlobalVariable::PrivateLinkage,
-          ::llvm::ConstantArray::get(field_desc_array_ty, field_descs),
-          StringPrintf(
-            "__%s_FieldDescriptors", class_type->class_def->name().c_str()),
-          nullptr,  // insertBefore
-          ::llvm::GlobalVariable::NotThreadLocal,
-          0,  // address space
-          false);  // isExternallyInitialized
+  ::llvm::ArrayType* field_desc_array_ty = ::llvm::ArrayType::get(
+      builtins_->types.field_desc_ty, field_descs.size());
+  ::llvm::GlobalVariable* field_desc_array = new ::llvm::GlobalVariable(
+      *module_, field_desc_array_ty,
+      true,  // isConstant
+      ::llvm::GlobalVariable::PrivateLinkage,
+      ::llvm::ConstantArray::get(field_desc_array_ty, field_descs),
+      StringPrintf(
+          "__%s_FieldDescriptors", class_type->class_def->name().c_str()),
+      nullptr,  // insertBefore
+      ::llvm::GlobalVariable::NotThreadLocal,
+      0,       // address space
+      false);  // isExternallyInitialized
   ::llvm::ArrayType* view_array_ty =
-      ::llvm::ArrayType::get(
-          builtins_->types.class_view_ty, 1);
-  ::llvm::GlobalVariable* view_array =
-      new ::llvm::GlobalVariable(
-          *module_,
+      ::llvm::ArrayType::get(builtins_->types.class_view_ty, 1);
+  ::llvm::GlobalVariable* view_array = new ::llvm::GlobalVariable(
+      *module_, view_array_ty,
+      true,  // isConstant
+      ::llvm::GlobalVariable::PrivateLinkage,
+      ::llvm::ConstantArray::get(
           view_array_ty,
-          true,  // isConstant
-          ::llvm::GlobalVariable::PrivateLinkage,
-          ::llvm::ConstantArray::get(
-              view_array_ty,
-              {
-                  ::llvm::ConstantStruct::get(
-                      builtins_->types.class_view_ty,
-                      {
-                        class_type->desc,
-                        ::llvm::ConstantInt::getSigned(
-                            ::llvm::Type::getInt32Ty(ctx_), field_descs.size()),
-                        ::llvm::ConstantExpr::getPointerCast(
-                            field_desc_array,
-                            ::llvm::PointerType::getUnqual(
-                                builtins_->types.field_desc_ty)),
-                      }),
-              }),
-          StringPrintf(
-            "__%s_View", class_type->class_def->name().c_str()),
-          nullptr,  // insertBefore
-          ::llvm::GlobalVariable::NotThreadLocal,
-          0,  // address space
-          false);  // isExternallyInitialized
+          {
+              ::llvm::ConstantStruct::get(
+                  builtins_->types.class_view_ty,
+                  {
+                      class_type->desc,
+                      ::llvm::ConstantInt::getSigned(
+                          ::llvm::Type::getInt32Ty(ctx_), field_descs.size()),
+                      ::llvm::ConstantExpr::getPointerCast(
+                          field_desc_array,
+                          ::llvm::PointerType::getUnqual(
+                              builtins_->types.field_desc_ty)),
+                  }),
+          }),
+      StringPrintf("__%s_View", class_type->class_def->name().c_str()),
+      nullptr,  // insertBefore
+      ::llvm::GlobalVariable::NotThreadLocal,
+      0,       // address space
+      false);  // isExternallyInitialized
   ::llvm::Constant* class_name_array =
       ::llvm::ConstantDataArray::getString(ctx_, class_type->class_def->name());
-  class_type->desc->setInitializer(
-      ::llvm::ConstantStruct::get(
-          builtins_->types.class_desc_ty,
-          {
-            ::llvm::ConstantExpr::getPointerCast(
-                new ::llvm::GlobalVariable(
-                    *module_,
-                    class_name_array->getType(),
-                    true,  // isConstant
-                    ::llvm::GlobalVariable::PrivateLinkage,
-                    class_name_array,
-                    StringPrintf(
+  class_type->desc->setInitializer(::llvm::ConstantStruct::get(
+      builtins_->types.class_desc_ty,
+      {
+          ::llvm::ConstantExpr::getPointerCast(
+              new ::llvm::GlobalVariable(
+                  *module_, class_name_array->getType(),
+                  true,  // isConstant
+                  ::llvm::GlobalVariable::PrivateLinkage, class_name_array,
+                  StringPrintf(
                       "__%s_ClassName", class_type->class_def->name().c_str()),
-                    nullptr,  // insertBefore
-                    ::llvm::GlobalVariable::NotThreadLocal,
-                    0,  // address space
-                    false),  // isExternallyInitialized
-                ::llvm::Type::getInt8PtrTy(ctx_)),
-            ::llvm::ConstantInt::getSigned(
-                ::llvm::Type::getInt32Ty(ctx_), 1),
-            ::llvm::ConstantExpr::getPointerCast(
-                view_array,
-                ::llvm::PointerType::getUnqual(
-                    builtins_->types.class_view_ty)),
-          }));
+                  nullptr,  // insertBefore
+                  ::llvm::GlobalVariable::NotThreadLocal,
+                  0,       // address space
+                  false),  // isExternallyInitialized
+              ::llvm::Type::getInt8PtrTy(ctx_)),
+          ::llvm::ConstantInt::getSigned(::llvm::Type::getInt32Ty(ctx_), 1),
+          ::llvm::ConstantExpr::getPointerCast(
+              view_array,
+              ::llvm::PointerType::getUnqual(builtins_->types.class_view_ty)),
+      }));
 }
 
 void Symbols::SetupClassMethods(
@@ -404,8 +368,7 @@ void Symbols::SetupClassMethods(
           class_type->methods_by_name.count(fn_def.name())) {
         throw Exception(
             "Duplicate member field or method '%s' in class %s",
-            fn_def.name().c_str(),
-            class_def.name().c_str());
+            fn_def.name().c_str(), class_def.name().c_str());
       }
       class_type->methods.emplace_back();
       FnType* fn_type = &class_type->methods.back();
@@ -422,19 +385,14 @@ Scope* Symbols::PushScope() {
   return GetScope();
 }
 
-void Symbols::PopScope() {
-  scopes_.pop_back();
-}
+void Symbols::PopScope() { scopes_.pop_back(); }
 
-Scope* Symbols::GetScope() {
-  return &(scopes_.back());
-}
+Scope* Symbols::GetScope() { return &(scopes_.back()); }
 
 const vector<Scope*> Symbols::GetScopesInFn() {
   vector<Scope*> scopes_in_fn;
-  for (auto scope_it = scopes_.rbegin();
-      scope_it != scopes_.rend();
-      ++scope_it) {
+  for (auto scope_it = scopes_.rbegin(); scope_it != scopes_.rend();
+       ++scope_it) {
     scopes_in_fn.push_back(&(*scope_it));
     if (scope_it->is_fn_scope) {
       break;
@@ -444,9 +402,8 @@ const vector<Scope*> Symbols::GetScopesInFn() {
 }
 
 const Var* Symbols::LookupVar(const string& name) const {
-  for (auto scope_it = scopes_.rbegin();
-      scope_it != scopes_.rend();
-      ++scope_it) {
+  for (auto scope_it = scopes_.rbegin(); scope_it != scopes_.rend();
+       ++scope_it) {
     const Var* var = scope_it->Lookup(name);
     if (var != nullptr) {
       return var;
@@ -463,8 +420,7 @@ const FnType* Symbols::LookupFn(const string& name) const {
 const FnType* Symbols::LookupFnOrThrow(const string& name) const {
   const FnType* fn_type = LookupFn(name);
   if (fn_type == nullptr) {
-    throw Exception(
-        "Unknown function '%s'", name.c_str());
+    throw Exception("Unknown function '%s'", name.c_str());
   }
   return fn_type;
 }
@@ -480,11 +436,9 @@ ClassType* Symbols::LookupType(const TypeSpec& type_spec) const {
 ClassType* Symbols::LookupTypeOrDie(const TypeSpec& type_spec) const {
   ClassType* class_type = LookupType(type_spec);
   if (class_type == nullptr) {
-    throw Exception(
-        "Unknown type '%s'", type_spec.ShortDebugString().c_str());
+    throw Exception("Unknown type '%s'", type_spec.ShortDebugString().c_str());
   }
   return class_type;
 }
 
 }  // namespace quo
-

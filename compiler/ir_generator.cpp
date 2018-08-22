@@ -23,9 +23,9 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
+#include "compiler/exceptions.hpp"
 #include "glog/logging.h"
 #include "llvm/Support/raw_ostream.h"
-#include "compiler/exceptions.hpp"
 
 namespace quo {
 
@@ -34,8 +34,8 @@ using ::std::function;
 using ::std::list;
 using ::std::string;
 using ::std::transform;
-using ::std::unordered_map;
 using ::std::unique_ptr;
+using ::std::unordered_map;
 using ::std::vector;
 
 IRGenerator::IRGenerator() {}
@@ -65,8 +65,7 @@ void IRGenerator::ProcessModuleMember(const ModuleDef::Member& member) {
         break;
       default:
         throw Exception(
-            "Unsupported module member type: %d",
-            member.type_case());
+            "Unsupported module member type: %d", member.type_case());
     }
   } catch (const Exception& e) {
     throw e.withDefault(member.line());
@@ -102,12 +101,8 @@ void IRGenerator::ProcessFnDef(
   ::llvm::IRBuilder<> builder(ctx_);
   builder.SetInsertPoint(bb);
   ir_builder_ = &builder;
-  expr_ir_generator_.reset(
-      new ExprIRGenerator(
-          module_,
-          ir_builder_,
-          builtins_.get(),
-          symbols_.get()));
+  expr_ir_generator_.reset(new ExprIRGenerator(
+      module_, ir_builder_, builtins_.get(), symbols_.get()));
 
   // Object scope.
   Scope* object_scope;
@@ -136,8 +131,8 @@ void IRGenerator::ProcessFnDef(
   int i = 0;
   for (::llvm::Argument& arg : fn_->args()) {
     const FnParam& param = params[i++];
-    ::llvm::Value* arg_var = builder.CreateAlloca(
-        arg.getType(), nullptr, arg.getName());
+    ::llvm::Value* arg_var =
+        builder.CreateAlloca(arg.getType(), nullptr, arg.getName());
     // Store args in scope and increment ref counts.
     builder.CreateStore(&arg, arg_var);
     if (param.ref_mode() == STRONG_REF) {
@@ -163,10 +158,8 @@ void IRGenerator::ProcessFnDef(
           field_type.name,
           field_type.type_spec,
           expr_ir_generator_->GetFieldRefAddress(
-              parent_class_type,
-              &field_type,
-              ir_builder_->CreateLoad(
-                  fn_scope->vars.front().ref_address)),
+              parent_class_type, &field_type,
+              ir_builder_->CreateLoad(fn_scope->vars.front().ref_address)),
           WEAK_REF,
       });
     }
@@ -184,8 +177,7 @@ void IRGenerator::ProcessFnDef(
   }
 }
 
-void IRGenerator::ProcessBlock(
-    const Block& block, bool is_fn_body) {
+void IRGenerator::ProcessBlock(const Block& block, bool is_fn_body) {
   if (!is_fn_body) {
     symbols_->PushScope();
   }
@@ -258,14 +250,12 @@ void IRGenerator::ProcessBrkStmt(const BrkStmt& stmt) {
 void IRGenerator::ProcessCondStmt(const CondStmt& stmt) {
   ExprResult cond_expr_result =
       expr_ir_generator_->ProcessExpr(stmt.cond_expr());
-  ::llvm::BasicBlock* true_bb = ::llvm::BasicBlock::Create(
-      ctx_, "if", fn_);
+  ::llvm::BasicBlock* true_bb = ::llvm::BasicBlock::Create(ctx_, "if", fn_);
   ::llvm::BasicBlock* false_bb = ::llvm::BasicBlock::Create(ctx_, "else");
   ::llvm::BasicBlock* merge_bb = ::llvm::BasicBlock::Create(ctx_, "endif");
 
   ir_builder_->CreateCondBr(
-      expr_ir_generator_->ExtractBoolValue(cond_expr_result.value),
-      true_bb,
+      expr_ir_generator_->ExtractBoolValue(cond_expr_result.value), true_bb,
       false_bb);
 
   ir_builder_->SetInsertPoint(true_bb);
@@ -286,8 +276,8 @@ void IRGenerator::ProcessCondStmt(const CondStmt& stmt) {
 }
 
 void IRGenerator::ProcessCondLoopStmt(const CondLoopStmt& stmt) {
-  ::llvm::BasicBlock* loop_cond_bb = ::llvm::BasicBlock::Create(
-      ctx_, "while", fn_);
+  ::llvm::BasicBlock* loop_cond_bb =
+      ::llvm::BasicBlock::Create(ctx_, "while", fn_);
   ::llvm::BasicBlock* loop_body_bb = ::llvm::BasicBlock::Create(ctx_, "do");
   ::llvm::BasicBlock* loop_end_bb =
       ::llvm::BasicBlock::Create(ctx_, "endwhile");
@@ -298,8 +288,7 @@ void IRGenerator::ProcessCondLoopStmt(const CondLoopStmt& stmt) {
       expr_ir_generator_->ProcessExpr(stmt.cond_expr());
   ir_builder_->CreateCondBr(
       expr_ir_generator_->ExtractBoolValue(cond_expr_result.value),
-      loop_body_bb,
-      loop_end_bb);
+      loop_body_bb, loop_end_bb);
 
   loop_body_bb->insertInto(fn_);
   ir_builder_->SetInsertPoint(loop_body_bb);
@@ -325,18 +314,16 @@ void IRGenerator::ProcessVarDeclStmt(const VarDeclStmt& stmt) {
         expr_ir_generator_->ProcessAssignExpr(assign_expr, &var);
     if (stmt.has_type_spec() &&
         stmt.type_spec().SerializeAsString() !=
-        init_expr_result.type_spec.SerializeAsString()) {
+            init_expr_result.type_spec.SerializeAsString()) {
       throw Exception(
-          "Invalid init expr type in var decl: %s",
-          stmt.DebugString().c_str());
+          "Invalid init expr type in var decl: %s", stmt.DebugString().c_str());
     }
     var.type_spec = init_expr_result.type_spec;
     var.ref_address = init_expr_result.ref_address;
   } else {
     if (!stmt.has_type_spec()) {
       throw Exception(
-          "Missing type spec in var decl: %s",
-          stmt.DebugString().c_str());
+          "Missing type spec in var decl: %s", stmt.DebugString().c_str());
     }
     var.type_spec = stmt.type_spec();
     var.ref_address = expr_ir_generator_->CreateLocalVar(
@@ -351,8 +338,7 @@ void IRGenerator::DestroyTemps() {
     ir_builder_->CreateCall(
         builtins_->fns.quo_dec_refs,
         {
-            ir_builder_->CreateBitCast(
-                *it, ::llvm::Type::getInt8PtrTy(ctx_)),
+            ir_builder_->CreateBitCast(*it, ::llvm::Type::getInt8PtrTy(ctx_)),
         });
   }
 }
@@ -366,11 +352,9 @@ void IRGenerator::DestroyScope(Scope* scope) {
       ir_builder_->CreateCall(
           builtins_->fns.quo_dec_refs,
           {
-          ir_builder_->CreateBitCast(
-              ir_builder_->CreateLoad(
-                it->ref_address,
-                it->name + "_addr"),
-              ::llvm::Type::getInt8PtrTy(ctx_)),
+              ir_builder_->CreateBitCast(
+                  ir_builder_->CreateLoad(it->ref_address, it->name + "_addr"),
+                  ::llvm::Type::getInt8PtrTy(ctx_)),
           });
     }
   }
@@ -383,4 +367,3 @@ void IRGenerator::DestroyFnScopes() {
 }
 
 }  // namespace quo
-

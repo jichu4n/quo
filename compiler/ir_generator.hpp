@@ -23,12 +23,12 @@
 #include <stack>
 #include <string>
 #include <unordered_map>
-#include "llvm/IR/IRBuilder.h"
-#include "llvm/LinkAllIR.h"
 #include "ast/ast.pb.h"
 #include "compiler/builtins.hpp"
 #include "compiler/expr_ir_generator.hpp"
 #include "compiler/symbols.hpp"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/LinkAllIR.h"
 
 namespace quo {
 
@@ -40,12 +40,10 @@ class IRGenerator {
   ::std::unique_ptr<::llvm::Module> ProcessModule(const ModuleDef& module_def);
 
  private:
-  void ProcessModuleMember(
-      const ModuleDef::Member& member);
+  void ProcessModuleMember(const ModuleDef::Member& member);
   void ProcessClassDef(const ClassDef& class_def);
   void ProcessFnDef(const FnDef& fn_def, const ClassDef* parent_class_def);
-  void ProcessBlock(
-      const Block& block, bool is_fn_body = false);
+  void ProcessBlock(const Block& block, bool is_fn_body = false);
   void ProcessRetStmt(const RetStmt& stmt);
   void ProcessBrkStmt(const BrkStmt& stmt);
   void ProcessCondStmt(const CondStmt& stmt);

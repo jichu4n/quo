@@ -31,12 +31,10 @@ Exception::Exception(const Exception& e)
     : line(e.line),
       message(e.message),
       stacktrace(e.stacktrace),
-      what_(new string()) {
-}
+      what_(new string()) {}
 
 Exception::Exception(int line, const char* format, ...)
-    : line(line),
-      what_(new string()) {
+    : line(line), what_(new string()) {
   va_list args;
   va_start(args, format);
   StringAppendV(&message, format, args);
@@ -44,9 +42,7 @@ Exception::Exception(int line, const char* format, ...)
   DumpStackTraceToString(&stacktrace);
 }
 
-Exception::Exception(const char* format, ...)
-    : line(-1),
-      what_(new string()) {
+Exception::Exception(const char* format, ...) : line(-1), what_(new string()) {
   va_list args;
   va_start(args, format);
   StringAppendV(&message, format, args);

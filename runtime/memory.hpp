@@ -46,8 +46,6 @@ extern void __quo_assign(QObject** dest, QObject* src, int8_t ref_mode);
 // class.
 extern QObject** __quo_get_field(
     QObject* obj, QClassDescriptor* view_class, int32_t index);
-
 }
 
 #endif  // MEMORY_HPP_
-

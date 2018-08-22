@@ -89,7 +89,8 @@ class QuoLexer(object):
       'R_BRACE',
       'DOT',
       'COMMA',
-      'SEMICOLON', )
+      'SEMICOLON',
+  )
 
   _reserved_words = {
       'class': ('CLASS', None),

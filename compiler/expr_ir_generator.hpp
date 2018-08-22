@@ -20,10 +20,10 @@
 #define EXPR_IR_GENERATOR_HPP_
 
 #include <string>
+#include "ast/ast.pb.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
-#include "ast/ast.pb.h"
 
 namespace quo {
 
@@ -61,10 +61,8 @@ struct ExprResult {
 class ExprIRGenerator {
  public:
   ExprIRGenerator(
-      ::llvm::Module* module,
-      ::llvm::IRBuilder<>* ir_builder,
-      const Builtins* builtins,
-      Symbols* symbols);
+      ::llvm::Module* module, ::llvm::IRBuilder<>* ir_builder,
+      const Builtins* builtins, Symbols* symbols);
 
   // Runs AST -> IR generation for an expression.
   ExprResult ProcessExpr(const Expr& expr);
@@ -90,8 +88,7 @@ class ExprIRGenerator {
   //
   // Return type: QObject**.
   ::llvm::Value* GetFieldRefAddress(
-      const ClassType* parent_class_type,
-      const FieldType* field_type,
+      const ClassType* parent_class_type, const FieldType* field_type,
       ::llvm::Value* object_address);
 
  private:
@@ -119,8 +116,7 @@ class ExprIRGenerator {
   // Type of dest_ref_address: QObject**
   // Type of src_address: QObject*
   ::llvm::Value* AssignObject(
-      ::llvm::Value* dest_ref_address,
-      ::llvm::Value* src_address,
+      ::llvm::Value* dest_ref_address, ::llvm::Value* src_address,
       RefMode ref_mode);
 
   ::llvm::LLVMContext& ctx_;

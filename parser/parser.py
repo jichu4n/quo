@@ -61,20 +61,16 @@ class QuoParser(object):
   def p_primary_member(self, p):
     '''primary : primary DOT IDENTIFIER'''
     p[0] = Expr(
-        member=MemberExpr(parent_expr=p[1], member_name=p[3]),
-        line=p[1].line)
+        member=MemberExpr(parent_expr=p[1], member_name=p[3]), line=p[1].line)
 
   def p_primary_index(self, p):
     '''primary : primary L_BRACKET expr R_BRACKET'''
     p[0] = Expr(
-        index=IndexExpr(array_expr=p[1], index_expr=p[3]),
-        line=p[1].line)
+        index=IndexExpr(array_expr=p[1], index_expr=p[3]), line=p[1].line)
 
   def p_primary_call(self, p):
     '''primary : primary L_PAREN expr_list R_PAREN'''
-    p[0] = Expr(
-        call=CallExpr(fn_expr=p[1], arg_exprs=p[3]),
-        line=p[1].line)
+    p[0] = Expr(call=CallExpr(fn_expr=p[1], arg_exprs=p[3]), line=p[1].line)
 
   def p_unary_arith_primary(self, p):
     '''unary_arith : primary'''
@@ -121,8 +117,7 @@ class QuoParser(object):
   def p_unary_bool(self, p):
     '''unary_bool : NOT unary_bool'''
     p[0] = Expr(
-        unary_op=UnaryOpExpr(op=UnaryOpExpr.NOT, expr=p[2]),
-        line=p.lineno(1))
+        unary_op=UnaryOpExpr(op=UnaryOpExpr.NOT, expr=p[2]), line=p.lineno(1))
 
   def p_binary_bool_unary_bool(self, p):
     '''binary_bool : unary_bool'''
@@ -140,8 +135,7 @@ class QuoParser(object):
   def p_assign(self, p):
     '''assign : primary ASSIGN expr'''
     p[0] = Expr(
-        assign=AssignExpr(dest_expr=p[1], value_expr=p[3]),
-        line=p[1].line)
+        assign=AssignExpr(dest_expr=p[1], value_expr=p[3]), line=p[1].line)
 
   def p_assign_op(self, p):
     '''assign : primary ADD_ASSIGN expr
@@ -154,10 +148,11 @@ class QuoParser(object):
     p[0] = Expr(
         assign=AssignExpr(
             dest_expr=p[1],
-            value_expr=Expr(binary_op=BinaryOpExpr(
-              op=getattr(BinaryOpExpr, p[2].split('_')[0]),
-              left_expr=p[1],
-              right_expr=p[3]))),
+            value_expr=Expr(
+                binary_op=BinaryOpExpr(
+                    op=getattr(BinaryOpExpr, p[2].split('_')[0]),
+                    left_expr=p[1],
+                    right_expr=p[3]))),
         line=p[1].line)
 
   def p_expr(self, p):
@@ -242,19 +237,14 @@ class QuoParser(object):
 
   def p_var_decls_untyped(self, p):
     '''var_decls : var_list SEMICOLON'''
-    p[0] = [
-        Stmt(var_decl=var_decl, line=p.lineno(1))
-        for var_decl in p[1]
-    ]
+    p[0] = [Stmt(var_decl=var_decl, line=p.lineno(1)) for var_decl in p[1]]
 
   def p_var_decls_typed(self, p):
     '''var_decls : var_list type_spec SEMICOLON'''
     p[0] = []
     for var_decl in p[1]:
       var_decl_stmt = VarDeclStmt(
-          name=var_decl.name,
-          ref_mode=var_decl.ref_mode,
-          type_spec=p[2])
+          name=var_decl.name, ref_mode=var_decl.ref_mode, type_spec=p[2])
       if var_decl.HasField('init_expr'):
         var_decl_stmt.init_expr.CopyFrom(var_decl.init_expr)
       p[0].append(Stmt(var_decl=var_decl_stmt, line=p.lineno(1)))
@@ -279,9 +269,7 @@ class QuoParser(object):
 
   def p_expr_stmt(self, p):
     '''expr_stmt : expr SEMICOLON'''
-    p[0] = Stmt(
-        expr=ExprStmt(expr=p[1]),
-        line=p[1].line)
+    p[0] = Stmt(expr=ExprStmt(expr=p[1]), line=p[1].line)
 
   def p_return_stmt(self, p):
     '''return_stmt : RETURN SEMICOLON'''
@@ -302,8 +290,7 @@ class QuoParser(object):
   def p_cond_stmt_if(self, p):
     '''cond_stmt_if : IF expr L_BRACE stmts R_BRACE'''
     p[0] = Stmt(
-        cond=CondStmt(cond_expr=p[2], true_block=p[4]),
-        line=p.lineno(1))
+        cond=CondStmt(cond_expr=p[2], true_block=p[4]), line=p.lineno(1))
 
   def p_cond_stmt_cond_stmt_if(self, p):
     '''cond_stmt : cond_stmt_if'''
@@ -330,8 +317,7 @@ class QuoParser(object):
   def p_cond_loop_stmt(self, p):
     '''cond_loop_stmt : WHILE expr L_BRACE stmts R_BRACE'''
     p[0] = Stmt(
-        cond_loop=CondLoopStmt(cond_expr=p[2], block=p[4]),
-        line=p.lineno(1))
+        cond_loop=CondLoopStmt(cond_expr=p[2], block=p[4]), line=p.lineno(1))
 
   def p_stmt(self, p):
     '''stmt : expr_stmt
@@ -481,10 +467,7 @@ class QuoParser(object):
                L_BRACE class_members R_BRACE
     '''
     p[0] = ClassDef(
-        name=p[2],
-        type_params=p[3],
-        super_classes=p[4],
-        members=p[6])
+        name=p[2], type_params=p[3], super_classes=p[4], members=p[6])
     p.set_lineno(0, p.lineno(1))
 
   def p_extern_fn(self, p):
@@ -543,7 +526,8 @@ class QuoParser(object):
       ('left', 'AND'),
       ('nonassoc', 'EQ', 'NE', 'GT', 'GE', 'LT', 'LE'),
       ('left', 'ADD', 'SUB'),
-      ('left', 'MUL', 'DIV', 'MOD'), )
+      ('left', 'MUL', 'DIV', 'MOD'),
+  )
 
 
 def create_parser(**kwargs):

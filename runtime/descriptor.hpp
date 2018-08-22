@@ -19,10 +19,10 @@
 #ifndef DESCRIPTOR_HPP_
 #define DESCRIPTOR_HPP_
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
-#include <cstdint>
 #include "ast/ast.pb.h"
 
 struct QClassView;
@@ -34,9 +34,7 @@ struct QConstArray {
   int32_t size;
   const T* array_ptr;
 
-  const T& operator[] (const int32_t index) const {
-    return array_ptr[index];
-  }
+  const T& operator[](const int32_t index) const { return array_ptr[index]; }
 };
 
 // Descriptor for a class.
@@ -69,4 +67,3 @@ struct QFieldDescriptor {
 };
 
 #endif  // DESCRIPTOR_HPP_
-
