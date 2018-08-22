@@ -34,11 +34,12 @@
 #     - llvm: LLVM libraries and binaries.
 #     - glog: Google logging library.
 
-PROTOBUF_CPP_URL='https://github.com/google/protobuf/releases/download/v3.4.1/protobuf-cpp-3.4.1.tar.gz'
+PROTOBUF_CPP_URL='https://github.com/google/protobuf/releases/download/v3.6.1/protobuf-cpp-3.6.1.tar.gz'
+LIBUNWIND_URL='http://download.savannah.nongnu.org/releases/libunwind/libunwind-1.2.tar.gz'
 GLOG_URL='https://github.com/google/glog/archive/v0.3.5.tar.gz'
 GFLAGS_URL='https://github.com/gflags/gflags/archive/v2.2.1.tar.gz'
-CMAKE_URL='https://cmake.org/files/v3.9/cmake-3.9.4.tar.gz'
-LLVM_URL='http://llvm.org/releases/5.0.0/llvm-5.0.0.src.tar.xz'
+CMAKE_URL='https://cmake.org/files/v3.12/cmake-3.12.1.tar.gz'
+LLVM_URL='http://llvm.org/releases/3.9.1/llvm-3.9.1.src.tar.xz'
 
 cd "$(dirname $0)"
 prefix="$PWD/deps"
@@ -61,6 +62,31 @@ function install_protobuf() {
     tar -xvz --strip-components=1 -f "$protobuf_cpp_archive"
   fi
   ./configure --prefix="$prefix"
+  make -j4
+  make install
+}
+
+# libunwind (used by glog)
+function install_libunwind() {
+  cd "$prefix"
+  libunwind_archive="$src/libunwind.tar.gz"
+  libunwind_src="$src/libunwind"
+  if [ ! -e "$libunwind_archive" ]; then
+    curl -L -o "$libunwind_archive" "$LIBUNWIND_URL"
+  fi
+  if [ -e "$libunwind_src/configure" ]; then
+    cd "$libunwind_src"
+  else
+    mkdir -p "$libunwind_src"
+    cd "$libunwind_src"
+    tar -xvz --strip-components=1 -f "$libunwind_archive"
+  fi
+  CPPFLAGS="-I$prefix/include" \
+    LDFLAGS="-L$prefix/lib" \
+    CXXFLAGS="-g" \
+    ./configure \
+    --prefix="$prefix" \
+    --disable-minidebuginfo
   make -j4
   make install
 }
@@ -158,6 +184,7 @@ function install_llvm() {
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$prefix" \
     -DLLVM_ENABLE_RTTI=ON \
+    -DLLVM_ENABLE_TERMINFO=OFF \
     "$llvm_src"
   make -j4
   make install
@@ -165,7 +192,7 @@ function install_llvm() {
 
 mkdir -p "$src"
 if [ "$#" -eq 0 ]; then
-  components=(protobuf cmake gflags glog llvm)
+  components=(protobuf cmake gflags libunwind glog llvm)
 else
   components=$@
 fi

@@ -39,11 +39,9 @@ file(WRITE "${PROJECT_BINARY_DIR}/__init__.py")
 # Set global compilation flags.
 include_directories("${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 link_directories("${PROJECT_SOURCE_DIR}/deps/lib")
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
 set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 set(BUILD_SHARED_LIBS OFF)
-if(NOT APPLE)
-  list(INSERT CMAKE_EXE_LINKER_FLAGS 0 "-static")
-endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -g")
 
 # Configure protocol buffer compiler and libs.
@@ -58,6 +56,8 @@ link_libraries(${protobuf_LIB})
 # Configure Google logging library.
 find_library(glog_LIB "glog")
 link_libraries(${glog_LIB})
+find_library(unwind_LIB "unwind")
+link_libraries(${unwind_LIB})
 
 # Configure Google flags library.
 find_library(gflags_LIB "gflags")

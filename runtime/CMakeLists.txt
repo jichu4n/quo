@@ -16,9 +16,12 @@
 #                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+protobuf_generate_cpp(descriptor_CPP_SRCS descriptor_CPP_HDRS descriptor.proto)
+
 add_library(
   runtime
   STATIC
+  ${descriptor_CPP_HDRS} ${descriptor_CPP_SRCS}
   builtin_types.cpp
   memory.cpp
   main.cpp)
@@ -39,7 +42,15 @@ add_custom_command(
   COMMAND
   ${CMAKE_AR}
     x
+    ${unwind_LIB}
+  COMMAND
+  ${CMAKE_AR}
+    x
     ${glog_LIB}
+  COMMAND
+  ${CMAKE_AR}
+   x
+   ${protobuf_LIB}
   COMMAND
   ${CMAKE_AR}
     qs

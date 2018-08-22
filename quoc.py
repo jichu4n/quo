@@ -40,9 +40,7 @@ def compile_file(input_file, output_file=None):
       input_file)
 
   # 0. Build.
-  build_sh = os.path.join(
-      os.path.dirname(__file__),
-      'build.sh')
+  build_sh = os.path.join(os.path.dirname(__file__), 'build.sh')
   p0 = subprocess.run([build_sh])
   if p0.returncode != 0:
     return p0.returncode
@@ -57,9 +55,7 @@ def compile_file(input_file, output_file=None):
     file_obj.write(ast_str)
 
   # 2. Convert AST into LLVM IR.
-  build_dir = os.path.join(
-      os.path.dirname(__file__),
-      'build')
+  build_dir = os.path.join(os.path.dirname(__file__), 'build')
   quoc = os.path.join(build_dir, 'compiler', 'quoc')
   if not os.path.exists(quoc):
     print('Cannot find quoc at %s, exiting' % quoc, file=sys.stderr)
@@ -79,19 +75,14 @@ def compile_file(input_file, output_file=None):
     file_obj.write(p1.stdout)
 
   # 3. Compile.
-  llc = os.path.join(
-      os.path.dirname(__file__),
-      'deps',
-      'bin',
-      'llc')
+  llc = os.path.join(os.path.dirname(__file__), 'deps', 'bin', 'llc')
   if not os.path.exists(llc):
     print('Cannot find llc at %s, exiting' % llc, file=sys.stderr)
     return 1
   asm_file = input_file_root + '.s'
-  p2 = subprocess.run(
-      [llc, '-o', asm_file],
-      input=p1.stdout,
-      universal_newlines=True)
+  llc_args = [llc, '-relocation-model=pic', '-o', asm_file]
+  print(' '.join("'%s'" % arg for arg in llc_args))
+  p2 = subprocess.run(llc_args, input=p1.stdout, universal_newlines=True)
   if p2.returncode != 0:
     return p2.returncode
 
@@ -106,20 +97,19 @@ def compile_file(input_file, output_file=None):
   if cxx is None:
     print('Cannot find C++ compiler, exiting', file=sys.stderr)
     return 1
-  runtime_dir = os.path.join(
-      build_dir,
-      'runtime')
+  runtime_dir = os.path.join(build_dir, 'runtime')
   cxx_args = [
       cxx,
-      '-o', output_file if output_file else input_file_root,
+      '-o',
+      output_file if output_file else input_file_root,
       asm_file,
       '-g',
-      '-L', runtime_dir,
+      '-L',
+      runtime_dir,
       '-lruntime',
       '-pthread',
   ]
-  # if sys.platform != 'darwin':
-  #   cxx_args.append('-static')
+  print(' '.join("'%s'" % arg for arg in cxx_args))
   p3 = subprocess.run(cxx_args)
   return p3.returncode
 
@@ -131,4 +121,3 @@ if __name__ == '__main__':
   args = vars(arg_parser.parse_args())
 
   sys.exit(compile_file(args['input_file'], output_file=args['o']))
-

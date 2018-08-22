@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package quo.runtime;
+
+// Descriptor for a class.
+message ClassDescriptor {
+  string name = 1;
+  // Array of ClassViews. Each ClassView defines how to access an object of this
+  // class as a superclass (or as itself).
+  repeated ClassView views = 2;
+}
+
+message ClassView {
+  // The superclass this view is defined for, or the target class itself.
+  string class_name = 1;
+  // Array of field descriptors.
+  repeated FieldDescriptor fields = 2;
+}
+
+// Descriptor for a field (instance variable).
+message FieldDescriptor {
+  // Index of this field within the object's actual memory layout.
+  int32 index = 1;
+  // Name of this field.
+  string name = 2;
+  // Type of this field.
+  string type_name = 3;
+  // Reference mode of this field.
+  RefMode ref_mode = 4;
+};
+
+// Mode of a reference.
+enum RefMode {
+  STRONG_REF = 0;
+  WEAK_REF = 1;
+}

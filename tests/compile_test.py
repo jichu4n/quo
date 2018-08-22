@@ -60,8 +60,7 @@ fn Main() Int {
 
   def test_fib(self):
     input_file = 'fib.quo'
-    #for i in range(len(self.FIB)):
-    for i in range(1):
+    for i in range(len(self.FIB)):
       logging.info('Testing Fib(%d)', i)
       with open(os.path.join(self.DATA_DIR, input_file), 'w') as file_obj:
         file_obj.write(self.FIB_TEMPLATE % i)
@@ -76,7 +75,7 @@ fn Main() Int {
       'loop.quo': 165,
       'break.quo': 123,
   }
+
   def test_compile(self):
     for input_file, exit_code in self.COMPILE_TESTS.items():
       self.compile_and_check_exit_code(input_file, exit_code)
-
