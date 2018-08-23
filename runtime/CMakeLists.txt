@@ -19,21 +19,21 @@
 protobuf_generate_cpp(descriptor_CPP_SRCS descriptor_CPP_HDRS descriptor.proto)
 
 add_library(
-  runtime
+  quort
   STATIC
   ${descriptor_CPP_HDRS} ${descriptor_CPP_SRCS}
   builtin_types.cpp
   memory.cpp
   main.cpp)
 add_custom_command(
-  TARGET runtime
+  TARGET quort
   POST_BUILD
   COMMAND
   ${CMAKE_COMMAND} -E remove_directory deps_objs
   COMMAND
   ${CMAKE_COMMAND} -E make_directory deps_objs)
 add_custom_command(
-  TARGET runtime
+  TARGET quort
   POST_BUILD
   COMMAND
   ${CMAKE_AR}
@@ -54,7 +54,7 @@ add_custom_command(
   COMMAND
   ${CMAKE_AR}
     qs
-    $<TARGET_FILE:runtime>
+    $<TARGET_FILE:quort>
     *
   WORKING_DIRECTORY
   deps_objs)

@@ -106,7 +106,7 @@ def compile_file(input_file, output_file=None):
       '-g',
       '-L',
       runtime_dir,
-      '-lruntime',
+      '-lquort',
       '-pthread',
   ]
   print(' '.join("'%s'" % arg for arg in cxx_args))
