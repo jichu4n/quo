@@ -428,7 +428,8 @@ class QuoParser(object):
         params=p[6],
         cc=FnDef.DEFAULT,
         is_override=p[1],
-        block=p[10])
+        block=p[10],
+        line=p.lineno(2))
     if p[8] is not None:
       p[0].return_type_spec.CopyFrom(p[8])
     if p[4]:
@@ -467,7 +468,11 @@ class QuoParser(object):
                L_BRACE class_members R_BRACE
     '''
     p[0] = ClassDef(
-        name=p[2], type_params=p[3], super_classes=p[4], members=p[6])
+        name=p[2],
+        type_params=p[3],
+        super_classes=p[4],
+        members=p[6],
+        line=p.lineno(1))
     p.set_lineno(0, p.lineno(1))
 
   def p_extern_fn(self, p):
@@ -475,7 +480,8 @@ class QuoParser(object):
                    L_PAREN fn_param_list R_PAREN \
                    return_type_spec SEMICOLON
     '''
-    p[0] = ExternFn(name=p[3], params=p[5], return_type_spec=p[7])
+    p[0] = ExternFn(
+        name=p[3], params=p[5], return_type_spec=p[7], line=p.lineno(1))
     p.set_lineno(0, p.lineno(1))
 
   def p_func_cc_empty(self, p):
@@ -488,7 +494,7 @@ class QuoParser(object):
 
   def p_module_func(self, p):
     '''module_func : func_cc func'''
-    p[0] = FnDef()
+    p[0] = FnDef(line=p.lineno(2))
     p[0].CopyFrom(p[2])
     p[0].cc = p[1]
     p.set_lineno(0, p.lineno(2))

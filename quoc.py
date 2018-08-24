@@ -50,7 +50,7 @@ def compile_file(input_file, output_file=None):
   lex = lexer.create_lexer()
   ast = parse.parse('\n'.join(lines), lexer=lex)
   ast_str = str(ast)
-  ast_file = input_file_root + '.asciiproto'
+  ast_file = input_file_root + '.ast.textproto'
   with open(ast_file, 'w') as file_obj:
     file_obj.write(ast_str)
 
@@ -61,8 +61,14 @@ def compile_file(input_file, output_file=None):
     print('Cannot find quoc at %s, exiting' % quoc, file=sys.stderr)
     return 1
   ll_file = input_file_root + '.ll'
+  desc_file = input_file_root + '.desc.textproto'
+  quoc_args = [
+      quoc,
+      '--output_descriptors_file_path=%s' % desc_file,
+  ]
+  print(' '.join("'%s'" % arg for arg in quoc_args))
   p1 = subprocess.run(
-      [quoc],
+      quoc_args,
       input=ast_str,
       universal_newlines=True,
       stdout=subprocess.PIPE,

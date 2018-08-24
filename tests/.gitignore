@@ -1,4 +1,4 @@
-testdata/*.asciiproto
+testdata/*.textproto
 testdata/*.ll
 testdata/*.s
 testdata/fib.quo
@@ -10,4 +10,4 @@ testdata/simple_class_fields
 testdata/methods
 testdata/loop
 testdata/break
-
+testdata/class_hierarchy

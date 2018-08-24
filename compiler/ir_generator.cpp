@@ -18,20 +18,27 @@
 
 #include "compiler/ir_generator.hpp"
 #include <algorithm>
+#include <fstream>
 #include <functional>
 #include <list>
 #include <memory>
 #include <unordered_map>
 #include <vector>
 #include "compiler/exceptions.hpp"
+#include "gflags/gflags.h"
 #include "glog/logging.h"
 #include "llvm/Support/raw_ostream.h"
+
+DEFINE_string(
+    output_descriptors_file_path, "",
+    "If set, writes computed descriptors to the specified file path.");
 
 namespace quo {
 
 using ::std::bind;
 using ::std::function;
 using ::std::list;
+using ::std::ofstream;
 using ::std::string;
 using ::std::transform;
 using ::std::unique_ptr;
@@ -47,6 +54,11 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   module_ = module.get();
   module_def_ = &module_def;
   builtins_ = Builtins::Create(module_);
+  types_ = Types::Create(module_def);
+  if (!FLAGS_output_descriptors_file_path.empty()) {
+    ofstream out(FLAGS_output_descriptors_file_path);
+    out << types_->GetModuleDescriptor().DebugString();
+  }
   symbols_ = Symbols::Create(module_, builtins_.get(), module_def);
   for (const auto& member : module_def.members()) {
     ProcessModuleMember(member);

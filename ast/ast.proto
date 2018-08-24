@@ -191,6 +191,7 @@ message FnDef {
   CC cc = 5;
   bool is_override = 6;
   Block block = 7;
+  int32 line = 1000;
 }
 
 // An external (C/C++) function declaration.
@@ -198,6 +199,7 @@ message ExternFn {
   string name = 1;
   repeated FnParam params = 2;
   TypeSpec return_type_spec = 3;
+  int32 line = 1000;
 }
 
 // A class definition.
@@ -214,6 +216,7 @@ message ClassDef {
     int32 line = 1000;
   }
   repeated Member members = 4;
+  int32 line = 1000;
 }
 
 // A module definition.

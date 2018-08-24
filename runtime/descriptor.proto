@@ -1,33 +1,74 @@
 syntax = "proto3";
 
-package quo.runtime;
+package quo.rt;
+
+// Descriptor for a module.
+message ModuleDescriptor {
+  // Members.
+  repeated ModuleMemberDescriptor member_descs = 1;
+}
+
+// Descriptor for a module member.
+message ModuleMemberDescriptor {
+  oneof type {
+    ClassDescriptor class_desc = 1;
+    FnDescriptor fn_desc = 2;
+  }
+}
 
 // Descriptor for a class.
 message ClassDescriptor {
+  // Qualified name of the class.
   string name = 1;
-  // Array of ClassViews. Each ClassView defines how to access an object of this
-  // class as a superclass (or as itself).
-  repeated ClassView views = 2;
+  // Members.
+  repeated ClassMemberDescriptor member_descs = 2;
 }
 
-message ClassView {
-  // The superclass this view is defined for, or the target class itself.
-  string class_name = 1;
-  // Array of field descriptors.
-  repeated FieldDescriptor fields = 2;
+// Descriptor for a class member.
+message ClassMemberDescriptor {
+  // Qualified name of the class that declared this member.
+  string decl_class_name = 1;
+  // Fields.
+  oneof type {
+    PropDescriptor prop_desc = 2;
+    FnDescriptor fn_desc = 3;
+  }
 }
 
-// Descriptor for a field (instance variable).
-message FieldDescriptor {
-  // Index of this field within the object's actual memory layout.
-  int32 index = 1;
-  // Name of this field.
-  string name = 2;
-  // Type of this field.
+// Descriptor for a property (instance variable).
+message PropDescriptor {
+  // Qualified name of the function.
+  string name = 1;
+  // Index of this property within the object's memory layout.
+  int32 index = 2;
+  // Qualified name of the type of this property.
   string type_name = 3;
-  // Reference mode of this field.
+  // Reference mode of this property.
   RefMode ref_mode = 4;
 };
+
+// Descriptor for a method.
+message FnDescriptor {
+  // Qualified name of the function.
+  string name = 1;
+  // Index of this method in the function table.
+  int32 fn_table_index = 2;
+  // Parameters.
+  repeated FnParamDescriptor param_descs = 3;
+  // Qualified name of the return type of the function.
+  string return_type_name = 4;
+  // Whether this was an override function.
+  bool is_override = 5;
+}
+
+message FnParamDescriptor {
+  // Name of the parameter.
+  string name = 1;
+  // Reference mode.
+  RefMode ref_mode = 2;
+  // Qualified name of the type of the paramter.
+  string type_name = 3;
+}
 
 // Mode of a reference.
 enum RefMode {

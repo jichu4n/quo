@@ -19,12 +19,17 @@
 protobuf_generate_cpp(descriptor_CPP_SRCS descriptor_CPP_HDRS descriptor.proto)
 
 add_library(
+  descriptor
+  ${descriptor_CPP_HDRS} ${descriptor_CPP_SRCS}
+)
+
+add_library(
   quort
   STATIC
-  ${descriptor_CPP_HDRS} ${descriptor_CPP_SRCS}
   builtin_types.cpp
   memory.cpp
   main.cpp)
+target_link_libraries(quort PRIVATE descriptor)
 add_custom_command(
   TARGET quort
   POST_BUILD

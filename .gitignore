@@ -5,3 +5,4 @@ deps/
 build/
 *.dSYM
 
+.vscode/tags

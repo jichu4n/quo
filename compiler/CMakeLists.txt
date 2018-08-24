@@ -20,12 +20,14 @@ find_package(LLVM REQUIRED CONFIG)
 
 add_executable(
   quoc
-  main.cpp
-  ir_generator.cpp
-  expr_ir_generator.cpp
-  symbols.cpp
   builtins.cpp
-  exceptions.cpp)
-target_link_libraries(quoc PRIVATE ast)
+  exceptions.cpp
+  expr_ir_generator.cpp
+  ir_generator.cpp
+  main.cpp
+  symbols.cpp
+  types.cpp
+)
+target_link_libraries(quoc PRIVATE ast descriptor)
 llvm_config(quoc core)
 

@@ -27,6 +27,7 @@
 #include "compiler/builtins.hpp"
 #include "compiler/expr_ir_generator.hpp"
 #include "compiler/symbols.hpp"
+#include "compiler/types.hpp"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/LinkAllIR.h"
 
@@ -75,6 +76,7 @@ class IRGenerator {
   ::std::stack<::llvm::BasicBlock*> loop_end_bb_stack_;
 
   ::std::unique_ptr<Builtins> builtins_;
+  ::std::unique_ptr<Types> types_;
   ::std::unique_ptr<Symbols> symbols_;
   ::std::unique_ptr<ExprIRGenerator> expr_ir_generator_;
 };
