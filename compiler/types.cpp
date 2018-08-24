@@ -168,11 +168,11 @@ void Types::ProcessMethod(const FnDef& fn_def, rt::FnDescriptor* fn_desc) {
 
 void Types::ProcessFn(const FnDef& fn_def, rt::FnDescriptor* fn_desc) {
   fn_desc->set_name(fn_def.name());
-  fn_desc->set_fn_table_index(fn_table_.Add({
-      class_def_,
-      class_desc_,
-      &fn_def,
-  }));
+  fn_desc->set_fn_table_index(
+      fn_table_.Add(
+          {
+              class_def_, class_desc_, &fn_def,
+          }));
   for (const FnParam& param : fn_def.params()) {
     rt::FnParamDescriptor* fn_param_desc = fn_desc->add_param_descs();
     fn_param_desc->set_name(param.name());
@@ -185,51 +185,37 @@ void Types::ProcessFn(const FnDef& fn_def, rt::FnDescriptor* fn_desc) {
 
 vector<const ClassDef*> Types::SortClassDefs(
     const unordered_map<string, const ClassDef*>& class_defs_by_name) {
+  // Topological sort via DFS.
   vector<const ClassDef*> sorted_class_defs;
   sorted_class_defs.reserve(class_defs_by_name.size());
   unordered_set<const ClassDef*> processed_class_defs;
   unordered_set<const ClassDef*> staged_class_defs;
-  function<vector<const ClassDef*>(const ClassDef*)>
-      prepend_unprocessed_superclasses =
-          [&class_defs_by_name, &processed_class_defs, &staged_class_defs,
-           &prepend_unprocessed_superclasses](const ClassDef* class_def) {
-            vector<const ClassDef*> result;
-            if (processed_class_defs.count(class_def)) {
-              return result;
-            }
-            if (staged_class_defs.count(class_def)) {
-              throw Exception(
-                  class_def->line(), "Cycle detected in inheritance for '%s'",
-                  class_def->name().c_str());
-            }
-            staged_class_defs.insert(class_def);
-            for (const auto& type_spec : class_def->super_classes()) {
-              const auto it = class_defs_by_name.find(type_spec.name());
-              if (it == class_defs_by_name.end()) {
-                throw Exception(
-                    class_def->line(), "Super class '%s' not found",
-                    type_spec.name().c_str());
-              }
-              vector<const ClassDef*> super_class_result =
-                  prepend_unprocessed_superclasses(it->second);
-              result.insert(
-                  result.end(), super_class_result.begin(),
-                  super_class_result.end());
-            }
-            staged_class_defs.erase(class_def);
-            result.push_back(class_def);
-            return result;
-          };
+  function<void(const ClassDef*)> visit =
+      [&class_defs_by_name, &sorted_class_defs, &processed_class_defs,
+       &staged_class_defs, &visit](const ClassDef* class_def) {
+        if (processed_class_defs.count(class_def)) {
+          return;
+        }
+        if (staged_class_defs.count(class_def)) {
+          throw Exception(
+              class_def->line(), "Cycle detected in class hierarchy: '%s'",
+              class_def->name().c_str());
+        }
+        staged_class_defs.insert(class_def);
+        for (const auto& type_spec : class_def->super_classes()) {
+          const auto it = class_defs_by_name.find(type_spec.name());
+          if (it == class_defs_by_name.end()) {
+            throw Exception(
+                class_def->line(), "Super class '%s' not found",
+                type_spec.name().c_str());
+          }
+          visit(it->second);
+        }
+        sorted_class_defs.push_back(class_def);
+        processed_class_defs.insert(class_def);
+      };
   for (const auto& it : class_defs_by_name) {
-    vector<const ClassDef*> next_class_defs =
-        prepend_unprocessed_superclasses(it.second);
-    for (auto class_def : next_class_defs) {
-      if (processed_class_defs.count(class_def)) {
-        continue;
-      }
-      sorted_class_defs.push_back(class_def);
-      processed_class_defs.insert(class_def);
-    }
+    visit(it.second);
   }
   return sorted_class_defs;
 }

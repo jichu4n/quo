@@ -47,6 +47,8 @@ class Types {
   void ProcessMethod(const FnDef& fn_def, rt::FnDescriptor* fn_desc);
   void ProcessFn(const FnDef& fn_def, rt::FnDescriptor* fn_desc);
 
+  // Sort classes topologically, so that super classes appear before their
+  // derived classes.
   static ::std::vector<const ClassDef*> SortClassDefs(
       const ::std::unordered_map<::std::string, const ClassDef*>&
           class_defs_by_name);
