@@ -32,10 +32,14 @@
 DEFINE_string(
     output_descriptors_file_path, "",
     "If set, writes computed descriptors to the specified file path.");
+DEFINE_string(
+    output_fn_table_file_path, "",
+    "If set, writes computed function table to the specified file path.");
 
 namespace quo {
 
 using ::std::bind;
+using ::std::endl;
 using ::std::function;
 using ::std::list;
 using ::std::ofstream;
@@ -58,6 +62,13 @@ unique_ptr<::llvm::Module> IRGenerator::ProcessModule(
   if (!FLAGS_output_descriptors_file_path.empty()) {
     ofstream out(FLAGS_output_descriptors_file_path);
     out << types_->GetModuleDescriptor().DebugString();
+  }
+  if (!FLAGS_output_fn_table_file_path.empty()) {
+    ofstream out(FLAGS_output_fn_table_file_path);
+    int i = 0;
+    for (const FnTableItem& fn_table_item : types_->GetFnTable()) {
+      out << i++ << ":\t" << fn_table_item.GetOutputName() << endl;
+    }
   }
   symbols_ = Symbols::Create(module_, builtins_.get(), module_def);
   for (const auto& member : module_def.members()) {
@@ -113,8 +124,9 @@ void IRGenerator::ProcessFnDef(
   ::llvm::IRBuilder<> builder(ctx_);
   builder.SetInsertPoint(bb);
   ir_builder_ = &builder;
-  expr_ir_generator_.reset(new ExprIRGenerator(
-      module_, ir_builder_, builtins_.get(), symbols_.get()));
+  expr_ir_generator_.reset(
+      new ExprIRGenerator(
+          module_, ir_builder_, builtins_.get(), symbols_.get()));
 
   // Object scope.
   Scope* object_scope;
@@ -155,25 +167,23 @@ void IRGenerator::ProcessFnDef(
                   &arg, ::llvm::Type::getInt8PtrTy(ctx_)),
           });
     }
-    fn_scope->AddVar({
-        arg.getName(),
-        param.type_spec(),
-        arg_var,
-        param.ref_mode(),
-    });
+    fn_scope->AddVar(
+        {
+            arg.getName(), param.type_spec(), arg_var, param.ref_mode(),
+        });
     args.push_back(&arg);
   }
 
   if (parent_class_def != nullptr) {
     for (const FieldType& field_type : parent_class_type->fields) {
-      object_scope->AddVar({
-          field_type.name,
-          field_type.type_spec,
-          expr_ir_generator_->GetFieldRefAddress(
-              parent_class_type, &field_type,
-              ir_builder_->CreateLoad(fn_scope->vars.front().ref_address)),
-          WEAK_REF,
-      });
+      object_scope->AddVar(
+          {
+              field_type.name, field_type.type_spec,
+              expr_ir_generator_->GetFieldRefAddress(
+                  parent_class_type, &field_type,
+                  ir_builder_->CreateLoad(fn_scope->vars.front().ref_address)),
+              WEAK_REF,
+          });
     }
   }
 

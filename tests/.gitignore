@@ -1,6 +1,7 @@
 testdata/*.textproto
 testdata/*.ll
 testdata/*.s
+testdata/*.fn.txt
 testdata/fib.quo
 testdata/fib
 testdata/assign

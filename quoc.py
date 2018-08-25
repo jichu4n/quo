@@ -62,9 +62,11 @@ def compile_file(input_file, output_file=None):
     return 1
   ll_file = input_file_root + '.ll'
   desc_file = input_file_root + '.desc.textproto'
+  fn_table_file = input_file_root + '.fn.txt'
   quoc_args = [
       quoc,
       '--output_descriptors_file_path=%s' % desc_file,
+      '--output_fn_table_file_path=%s' % fn_table_file,
   ]
   print(' '.join("'%s'" % arg for arg in quoc_args))
   p1 = subprocess.run(

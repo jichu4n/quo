@@ -14,6 +14,15 @@ using ::std::unordered_map;
 using ::std::unordered_set;
 using ::std::vector;
 
+string FnTableItem::GetOutputName() const {
+  if (class_def == nullptr) {
+    return fn_def->name();
+  } else {
+    return StringPrintf(
+        "__%s_%s", class_def->name().c_str(), fn_def->name().c_str());
+  }
+}
+
 int FnTable::Add(const FnTableItem& item) {
   items_.push_back(item);
   return items_.size() - 1;
@@ -34,7 +43,9 @@ Types::Types()
 void Types::ProcessModule(
     const ModuleDef& module_def, rt::ModuleDescriptor* module_desc) {
   module_def_ = &module_def;
+  module_desc->mutable_member_descs()->Reserve(module_def.members_size());
   unordered_map<string, const ClassDef*> class_defs_by_name;
+  int i = 0;
   for (const auto& member : module_def.members()) {
     switch (member.type_case()) {
       case ModuleDef::Member::kClassDef: {
@@ -45,6 +56,10 @@ void Types::ProcessModule(
               class_def.name().c_str());
         }
         class_defs_by_name[class_def.name()] = &class_def;
+        rt::ClassDescriptor* class_desc =
+            module_desc->add_member_descs()->mutable_class_desc();
+        class_descs_by_name_[class_def.name()] = class_desc;
+        class_descs_by_class_def_[&class_def] = class_desc;
         break;
       }
       case ModuleDef::Member::kFnDef:
@@ -53,27 +68,22 @@ void Types::ProcessModule(
             module_desc->add_member_descs()->mutable_fn_desc());
         break;
     }
+    ++i;
   }
   vector<const ClassDef*> sorted_class_defs = SortClassDefs(class_defs_by_name);
   for (const ClassDef* class_def : sorted_class_defs) {
-    ProcessClassDef(
-        *class_def, module_desc->add_member_descs()->mutable_class_desc());
+    ProcessClassDef(*class_def, class_descs_by_class_def_.at(class_def));
   }
 }
 
 void Types::ProcessClassDef(
     const ClassDef& class_def, rt::ClassDescriptor* class_desc) {
-  if (class_descs_by_name_.count(class_def.name())) {
-    throw Exception(
-        class_def.line(), "Duplicate class definition '%s'",
-        class_def.name().c_str());
-  }
   class_def_ = &class_def;
-  class_desc->set_name(class_def.name());
-  class_descs_by_name_[class_desc->name()] = class_desc;
   class_desc_ = class_desc;
+  class_desc->set_name(class_def.name());
   unordered_map<string, rt::ClassMemberDescriptor*> member_descs_by_name;
   int prop_idx = 0;
+  // 1. Add members from super classes.
   for (const auto& type_spec : class_def.super_classes()) {
     rt::ClassDescriptor* super_class_desc =
         class_descs_by_name_.at(type_spec.name());
@@ -112,6 +122,9 @@ void Types::ProcessClassDef(
       }
     }
   }
+  // 1. Add members from the class itself.
+  class_desc->mutable_member_descs()->Reserve(
+      class_desc->member_descs_size() + class_def.members_size());
   for (const auto& member : class_def.members()) {
     string name = GetName(class_def, member);
     rt::ClassMemberDescriptor* member_desc;
@@ -167,12 +180,9 @@ void Types::ProcessMethod(const FnDef& fn_def, rt::FnDescriptor* fn_desc) {
 }
 
 void Types::ProcessFn(const FnDef& fn_def, rt::FnDescriptor* fn_desc) {
+  fn_descs_by_fn_def_[&fn_def] = fn_desc;
   fn_desc->set_name(fn_def.name());
-  fn_desc->set_fn_table_index(
-      fn_table_.Add(
-          {
-              class_def_, class_desc_, &fn_def,
-          }));
+  fn_desc->set_fn_table_index(fn_table_.Add({class_def_, &fn_def}));
   for (const FnParam& param : fn_def.params()) {
     rt::FnParamDescriptor* fn_param_desc = fn_desc->add_param_descs();
     fn_param_desc->set_name(param.name());

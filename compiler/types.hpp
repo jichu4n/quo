@@ -1,6 +1,7 @@
 #ifndef TYPES_HPP_
 #define TYPES_HPP_
 
+#include <iterator>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -10,17 +11,25 @@
 
 namespace quo {
 
-// An item in the parsed function table.
+// An item in the function table at compile time.
 struct FnTableItem {
   const ClassDef* class_def;
-  const rt::ClassDescriptor* class_desc;
   const FnDef* fn_def;
+
+  ::std::string GetOutputName() const;
 };
 
 class FnTable {
  public:
   int Add(const FnTableItem& item);
-  // void Lookup(const FnTableItem& item);
+
+  ::std::vector<FnTableItem>::const_iterator begin() const {
+    return items_.begin();
+  }
+  ::std::vector<FnTableItem>::const_iterator end() const {
+    return items_.end();
+  }
+
  private:
   ::std::vector<FnTableItem> items_;
 };
@@ -34,6 +43,10 @@ class Types {
   // Returns the constructed module descriptor.
   const rt::ModuleDescriptor& GetModuleDescriptor() const {
     return *module_desc_.get();
+  }
+  // Returns the constructed function table.
+  const FnTable& GetFnTable() const {
+    return fn_table_;
   }
 
  private:
@@ -69,6 +82,11 @@ class Types {
   // Class descriptors, indexed by name.
   ::std::unordered_map<::std::string, rt::ClassDescriptor*>
       class_descs_by_name_;
+  // Class descriptors, indexed by ClassDef.
+  ::std::unordered_map<const ClassDef*, rt::ClassDescriptor*>
+      class_descs_by_class_def_;
+  ::std::unordered_map<const FnDef*, rt::FnDescriptor*>
+      fn_descs_by_fn_def_;
   // Function definitions.
   FnTable fn_table_;
 };
