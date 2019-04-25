@@ -1,0 +1,214 @@
+syntax = "proto3";
+
+package quo;
+
+// A constant expression.
+message ConstantExpr {
+  oneof value {
+    string str_value = 1;
+    int64 int_value = 2;
+    bool bool_value = 3;
+  }
+}
+
+// A variable reference.
+message VarExpr {
+  string name = 1;
+}
+
+// A member reference.
+message MemberExpr {
+  Expr parent_expr = 1;
+  string member_name = 2;
+}
+
+// An index expression.
+message IndexExpr {
+  Expr array_expr = 1;
+  Expr index_expr = 2;
+}
+
+// A function call expression.
+message CallExpr {
+  Expr fn_expr = 1;
+  repeated Expr arg_exprs = 2;
+}
+
+// A unary operation.
+message UnaryOpExpr {
+  // Unary operators.
+  enum Op {
+    UNKNOWN = 0;
+    ADD = 1;
+    SUB = 2;
+    NOT = 5;
+  }
+
+  Op op = 1;
+  Expr expr = 2;
+}
+
+// A binary operation.
+message BinaryOpExpr {
+  // Binary operators.
+  enum Op {
+    UNKNOWN = 0;
+    ADD = 1;
+    SUB = 2;
+    MUL = 3;
+    DIV = 4;
+    MOD = 5;
+    EQ = 6;
+    NE = 7;
+    GT = 8;
+    GE = 9;
+    LT = 10;
+    LE = 11;
+    AND = 12;
+    OR = 13;
+  }
+
+  Op op = 1;
+  Expr left_expr = 2;
+  Expr right_expr = 3;
+}
+
+// Variable assignment.
+message AssignExpr {
+  Expr dest_expr = 1;
+  Expr value_expr = 2;
+}
+
+// Any expression.
+message Expr {
+  oneof type {
+    ConstantExpr constant = 1;
+    VarExpr var = 2;
+    MemberExpr member = 3;
+    IndexExpr index = 4;
+    CallExpr call = 5;
+    UnaryOpExpr unary_op = 6;
+    BinaryOpExpr binary_op = 7;
+    AssignExpr assign = 8;
+  }
+  int32 line = 1000;
+}
+
+// Expression statement.
+message ExprStmt {
+  Expr expr = 1;
+}
+
+// Return statement.
+message RetStmt {
+  Expr expr = 1;
+}
+
+// Break statement.
+message BrkStmt {
+}
+
+// Continue statement.
+message ContStmt {
+}
+
+// if-else statement.
+message CondStmt {
+  Expr cond_expr = 1;
+  Block true_block = 2;
+  Block false_block = 3;
+}
+
+// Conditional loop statement.
+message CondLoopStmt {
+  Expr cond_expr = 1;
+  Block block = 2;
+}
+
+// Variable declaration statement.
+message VarDeclStmt {
+  string name = 1;
+  string type_spec = 2;
+  Expr init_expr = 4;
+}
+
+// Any statement.
+message Stmt {
+  oneof type {
+    ExprStmt expr = 1;
+    RetStmt ret = 2;
+    BrkStmt brk = 3;
+    ContStmt cont = 4;
+    CondStmt cond = 5;
+    CondLoopStmt cond_loop = 6;
+    VarDeclStmt var_decl = 7;
+  }
+  int32 line = 1000;
+}
+
+// A code block.
+message Block {
+  repeated Stmt stmts = 1;
+}
+
+// A formal function parameter.
+message FnParam {
+  string name = 1;
+  string type_spec = 3;
+  Expr init_expr = 4;
+}
+
+// A function definition.
+message FnDef {
+  enum CC {
+    DEFAULT = 0;
+    C = 1;
+  }
+  string name = 1;
+  repeated string type_params = 2;
+  repeated FnParam params = 3;
+  string return_type_spec = 4;
+  CC cc = 5;
+  bool is_override = 6;
+  Block block = 7;
+  int32 line = 1000;
+}
+
+// An external (C/C++) function declaration.
+message ExternFn {
+  string name = 1;
+  repeated FnParam params = 2;
+  string return_type_spec = 3;
+  int32 line = 1000;
+}
+
+// A class definition.
+message ClassDef {
+  string name = 1;
+  repeated string super_classes = 3;
+  message Member {
+    oneof type {
+      ClassDef class_def = 1;
+      FnDef fn_def = 2;
+      VarDeclStmt var_decl = 3;
+    }
+    int32 line = 1000;
+  }
+  repeated Member members = 4;
+  int32 line = 1000;
+}
+
+// A module definition.
+message ModuleDef {
+  string name = 1;
+  message Member {
+    oneof type {
+      ClassDef class_def = 1;
+      FnDef fn_def = 2;
+      VarDeclStmt var_decl = 3;
+      ExternFn extern_fn = 4;
+    }
+    int32 line = 1000;
+  }
+  repeated Member members = 2;
+}
