@@ -12,4 +12,5 @@ link_libraries(${Protobuf_LIBRARIES})
 
 # Sub-directories.
 add_subdirectory("ast")
+add_subdirectory("parser")
 
