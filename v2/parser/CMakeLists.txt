@@ -26,3 +26,11 @@ add_test(
   quo_lexer_test
   quo_lexer_test
 )
+target_link_libraries(
+  quo_lexer_test
+  absl::strings
+  gtest_main)
+add_dependencies(
+  quo_lexer_test
+  quo_parser
+)

@@ -8,6 +8,8 @@
 #include "parser/quo_parser.cpp"
 #include "parser/quo_lexer.cpp"
 #undef private
+#include "absl/strings/str_join.h"
+#include "gtest/gtest.h"
 
 using namespace std;
 using namespace yy;
@@ -27,26 +29,20 @@ vector<string> RunLexAndGetTokenNames(const string& input) {
 
 void RunLexTest(const string& input, const vector<string>& expected_token_names) {
   const auto actual_token_names = RunLexAndGetTokenNames(input);
-  cout << "Input: " << endl << input << endl;
-  cout << "Expected: " << endl;
-  for (const string &s : expected_token_names) {
-    cout << s << " ";
-  }
-  cout << endl;
-  cout << "Actual: " << endl;
-  for (const string &s : actual_token_names) {
-    cout << s << " ";
-  }
-  cout << endl;
-  if (actual_token_names == expected_token_names) {
-    cout << "Pass!" << endl;
-  } else {
-    cout << "Fail!" << endl;
-    throw 1;
-  }
+  EXPECT_EQ(actual_token_names, expected_token_names)
+    << "Input: " << endl << input << endl;
 }
 
-int main() {
+TEST(LexerTest, StringLiteralTest) {
+  RunLexTest(
+      R"(
+      "hello \"world!\""
+      )", {
+      "STRING_LITERAL",
+  });
+}
+
+TEST(LexerTest, FunctionTest) {
   RunLexTest(
       R"(
       // Sanity check
@@ -74,12 +70,10 @@ int main() {
       "SEMICOLON",
       "R_BRACE",
   });
-  RunLexTest(
-      R"(
-      "hello \"world!\""
-      )", {
-      "STRING_LITERAL",
-  });
-  return 0;
+}
+
+int main(int argc, char** argv) {
+  ::testing::InitGoogleTest(&argc, argv);
+  return RUN_ALL_TESTS();
 }
 
