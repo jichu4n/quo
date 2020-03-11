@@ -6,9 +6,6 @@ build="$PWD/build"
 
 set -ex
 
-mkdir -p "$build"
-cd "$build"
-"$cmake" ../
-# "$cmake" --build .
-make VERBOSE=1
+"$cmake" "-B${build}" -DCMAKE_EXPORT_COMPILE_COMMANDS=YES
+make -C "$build" VERBOSE=1
 
