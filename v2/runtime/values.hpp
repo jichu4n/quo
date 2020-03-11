@@ -1,5 +1,5 @@
-#ifndef QVALUE_HPP
-#define QVALUE_HPP
+#ifndef VALUES_HPP
+#define VALUES_HPP
 
 #include <cstdint>
 

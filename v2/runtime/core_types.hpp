@@ -2,7 +2,7 @@
 #define CORE_TYPES_HPP
 
 #include <cstdint>
-#include "runtime/q_value.hpp"
+#include "runtime/values.hpp"
 
 // ============================================================================
 //   Null
