@@ -16,3 +16,13 @@ add_library(
   ${BISON_QuoParser_OUTPUTS}
   ${FLEX_QuoLexer_OUTPUTS}
 )
+
+add_executable(
+  quo_lexer_test
+  quo_lexer_test.cpp
+)
+
+add_test(
+  quo_lexer_test
+  quo_lexer_test
+)
