@@ -2,6 +2,7 @@
 #define CORE_TYPES_HPP
 
 #include <cstdint>
+
 #include "runtime/values.hpp"
 
 // ============================================================================
@@ -12,8 +13,7 @@
 extern QTypeInfo QNullTypeInfo;
 
 /** Null value representation. */
-struct QNullValue : QValue {
-};
+struct QNullValue : QValue {};
 
 /** Singleton instance of null. */
 extern const QNullValue __QNull;
@@ -71,5 +71,4 @@ struct QArrayValue;
 extern "C" QArrayValue* __QArrayValue_Create();
 
 #endif
-
 

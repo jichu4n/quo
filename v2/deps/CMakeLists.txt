@@ -23,10 +23,12 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(json)
 
 set(INJA_USE_EMBEDDED_JSON OFF CACHE BOOL "" FORCE)
+set(INJA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BUILD_BENCHMARK OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   inja
-  GIT_REPOSITORY https://github.com/pantor/inja.git
-  GIT_TAG v2.2.0
+  GIT_REPOSITORY https://github.com/jichu4n/inja.git
+  GIT_TAG origin/jichu4n-patch-1
 )
 FetchContent_MakeAvailable(inja)
 
