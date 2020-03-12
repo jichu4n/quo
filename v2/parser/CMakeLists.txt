@@ -11,6 +11,7 @@ target_link_libraries(
   absl::flags
   absl::flags_parse
   nlohmann_json::nlohmann_json
+  inja
 )
 
 add_custom_command(
@@ -21,10 +22,14 @@ add_custom_command(
   generate_quo_ast_types
   ARGS
   --ast_json_file_path=${CMAKE_CURRENT_SOURCE_DIR}/quo_ast.json
+  --cpp_template_file_path=${CMAKE_CURRENT_SOURCE_DIR}/quo_ast_types_cpp_template.txt
+  --hpp_template_file_path=${CMAKE_CURRENT_SOURCE_DIR}/quo_ast_types_hpp_template.txt
   --output_cpp_file_path=${CMAKE_CURRENT_BINARY_DIR}/quo_ast_types.cpp
   --output_hpp_file_path=${CMAKE_CURRENT_BINARY_DIR}/quo_ast_types.hpp
   DEPENDS
   generate_quo_ast_types
+  quo_ast_types_cpp_template.txt
+  quo_ast_types_hpp_template.txt
 )
 
 BISON_TARGET(
