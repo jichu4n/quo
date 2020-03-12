@@ -14,10 +14,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(abseil)
 
+set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
   GIT_TAG v3.7.3
 )
 FetchContent_MakeAvailable(json)
+
+set(INJA_USE_EMBEDDED_JSON OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+  inja
+  GIT_REPOSITORY https://github.com/pantor/inja.git
+  GIT_TAG v2.2.0
+)
+FetchContent_MakeAvailable(inja)
 
