@@ -57,6 +57,19 @@ struct QStringValue;
 /** String value constructor. */
 extern "C" QStringValue* __QStringValue_Create(const char* value);
 
+// ============================================================================
+//   Array
+// ============================================================================
+
+/** Array type. */
+extern QTypeInfo QArrayTypeInfo;
+
+/** Array value representation. */
+struct QArrayValue;
+
+/** Array value constructor. */
+extern "C" QArrayValue* __QArrayValue_Create();
+
 #endif
 
 
