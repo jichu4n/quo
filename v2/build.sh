@@ -2,10 +2,10 @@
 
 cd "$(dirname "$0")"
 cmake="$prefix/bin/cmake"
-build="$PWD/build"
+build="./build"
 
 set -ex
 
 "$cmake" "-B${build}" -DCMAKE_EXPORT_COMPILE_COMMANDS=YES
-make -C "$build" VERBOSE=1
+"$cmake" --build "$build" --verbose
 

@@ -1,0 +1,116 @@
+[
+  {
+    "name": "LiteralExpr",
+    "fields": {
+      "type": "String",
+      "string_value": "String",
+      "int_value": "Int"
+    }
+  },
+  {
+    "name": "VarExpr",
+    "fields": {
+      "name": "String"
+    }
+  },
+  {
+    "name": "MemberExpr",
+    "fields": {
+      "parent_expr": "Expr",
+      "member_name": "String"
+    }
+  },
+  {
+    "name": "CallExpr",
+    "fields": {
+      "fn_expr": "Expr",
+      "arg_exprs": "Array"
+    }
+  },
+  {
+    "name": "BinaryOpExpr",
+    "fields": {
+      "op": "String",
+      "left_expr": "Expr",
+      "right_expr": "Expr"
+    }
+  },
+  {
+    "name": "AssignExpr",
+    "fields": {
+      "dest_expr": "Expr",
+      "value_expr": "Expr"
+    }
+  },
+  {
+    "name": "Expr",
+    "fields": {
+      "type": "String",
+      "literal": "LiteralExpr",
+      "var": "VarExpr",
+      "member": "MemberExpr",
+      "call": "CallExpr",
+      "binaryOp": "BinaryOpExpr",
+      "assign": "AssignExpr"
+    }
+  },
+  {
+    "name": "ExprStmt",
+    "fields": {
+      "expr": "Expr"
+    }
+  },
+  {
+    "name": "RetStmt",
+    "fields": {
+      "expr": "Expr"
+    }
+  },
+  {
+    "name": "CondStmt",
+    "fields": {
+      "cond_expr": "Expr",
+      "true_block": "Block",
+      "false_block": "Block"
+    }
+  },
+  {
+    "name": "CondLoopStmt",
+    "fields": {
+      "cond_expr": "Expr",
+      "block": "Block"
+    }
+  },
+  {
+    "name": "VarDeclStmt",
+    "fields": {
+      "name": "String",
+      "type_spec": "String"
+    }
+  },
+  {
+    "name": "Stmt",
+    "fields": {
+      "type": "String",
+      "expr": "ExprStmt",
+      "ret": "RetStmt",
+      "cond": "CondStmt",
+      "cond_loop": "CondLoopStmt",
+      "var_decl": "VarDeclStmt"
+    }
+  },
+  {
+    "name": "Block",
+    "fields": {
+      "stmts": "Array"
+    }
+  },
+  {
+    "name": "FnDef",
+    "fields": {
+      "name": "String",
+      "params": "Array",
+      "block": "Block"
+    }
+  }
+]
