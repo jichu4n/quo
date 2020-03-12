@@ -29,14 +29,14 @@ using namespace yy;
 "continue"		{ return parser::make_CONTINUE(); }
 "break"			{ return parser::make_BREAK(); }
 "return"		{ return parser::make_RETURN(); }
+"true"			{ return parser::make_BOOLEAN_LITERAL(true); }
+"false"			{ return parser::make_BOOLEAN_LITERAL(false); }
+"this"			{ return parser::make_THIS(); }
   /* Other classes of tokens. */
 [_a-zA-Z][_a-zA-Z0-9]*	{ return parser::make_IDENTIFIER(yytext); }
 [0-9]+			{ return parser::make_INTEGER_LITERAL(strtoll(yytext, nullptr, 10)); }
 '([^\\']|\\.)*'		{ return parser::make_STRING_LITERAL(::std::string(yytext + 1, yyleng - 2)); }
 \"([^\\\"]|\\.)*\"	{ return parser::make_STRING_LITERAL(::std::string(yytext + 1, yyleng - 2)); }
-"true"			{ return parser::make_BOOLEAN_LITERAL(true); }
-"false"			{ return parser::make_BOOLEAN_LITERAL(false); }
-"this"			{ return parser::make_THIS(); }
   /* Operators. */
 "&&"			{ return parser::make_AND(); }
 "||"			{ return parser::make_OR(); }
