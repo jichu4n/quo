@@ -113,6 +113,13 @@
 	{"name": "params", "type": "QArrayValue", "type_arg": "VarDeclStmt"},
 	{"name": "block", "type": "Block"}
       ]
+    },
+    {
+      "name": "ModuleDef",
+      "fields": [
+	{"name": "name", "type": "QStringValue"},
+	{"name": "members", "type": "QArrayValue", "type_arg": "FnDef"}
+      ]
     }
   ]
 }
