@@ -7,16 +7,13 @@
 
 using namespace std;
 
-extern QValue* GetMemberFromMap(
-    QTypeInfo* type, const unordered_map<string, void*> methods, QValue* self,
-    const char* member_name);
-
 // ============================================================================
 //   Null
 // ============================================================================
 
 QValue* __QNullValue_GetMember(QValue* self, const char* member_name) {
-  return nullptr;
+  return __QValue_GetMemberFromMap(
+      &QNullTypeInfo, QFieldMap(), QMethodMap(), self, member_name);
 }
 
 QTypeInfo QNullTypeInfo = {
@@ -69,7 +66,7 @@ struct QIntValue : QValue {
 };
 
 QValue* __QIntValue_GetMember(QValue* self, const char* member_name) {
-  static const unordered_map<string, void*> methods{
+  static const QMethodMap methods{
       {
           "toString",
           reinterpret_cast<void*>(+[](QIntValue* self) {
@@ -77,7 +74,8 @@ QValue* __QIntValue_GetMember(QValue* self, const char* member_name) {
           }),
       },
   };
-  return GetMemberFromMap(&QIntTypeInfo, methods, self, member_name);
+  return __QValue_GetMemberFromMap(
+      &QIntTypeInfo, QFieldMap(), methods, self, member_name);
 }
 
 QTypeInfo QIntTypeInfo = {
@@ -104,7 +102,7 @@ struct QStringValue : QValue {
 };
 
 QValue* __QStringValue_GetMember(QValue* self, const char* member_name) {
-  static const unordered_map<string, void*> methods{
+  static const QMethodMap methods{
       {
           "length",
           reinterpret_cast<void*>(+[](QStringValue* self) {
@@ -112,7 +110,8 @@ QValue* __QStringValue_GetMember(QValue* self, const char* member_name) {
           }),
       },
   };
-  return GetMemberFromMap(&QStringTypeInfo, methods, self, member_name);
+  return __QValue_GetMemberFromMap(
+      &QStringTypeInfo, QFieldMap(), methods, self, member_name);
 }
 
 QTypeInfo QStringTypeInfo = {
@@ -146,7 +145,7 @@ class ArrayAccessException : public invalid_argument {
 };
 
 QValue* __QArrayValue_GetMember(QValue* self, const char* member_name) {
-  static const unordered_map<string, void*> methods{
+  static const QMethodMap methods{
       {
           "length",
           reinterpret_cast<void*>(+[](QArrayValue* self) {
@@ -176,7 +175,8 @@ QValue* __QArrayValue_GetMember(QValue* self, const char* member_name) {
           }),
       },
   };
-  return GetMemberFromMap(&QArrayTypeInfo, methods, self, member_name);
+  return __QValue_GetMemberFromMap(
+      &QArrayTypeInfo, QFieldMap(), methods, self, member_name);
 }
 
 QTypeInfo QArrayTypeInfo = {
@@ -191,21 +191,5 @@ QArrayValue* __QArrayValue_Create() {
           .refs = 1,
       },
   });
-}
-
-// ============================================================================
-//   Misc
-// ============================================================================
-
-QValue* GetMemberFromMap(
-    QTypeInfo* type, const unordered_map<string, void*> methods, QValue* self,
-    const char* member_name) {
-  assert(self != nullptr);
-  assert(self->type_info == type);
-  const auto method_it = methods.find(member_name);
-  if (method_it != methods.end()) {
-    return __QFunctionValue_Create(self, method_it->second);
-  }
-  return nullptr;
 }
 

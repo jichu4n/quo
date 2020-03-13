@@ -1,7 +1,10 @@
 #ifndef CORE_TYPES_HPP
 #define CORE_TYPES_HPP
 
+#include <cassert>
 #include <cstdint>
+#include <string>
+#include <unordered_map>
 
 #include "runtime/values.hpp"
 
@@ -69,6 +72,38 @@ struct QArrayValue;
 
 /** Array value constructor. */
 extern "C" QArrayValue* __QArrayValue_Create();
+
+// ============================================================================
+//   Misc
+// ============================================================================
+
+/** Look up a Quo object member based on static type maps.
+ *
+ * @param fields QFieldMap or similar STL container.
+ * @param methods QMethodMap or similar STL container.
+ */
+template <typename FieldMapT, typename MethodMapT>
+QValue* __QValue_GetMemberFromMap(
+    QTypeInfo* type, const FieldMapT& fields, const MethodMapT& methods,
+    QValue* self, const char* member_name) {
+  assert(self != nullptr);
+  assert(self->type_info == type);
+  const auto field_it = fields.find(member_name);
+  if (field_it != fields.end()) {
+    return static_cast<QObjectValue*>(self)->fields[field_it->second];
+  }
+  const auto method_it = methods.find(member_name);
+  if (method_it != methods.end()) {
+    return __QFunctionValue_Create(self, method_it->second);
+  }
+  return nullptr;
+}
+
+/** Mapping from the name of a field to its index in a QObjectValue. */
+typedef ::std::unordered_map<::std::string, int> QFieldMap;
+
+/** Mapping from the name of a method to a function pointer. */
+typedef ::std::unordered_map<::std::string, void*> QMethodMap;
 
 #endif
 
