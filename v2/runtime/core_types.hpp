@@ -10,19 +10,6 @@
 #include "runtime/values.hpp"
 
 // ============================================================================
-//   Null
-// ============================================================================
-
-/** Null type. */
-extern QTypeInfo QNullTypeInfo;
-
-/** Null value representation. */
-struct QNullValue : QValue {};
-
-/** Singleton instance of null. */
-extern const QNullValue __QNull;
-
-// ============================================================================
 //   Function
 // ============================================================================
 
@@ -53,6 +40,11 @@ struct QIntValue : QValue {
 /** Int value constructor. */
 extern "C" QIntValue* __QIntValue_Create(int64_t value);
 
+/** User-defined literal operator to construct a QIntValue. */
+inline QIntValue* operator"" _Q(unsigned long long value) {
+  return __QIntValue_Create(value);
+}
+
 // ============================================================================
 //   String
 // ============================================================================
@@ -67,6 +59,11 @@ struct QStringValue : QValue {
 
 /** String value constructor. */
 extern "C" QStringValue* __QStringValue_Create(const char* value);
+
+/** User-defined literal operator to construct a QStringValue. */
+inline QStringValue* operator"" _Q(const char* value, size_t size) {
+  return __QStringValue_Create(value);
+}
 
 // ============================================================================
 //   Array

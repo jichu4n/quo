@@ -8,27 +8,6 @@
 using namespace std;
 
 // ============================================================================
-//   Null
-// ============================================================================
-
-QValue* __QNullValue_GetMember(QValue* self, const char* member_name) {
-  return __QValue_GetMemberFromMap(
-      &QNullTypeInfo, QFieldMap(), QMethodMap(), self, member_name);
-}
-
-QTypeInfo QNullTypeInfo = {
-    .name = "Null",
-    .get_member_fn = &__QNullValue_GetMember,
-};
-
-const QNullValue __QNull = {
-    {
-        .type_info = &QNullTypeInfo,
-        .refs = 1,
-    },
-};
-
-// ============================================================================
 //   Function
 // ============================================================================
 
@@ -154,7 +133,7 @@ QValue* __QArrayValue_GetMember(QValue* self, const char* member_name) {
           reinterpret_cast<void*>(+[](QArrayValue* self, QValue* element) {
             assert(element != nullptr);
             self->elements.push_back(element);
-            return &__QNull;
+            return nullptr;
           }),
       },
   };

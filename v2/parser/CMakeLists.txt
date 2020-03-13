@@ -1,6 +1,9 @@
 find_package(BISON)
 find_package(FLEX)
 
+# =============================================================================
+# quo_ast_types library
+# =============================================================================
 add_executable(
   generate_quo_ast_types
   generate_quo_ast_types.cpp
@@ -33,6 +36,18 @@ add_custom_command(
   quo_ast_types_hpp_template.txt
 )
 
+add_library(
+  quo_ast_types
+  quo_ast_types.cpp
+)
+target_link_libraries(
+  quo_ast_types
+  quo_runtime
+)
+
+# =============================================================================
+# quo_parser library
+# =============================================================================
 BISON_TARGET(
   QuoParser
   quo_parser.y
@@ -45,11 +60,17 @@ ADD_FLEX_BISON_DEPENDENCY(QuoLexer QuoParser)
 
 add_library(
   quo_parser
-  quo_ast_types.cpp
   ${BISON_QuoParser_OUTPUTS}
   ${FLEX_QuoLexer_OUTPUTS}
 )
+target_link_libraries(
+  quo_parser
+  quo_ast_types
+)
 
+# =============================================================================
+# quo_lexer_test
+# =============================================================================
 add_executable(
   quo_lexer_test
   quo_lexer_test.cpp
@@ -60,6 +81,7 @@ add_test(
 )
 target_link_libraries(
   quo_lexer_test
+  quo_ast_types
   absl::strings
   gtest_main
 )
@@ -67,3 +89,4 @@ add_dependencies(
   quo_lexer_test
   quo_parser
 )
+

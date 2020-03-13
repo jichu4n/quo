@@ -9,6 +9,7 @@
 %code requires {
   #include <string>
   #include <cstdint>
+  #include "parser/quo_ast_types.hpp"
 }
 
 %code provides {
@@ -20,6 +21,10 @@
   extern YY_DECL;
   #define yyerror(x)
 }
+
+// ============================================================================
+//   Tokens
+// ============================================================================
 
 // Program structure.
 %token CLASS
@@ -71,9 +76,43 @@
 %token COLON
 %token SEMICOLON
 
+// ============================================================================
+//   Nonterminal symbols
+// ============================================================================
+
+%nterm <LiteralExpr*> literal_expr
+%nterm <Expr*> expr
+
 %%
 
-program: ;
+expr:
+    literal_expr {
+        $$ = __Expr_Create(
+	    "literal"_Q,
+	    $1,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    }
+    ;
+
+literal_expr:
+    INTEGER_LITERAL {
+        $$ = __LiteralExpr_Create(
+	    "int"_Q,
+	    nullptr,
+	    __QIntValue_Create($1));
+    }
+    | STRING_LITERAL {
+        $$ = __LiteralExpr_Create(
+	    "string"_Q,
+	    __QStringValue_Create($1.c_str()),
+	    nullptr);
+    }
+    ;
+
 
 %%
 
