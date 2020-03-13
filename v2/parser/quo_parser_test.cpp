@@ -32,9 +32,7 @@ TEST(ParserTest, IntLiteralTest) {
   Expr* e = ParseExpr("100");
   ASSERT_NE(e, nullptr);
   EXPECT_EQ(e->type->value, "literal");
-  ASSERT_NE(e->literal, nullptr);
   EXPECT_EQ(e->literal->type->value, "int");
-  ASSERT_NE(e->literal->int_value, nullptr);
   EXPECT_EQ(e->literal->int_value->value, 100);
 }
 
@@ -42,9 +40,7 @@ TEST(ParserTest, StringLiteralTest) {
   Expr* e = ParseExpr("\"hello world!\"");
   ASSERT_NE(e, nullptr);
   EXPECT_EQ(e->type->value, "literal");
-  ASSERT_NE(e->literal, nullptr);
   EXPECT_EQ(e->literal->type->value, "string");
-  ASSERT_NE(e->literal->string_value, nullptr);
   EXPECT_EQ(e->literal->string_value->value, "hello world!");
 }
 
@@ -52,11 +48,7 @@ TEST(ParserTest, MemberExprTestWithLiteral) {
   Expr* e = ParseExpr("100.toString");
   ASSERT_NE(e, nullptr);
   EXPECT_EQ(e->type->value, "member");
-  ASSERT_NE(e->member, nullptr);
-  ASSERT_NE(e->member->parent_expr, nullptr);
   EXPECT_EQ(e->member->parent_expr->type->value, "literal");
-  ASSERT_NE(e->member->parent_expr->literal, nullptr);
-  ASSERT_NE(e->member->member_name, nullptr);
   EXPECT_EQ(e->member->member_name->value, "toString");
 }
 
@@ -64,13 +56,8 @@ TEST(ParserTest, MemberExprTestWithVar) {
   Expr* e = ParseExpr("x.toString");
   ASSERT_NE(e, nullptr);
   EXPECT_EQ(e->type->value, "member");
-  ASSERT_NE(e->member, nullptr);
-  ASSERT_NE(e->member->parent_expr, nullptr);
   EXPECT_EQ(e->member->parent_expr->type->value, "var");
-  ASSERT_NE(e->member->parent_expr->var, nullptr);
-  ASSERT_NE(e->member->parent_expr->var->name, nullptr);
   EXPECT_EQ(e->member->parent_expr->var->name->value, "x");
-  ASSERT_NE(e->member->member_name, nullptr);
   EXPECT_EQ(e->member->member_name->value, "toString");
 }
 
@@ -78,10 +65,7 @@ TEST(ParserTest, CallExprTest) {
   Expr* e = ParseExpr("100.toString()");
   ASSERT_NE(e, nullptr);
   EXPECT_EQ(e->type->value, "call");
-  ASSERT_NE(e->call, nullptr);
-  ASSERT_NE(e->call->fn_expr, nullptr);
   EXPECT_EQ(e->call->fn_expr->type->value, "member");
-  ASSERT_NE(e->call->arg_exprs, nullptr);
   EXPECT_EQ(e->call->arg_exprs->elements.size(), 0);
 }
 
@@ -94,27 +78,101 @@ TEST(ParserTest, CallExprTestWithSingleArg) {
     Expr* e = ParseExpr(input);
     ASSERT_NE(e, nullptr);
     EXPECT_EQ(e->type->value, "call");
-    ASSERT_NE(e->call, nullptr);
-    ASSERT_NE(e->call->fn_expr, nullptr);
     EXPECT_EQ(e->call->fn_expr->type->value, "member");
-    ASSERT_NE(e->call->arg_exprs, nullptr);
     EXPECT_EQ(e->call->arg_exprs->elements.size(), 1);
     ASSERT_EQ(e->call->arg_exprs->elements[0]->type_info, &ExprTypeInfo);
     const Expr* arg_expr = static_cast<Expr*>(e->call->arg_exprs->elements[0]);
     EXPECT_EQ(arg_expr->type->value, "literal");
     EXPECT_EQ(arg_expr->literal->type->value, "int");
-    ASSERT_NE(arg_expr->literal->int_value, nullptr);
     EXPECT_EQ(arg_expr->literal->int_value->value, 42);
   }
 }
 
 TEST(ParserTest, ArithBinaryOpExprTest) {
-  Expr* e = ParseExpr("a + b * c - d / e");
+  Expr* e = ParseExpr("a + b * c - d % e / f");
   ASSERT_NE(e, nullptr);
   EXPECT_EQ(e->type->value, "binaryOp");
-  ASSERT_NE(e->binaryOp, nullptr);
-  ASSERT_NE(e->binaryOp->op, nullptr);
   EXPECT_EQ(e->binaryOp->op->value, "sub");
+  EXPECT_EQ(e->binaryOp->left_expr->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->left_expr->binaryOp->op->value, "add");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->type->value, "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->op->value, "mul");
+  EXPECT_EQ(e->binaryOp->right_expr->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->right_expr->binaryOp->op->value, "div");
+  EXPECT_EQ(
+      e->binaryOp->right_expr->binaryOp->left_expr->type->value, "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->right_expr->binaryOp->left_expr->binaryOp->op->value, "mod");
+}
+
+TEST(ParserTest, ArithBinaryOpExprWithParensTest) {
+  Expr* e = ParseExpr("(a + b * (c - d) % e) / f");
+  ASSERT_NE(e, nullptr);
+  EXPECT_EQ(e->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->op->value, "div");
+  EXPECT_EQ(e->binaryOp->left_expr->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->left_expr->binaryOp->op->value, "add");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->type->value, "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->op->value, "mod");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->left_expr->type
+          ->value,
+      "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->left_expr
+          ->binaryOp->op->value,
+      "mul");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->left_expr
+          ->binaryOp->right_expr->type->value,
+      "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->left_expr
+          ->binaryOp->right_expr->binaryOp->op->value,
+      "sub");
+}
+
+TEST(ParserTest, CompAndBoolBinaryOpExprTest) {
+  Expr* e = ParseExpr("a + b > c && d == 3 || e && f <= g + h");
+  ASSERT_NE(e, nullptr);
+  EXPECT_EQ(e->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->op->value, "or");
+  EXPECT_EQ(e->binaryOp->left_expr->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->left_expr->binaryOp->op->value, "and");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->left_expr->type->value, "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->left_expr->binaryOp->op->value, "gt");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->left_expr->binaryOp->left_expr->type
+          ->value,
+      "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->left_expr->binaryOp->left_expr->binaryOp
+          ->op->value,
+      "add");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->type->value, "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->left_expr->binaryOp->right_expr->binaryOp->op->value, "eq");
+  EXPECT_EQ(e->binaryOp->right_expr->type->value, "binaryOp");
+  EXPECT_EQ(e->binaryOp->right_expr->binaryOp->op->value, "and");
+  EXPECT_EQ(
+      e->binaryOp->right_expr->binaryOp->right_expr->type->value, "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->right_expr->binaryOp->right_expr->binaryOp->op->value, "le");
+  EXPECT_EQ(
+      e->binaryOp->right_expr->binaryOp->right_expr->binaryOp->right_expr->type
+          ->value,
+      "binaryOp");
+  EXPECT_EQ(
+      e->binaryOp->right_expr->binaryOp->right_expr->binaryOp->right_expr
+          ->binaryOp->op->value,
+      "add");
 }
 
 int main(int argc, char** argv) {
