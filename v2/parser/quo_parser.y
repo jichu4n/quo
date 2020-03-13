@@ -34,6 +34,18 @@
   bool ShouldOnlyParseExprForTest;
   Expr* ParsedExprForTest;
   }
+
+  inline Expr* CreateExprWithBinaryOpExpr(
+      QStringValue* op, Expr* left, Expr* right) {
+    return __Expr_Create(
+	"binaryOp"_Q,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+	__BinaryOpExpr_Create(op, left, right),
+	nullptr);
+  }
 }
 
 // ============================================================================
@@ -111,11 +123,9 @@
 %nterm <CallExpr*> call_expr
 %nterm <::std::vector<Expr*>> expr_list
 %nterm <Expr*> arith_binary_op_expr
-%nterm <QStringValue*> arith_binary_op
 %nterm <Expr*> comp_binary_op_expr
 %nterm <QStringValue*> comp_binary_op
 %nterm <Expr*> bool_binary_op_expr
-%nterm <QStringValue*> bool_binary_op
 
 %%
 
@@ -224,24 +234,21 @@ arith_binary_op_expr:
     primary_expr {
         $$ = $1;
     }
-    | arith_binary_op_expr arith_binary_op arith_binary_op_expr {
-        $$ = __Expr_Create(
-	    "binaryOp"_Q,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    __BinaryOpExpr_Create($2, $1, $3),
-	    nullptr);
+    | arith_binary_op_expr ADD arith_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("add"_Q, $1, $3);
     }
-    ;
-
-arith_binary_op:
-    ADD { $$ = "add"_Q; }
-    | SUB { $$ = "sub"_Q; }
-    | MUL { $$ = "mul"_Q; }
-    | DIV { $$ = "div"_Q; }
-    | MOD { $$ = "mod"_Q; }
+    | arith_binary_op_expr SUB arith_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("sub"_Q, $1, $3);
+    }
+    | arith_binary_op_expr MUL arith_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("mul"_Q, $1, $3);
+    }
+    | arith_binary_op_expr DIV arith_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("div"_Q, $1, $3);
+    }
+    | arith_binary_op_expr MOD arith_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("mod"_Q, $1, $3);
+    }
     ;
 
 comp_binary_op_expr:
@@ -249,14 +256,7 @@ comp_binary_op_expr:
         $$ = $1;
     }
     | arith_binary_op_expr comp_binary_op arith_binary_op_expr {
-        $$ = __Expr_Create(
-	    "binaryOp"_Q,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    __BinaryOpExpr_Create($2, $1, $3),
-	    nullptr);
+        $$ = CreateExprWithBinaryOpExpr($2, $1, $3);
     }
     ;
 
@@ -273,21 +273,12 @@ bool_binary_op_expr:
     comp_binary_op_expr {
         $$ = $1;
     }
-    | bool_binary_op_expr bool_binary_op bool_binary_op_expr {
-        $$ = __Expr_Create(
-	    "binaryOp"_Q,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    __BinaryOpExpr_Create($2, $1, $3),
-	    nullptr);
+    | bool_binary_op_expr AND bool_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("and"_Q, $1, $3);
     }
-    ;
-
-bool_binary_op:
-    AND { $$ = "and"_Q; }
-    | OR { $$ = "or"_Q; }
+    | bool_binary_op_expr OR bool_binary_op_expr {
+        $$ = CreateExprWithBinaryOpExpr("or"_Q, $1, $3);
+    }
     ;
 
 %%
