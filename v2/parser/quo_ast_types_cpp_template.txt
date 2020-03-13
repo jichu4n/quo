@@ -17,19 +17,19 @@ using namespace std;
 //   {{ t.name }}
 // ============================================================================
 
-QValue* __{{ t.name }}_GetProperty(QValue* self, const char* prop_name) {
+QValue* __{{ t.name }}_GetMember(QValue* self, const char* member_name) {
   static const unordered_map<string, int> fields {
 ## for f in t.fields
       { "{{ f.name }}", {{ loop.index }} },
 ## endfor
   };
-  // return GetPropertyFromMap(&{{ t.name }}TypeInfo, fields, self, prop_name);
+  // return GetMemberFromMap(&{{ t.name }}TypeInfo, fields, self, membername);
   return nullptr;
 }
 
 QTypeInfo {{ t.name }}TypeInfo = {
     .name = "{{ t.name }}",
-    .get_property_fn = &__{{ t.name }}_GetProperty,
+    .get_member_fn = &__{{ t.name }}_GetMember,
 };
 
 {{ t.name }}* __{{ t.name }}_Create(

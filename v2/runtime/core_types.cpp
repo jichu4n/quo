@@ -7,21 +7,21 @@
 
 using namespace std;
 
-extern QValue* GetPropertyFromMap(
+extern QValue* GetMemberFromMap(
     QTypeInfo* type, const unordered_map<string, void*> methods, QValue* self,
-    const char* prop_name);
+    const char* member_name);
 
 // ============================================================================
 //   Null
 // ============================================================================
 
-QValue* __QNullValue_GetProperty(QValue* self, const char* prop_name) {
+QValue* __QNullValue_GetMember(QValue* self, const char* member_name) {
   return nullptr;
 }
 
 QTypeInfo QNullTypeInfo = {
     .name = "Null",
-    .get_property_fn = &__QNullValue_GetProperty,
+    .get_member_fn = &__QNullValue_GetMember,
 };
 
 const QNullValue __QNull = {
@@ -40,13 +40,13 @@ struct QFunctionValue : QValue {
   void* address;
 };
 
-QValue* __QFunctionValue_GetProperty(QValue* self, const char* prop_name) {
+QValue* __QFunctionValue_GetMember(QValue* self, const char* member_name) {
   return nullptr;
 }
 
 QTypeInfo QFunctionTypeInfo = {
     .name = "Function",
-    .get_property_fn = &__QFunctionValue_GetProperty,
+    .get_member_fn = &__QFunctionValue_GetMember,
 };
 
 QFunctionValue* __QFunctionValue_Create(QValue* self, void* address) {
@@ -68,7 +68,7 @@ struct QIntValue : QValue {
   int64_t value;
 };
 
-QValue* __QIntValue_GetProperty(QValue* self, const char* prop_name) {
+QValue* __QIntValue_GetMember(QValue* self, const char* member_name) {
   static const unordered_map<string, void*> methods{
       {
           "toString",
@@ -77,12 +77,12 @@ QValue* __QIntValue_GetProperty(QValue* self, const char* prop_name) {
           }),
       },
   };
-  return GetPropertyFromMap(&QIntTypeInfo, methods, self, prop_name);
+  return GetMemberFromMap(&QIntTypeInfo, methods, self, member_name);
 }
 
 QTypeInfo QIntTypeInfo = {
     .name = "Int",
-    .get_property_fn = &__QIntValue_GetProperty,
+    .get_member_fn = &__QIntValue_GetMember,
 };
 
 QIntValue* __QIntValue_Create(int64_t value) {
@@ -103,7 +103,7 @@ struct QStringValue : QValue {
   string value;
 };
 
-QValue* __QStringValue_GetProperty(QValue* self, const char* prop_name) {
+QValue* __QStringValue_GetMember(QValue* self, const char* member_name) {
   static const unordered_map<string, void*> methods{
       {
           "length",
@@ -112,12 +112,12 @@ QValue* __QStringValue_GetProperty(QValue* self, const char* prop_name) {
           }),
       },
   };
-  return GetPropertyFromMap(&QStringTypeInfo, methods, self, prop_name);
+  return GetMemberFromMap(&QStringTypeInfo, methods, self, member_name);
 }
 
 QTypeInfo QStringTypeInfo = {
     .name = "String",
-    .get_property_fn = &__QStringValue_GetProperty,
+    .get_member_fn = &__QStringValue_GetMember,
 };
 
 QStringValue* __QStringValue_Create(const char* value) {
@@ -145,7 +145,7 @@ class ArrayAccessException : public invalid_argument {
       : invalid_argument("ArrayAccessException: " + message){};
 };
 
-QValue* __QArrayValue_GetProperty(QValue* self, const char* prop_name) {
+QValue* __QArrayValue_GetMember(QValue* self, const char* member_name) {
   static const unordered_map<string, void*> methods{
       {
           "length",
@@ -176,12 +176,12 @@ QValue* __QArrayValue_GetProperty(QValue* self, const char* prop_name) {
           }),
       },
   };
-  return GetPropertyFromMap(&QArrayTypeInfo, methods, self, prop_name);
+  return GetMemberFromMap(&QArrayTypeInfo, methods, self, member_name);
 }
 
 QTypeInfo QArrayTypeInfo = {
     .name = "Array",
-    .get_property_fn = &__QArrayValue_GetProperty,
+    .get_member_fn = &__QArrayValue_GetMember,
 };
 
 QArrayValue* __QArrayValue_Create() {
@@ -197,12 +197,12 @@ QArrayValue* __QArrayValue_Create() {
 //   Misc
 // ============================================================================
 
-QValue* GetPropertyFromMap(
+QValue* GetMemberFromMap(
     QTypeInfo* type, const unordered_map<string, void*> methods, QValue* self,
-    const char* prop_name) {
+    const char* member_name) {
   assert(self != nullptr);
   assert(self->type_info == type);
-  const auto method_it = methods.find(prop_name);
+  const auto method_it = methods.find(member_name);
   if (method_it != methods.end()) {
     return __QFunctionValue_Create(self, method_it->second);
   }

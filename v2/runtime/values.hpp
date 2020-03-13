@@ -5,12 +5,12 @@
 
 struct QValue;
 
-typedef QValue* (*GetPropertyFn)(QValue* self, const char* prop_name);
+typedef QValue* (*GetMemberFn)(QValue* self, const char* prop_name);
 
 /** Runtime type information. */
 struct QTypeInfo {
   const char* name;
-  GetPropertyFn get_property_fn;
+  GetMemberFn get_member_fn;
 };
 
 /** Base class for runtime values. */
@@ -20,7 +20,7 @@ struct QValue {
 };
 
 /** Access object property by name. */
-extern "C" QValue* __QValue_GetProperty(QValue* self, const char* prop_name);
+extern "C" QValue* __QValue_GetMember(QValue* self, const char* prop_name);
 
 #endif
 

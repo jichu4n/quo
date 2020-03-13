@@ -4,4 +4,7 @@ add_library(
   values.cpp
   core_types.cpp
 )
-
+target_link_libraries(
+  quo_runtime
+  absl::strings
+)

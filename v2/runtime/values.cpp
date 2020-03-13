@@ -3,26 +3,29 @@
 #include <stdexcept>
 #include <string>
 
-using namespace std;
+#include "absl/strings/str_cat.h"
 
-class PropertyAccessException : public invalid_argument {
+using namespace std;
+using namespace absl;
+
+class MemberAccessException : public invalid_argument {
  public:
-  PropertyAccessException(const PropertyAccessException& other) = default;
-  PropertyAccessException(const string& message)
-      : invalid_argument("PropertyAccessException: " + message){};
+  MemberAccessException(const MemberAccessException& other) = default;
+  MemberAccessException(const string& message)
+      : invalid_argument("MemberAccessException: " + message){};
 };
 
-QValue* __QValue_GetProperty(QValue* self, const char* prop_name) {
+QValue* __QValue_GetMember(QValue* self, const char* member_name) {
   if (self == nullptr) {
-    throw PropertyAccessException(
-        string("Attempting to access field ") + prop_name + " on null value");
+    throw MemberAccessException(
+        StrCat("Attempting to access member ", member_name, " on null value"));
   }
   const auto type_info = self->type_info;
-  const auto value = (*(type_info->get_property_fn))(self, prop_name);
+  const auto value = (*(type_info->get_member_fn))(self, member_name);
   if (value == nullptr) {
-    throw PropertyAccessException(
-        string("Field \"") + prop_name + "\" does not exist on type " +
-        type_info->name);
+    throw MemberAccessException(StrCat(
+        "Member \"", member_name, "\" does not exist on type ",
+        type_info->name));
   }
   return value;
 }
