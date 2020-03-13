@@ -28,6 +28,7 @@ add_custom_command(
   --output_hpp_file_path=${CMAKE_CURRENT_BINARY_DIR}/quo_ast_types.hpp
   DEPENDS
   generate_quo_ast_types
+  quo_ast.json
   quo_ast_types_cpp_template.txt
   quo_ast_types_hpp_template.txt
 )

@@ -1,2 +1,52 @@
-// Quo AST types, generated through Inja.
+/*
+ * Quo AST types for usage in C++.
+ *
+ * Generated from quo_ast_types_cpp_template.txt.
+ */
+
+#include "parser/quo_ast_types.hpp"
+
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+## for t in ast_types
+
+// ============================================================================
+//   {{ t.name }}
+// ============================================================================
+
+QValue* __{{ t.name }}_GetProperty(QValue* self, const char* prop_name) {
+  static const unordered_map<string, int> fields {
+## for f in t.fields
+      { "{{ f.name }}", {{ loop.index }} },
+## endfor
+  };
+  // return GetPropertyFromMap(&{{ t.name }}TypeInfo, fields, self, prop_name);
+  return nullptr;
+}
+
+QTypeInfo {{ t.name }}TypeInfo = {
+    .name = "{{ t.name }}",
+    .get_property_fn = &__{{ t.name }}_GetProperty,
+};
+
+{{ t.name }}* __{{ t.name }}_Create(
+## for f in t.fields
+    {{ f.type }}* {{ f.name }}{% if not loop.is_last %},{% endif %}
+## endfor
+) {
+  return new {{ t.name }}({
+      {
+          .type_info = &{{ t.name }}TypeInfo,
+          .refs = 1,
+      },
+## for f in t.fields
+      .{{ f.name }} = {{ f.name }},
+## endfor
+  });
+}
+
+## endfor
 

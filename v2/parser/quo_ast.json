@@ -1,116 +1,118 @@
-[
-  {
-    "name": "LiteralExpr",
-    "fields": {
-      "type": "String",
-      "string_value": "String",
-      "int_value": "Int"
+{
+  "ast_types": [
+    {
+      "name": "LiteralExpr",
+      "fields": [
+	{"name": "type", "type": "QStringValue"},
+	{"name": "string_value", "type": "QStringValue"},
+	{"name": "int_value", "type": "QIntValue"}
+      ]
+    },
+    {
+      "name": "VarExpr",
+      "fields": [
+	{"name": "name", "type": "QStringValue"}
+      ]
+    },
+    {
+      "name": "MemberExpr",
+      "fields": [
+	{"name": "parent_expr", "type": "Expr"},
+	{"name": "member_name", "type": "QStringValue"}
+      ]
+    },
+    {
+      "name": "CallExpr",
+      "fields": [
+	{"name": "fn_expr", "type": "Expr"},
+	{"name": "arg_exprs", "type": "QArrayValue", "type_arg": "Expr"}
+      ]
+    },
+    {
+      "name": "BinaryOpExpr",
+      "fields": [
+	{"name": "op", "type": "QStringValue"},
+	{"name": "left_expr", "type": "Expr"},
+	{"name": "right_expr", "type": "Expr"}
+      ]
+    },
+    {
+      "name": "AssignExpr",
+      "fields": [
+	{"name": "dest_expr", "type": "Expr"},
+	{"name": "value_expr", "type": "Expr"}
+      ]
+    },
+    {
+      "name": "Expr",
+      "fields": [
+	{"name": "type", "type": "QStringValue"},
+	{"name": "literal", "type": "LiteralExpr"},
+	{"name": "var", "type": "VarExpr"},
+	{"name": "member", "type": "MemberExpr"},
+	{"name": "call", "type": "CallExpr"},
+	{"name": "binaryOp", "type": "BinaryOpExpr"},
+	{"name": "assign", "type": "AssignExpr"}
+      ]
+    },
+    {
+      "name": "ExprStmt",
+      "fields": [
+	{"name": "expr", "type": "Expr"}
+      ]
+    },
+    {
+      "name": "RetStmt",
+      "fields": [
+	{"name": "expr", "type": "Expr"}
+      ]
+    },
+    {
+      "name": "CondStmt",
+      "fields": [
+	{"name": "cond_expr", "type": "Expr"},
+	{"name": "true_block", "type": "Block"},
+	{"name": "false_block", "type": "Block"}
+      ]
+    },
+    {
+      "name": "CondLoopStmt",
+      "fields": [
+	{"name": "cond_expr", "type": "Expr"},
+	{"name": "block", "type": "Block"}
+      ]
+    },
+    {
+      "name": "VarDeclStmt",
+      "fields": [
+	{"name": "name", "type": "QStringValue"},
+	{"name": "type_spec", "type": "QStringValue"}
+      ]
+    },
+    {
+      "name": "Stmt",
+      "fields": [
+	{"name": "type", "type": "QStringValue"},
+	{"name": "expr", "type": "ExprStmt"},
+	{"name": "ret", "type": "RetStmt"},
+	{"name": "cond", "type": "CondStmt"},
+	{"name": "cond_loop", "type": "CondLoopStmt"},
+	{"name": "var_decl", "type": "VarDeclStmt"}
+      ]
+    },
+    {
+      "name": "Block",
+      "fields": [
+	{"name": "stmts", "type": "QArrayValue", "type_arg": "Stmt"}
+      ]
+    },
+    {
+      "name": "FnDef",
+      "fields": [
+	{"name": "name", "type": "QStringValue"},
+	{"name": "params", "type": "QArrayValue", "type_arg": "VarDeclStmt"},
+	{"name": "block", "type": "Block"}
+      ]
     }
-  },
-  {
-    "name": "VarExpr",
-    "fields": {
-      "name": "String"
-    }
-  },
-  {
-    "name": "MemberExpr",
-    "fields": {
-      "parent_expr": "Expr",
-      "member_name": "String"
-    }
-  },
-  {
-    "name": "CallExpr",
-    "fields": {
-      "fn_expr": "Expr",
-      "arg_exprs": "Array"
-    }
-  },
-  {
-    "name": "BinaryOpExpr",
-    "fields": {
-      "op": "String",
-      "left_expr": "Expr",
-      "right_expr": "Expr"
-    }
-  },
-  {
-    "name": "AssignExpr",
-    "fields": {
-      "dest_expr": "Expr",
-      "value_expr": "Expr"
-    }
-  },
-  {
-    "name": "Expr",
-    "fields": {
-      "type": "String",
-      "literal": "LiteralExpr",
-      "var": "VarExpr",
-      "member": "MemberExpr",
-      "call": "CallExpr",
-      "binaryOp": "BinaryOpExpr",
-      "assign": "AssignExpr"
-    }
-  },
-  {
-    "name": "ExprStmt",
-    "fields": {
-      "expr": "Expr"
-    }
-  },
-  {
-    "name": "RetStmt",
-    "fields": {
-      "expr": "Expr"
-    }
-  },
-  {
-    "name": "CondStmt",
-    "fields": {
-      "cond_expr": "Expr",
-      "true_block": "Block",
-      "false_block": "Block"
-    }
-  },
-  {
-    "name": "CondLoopStmt",
-    "fields": {
-      "cond_expr": "Expr",
-      "block": "Block"
-    }
-  },
-  {
-    "name": "VarDeclStmt",
-    "fields": {
-      "name": "String",
-      "type_spec": "String"
-    }
-  },
-  {
-    "name": "Stmt",
-    "fields": {
-      "type": "String",
-      "expr": "ExprStmt",
-      "ret": "RetStmt",
-      "cond": "CondStmt",
-      "cond_loop": "CondLoopStmt",
-      "var_decl": "VarDeclStmt"
-    }
-  },
-  {
-    "name": "Block",
-    "fields": {
-      "stmts": "Array"
-    }
-  },
-  {
-    "name": "FnDef",
-    "fields": {
-      "name": "String",
-      "params": "Array",
-      "block": "Block"
-    }
-  }
-]
+  ]
+}
