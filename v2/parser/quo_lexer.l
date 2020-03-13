@@ -31,6 +31,7 @@ using namespace yy;
 "return"		{ return parser::make_RETURN(); }
 "true"			{ return parser::make_BOOLEAN_LITERAL(true); }
 "false"			{ return parser::make_BOOLEAN_LITERAL(false); }
+"null"			{ return parser::make_NULL_LITERAL(); }
 "this"			{ return parser::make_THIS(); }
   /* Other classes of tokens. */
 [_a-zA-Z][_a-zA-Z0-9]*	{ return parser::make_IDENTIFIER(yytext); }

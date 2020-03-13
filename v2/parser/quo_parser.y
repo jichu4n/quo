@@ -48,6 +48,7 @@
 %token <int64_t> INTEGER_LITERAL
 %token <::std::string> STRING_LITERAL
 %token <bool> BOOLEAN_LITERAL
+%token NULL_LITERAL
 %token THIS
 // Operators.
 %token AND
@@ -80,12 +81,20 @@
 //   Nonterminal symbols
 // ============================================================================
 
-%nterm <LiteralExpr*> literal_expr
 %nterm <Expr*> expr
+%nterm <Expr*> primary_expr
+%nterm <LiteralExpr*> literal_expr
+%nterm <VarExpr*> var_expr
+%nterm <MemberExpr*> member_expr
+%nterm <CallExpr*> call_expr
+%nterm <::std::vector<Expr*>> expr_list
 
 %%
 
 expr:
+    primary_expr;
+
+primary_expr:
     literal_expr {
         $$ = __Expr_Create(
 	    "literal"_Q,
@@ -95,6 +104,39 @@ expr:
 	    nullptr,
 	    nullptr,
 	    nullptr);
+    }
+    | var_expr {
+        $$ = __Expr_Create(
+	    "var"_Q,
+	    nullptr,
+	    $1,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    }
+    | member_expr {
+        $$ = __Expr_Create(
+	    "member"_Q,
+	    nullptr,
+	    nullptr,
+	    $1,
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    }
+    | call_expr {
+        $$ = __Expr_Create(
+	    "call"_Q,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    $1,
+	    nullptr,
+	    nullptr);
+    }
+    | L_PAREN expr R_PAREN {
+        $$ = $2;
     }
     ;
 
@@ -108,11 +150,41 @@ literal_expr:
     | STRING_LITERAL {
         $$ = __LiteralExpr_Create(
 	    "string"_Q,
-	    __QStringValue_Create($1.c_str()),
+	    __QStringValue_Create($1),
 	    nullptr);
     }
     ;
 
+var_expr:
+    IDENTIFIER {
+        $$ = __VarExpr_Create(__QStringValue_Create($1));
+    }
+    ;
+
+member_expr:
+    primary_expr DOT IDENTIFIER {
+        $$ = __MemberExpr_Create($1, __QStringValue_Create($3));
+    }
+    ;
+
+call_expr:
+    primary_expr L_PAREN expr_list R_PAREN {
+        $$ = __CallExpr_Create($1, __QArrayValue_CreateFromContainer($3));
+    }
+    ;
+
+expr_list:
+    %empty {
+        $$ = ::std::vector<Expr*> {};
+    }
+    | expr {
+        $$ = ::std::vector<Expr*> { $1 };
+    }
+    | expr COMMA expr_list {
+        $$ = ::std::vector<Expr*> { $1 };
+	$$.insert($$.end(), $3.begin(), $3.end());
+    }
+    ;
 
 %%
 

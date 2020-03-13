@@ -59,6 +59,10 @@ struct QStringValue : QValue {
 
 /** String value constructor. */
 extern "C" QStringValue* __QStringValue_Create(const char* value);
+/** String value constructor. */
+inline QStringValue* __QStringValue_Create(const ::std::string& value) {
+  return __QStringValue_Create(value.c_str());
+}
 
 /** User-defined literal operator to construct a QStringValue. */
 inline QStringValue* operator"" _Q(const char* value, size_t size) {
@@ -79,6 +83,14 @@ struct QArrayValue : QValue {
 
 /** Array value constructor. */
 extern "C" QArrayValue* __QArrayValue_Create();
+/** Array value constructor. */
+template <typename ContainerT>
+QArrayValue* __QArrayValue_CreateFromContainer(const ContainerT& elements) {
+  QArrayValue* value = __QArrayValue_Create();
+  value->elements.insert(
+      value->elements.begin(), elements.begin(), elements.end());
+  return value;
+}
 
 // ============================================================================
 //   Misc
