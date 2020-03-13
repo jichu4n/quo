@@ -15,11 +15,25 @@
 %code provides {
   #define YY_DECL \
     ::yy::parser::symbol_type yylex()
+
+
+  namespace parser_testing {
+  /** For testing - enables ONLY_PARSE_EXPR_FOR_TEST. */
+  extern bool ShouldOnlyParseExprForTest;
+  /** For testing - the parsed Expr if ONLY_PARSE_EXPR. */
+  extern Expr* ParsedExprForTest;
+  }
 }
 
 %code {
   extern YY_DECL;
+
   #define yyerror(x)
+
+  namespace parser_testing {
+  bool ShouldOnlyParseExprForTest;
+  Expr* ParsedExprForTest;
+  }
 }
 
 // ============================================================================
@@ -77,6 +91,9 @@
 %token COLON
 %token SEMICOLON
 
+// Emit this token as the first token to only parse expressions.
+%token ONLY_PARSE_EXPR_FOR_TEST
+
 // ============================================================================
 //   Nonterminal symbols
 // ============================================================================
@@ -90,6 +107,12 @@
 %nterm <::std::vector<Expr*>> expr_list
 
 %%
+
+start:
+    ONLY_PARSE_EXPR_FOR_TEST expr {
+        ::parser_testing::ParsedExprForTest = $2;
+    }
+    ;
 
 expr:
     primary_expr;

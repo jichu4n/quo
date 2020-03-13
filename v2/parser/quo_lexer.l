@@ -9,6 +9,13 @@ using namespace yy;
 
 %%
 
+%{
+  if (::parser_testing::ShouldOnlyParseExprForTest) {
+    ::parser_testing::ShouldOnlyParseExprForTest = false;
+    return parser::make_ONLY_PARSE_EXPR_FOR_TEST();
+  }
+%}
+
 "//"[^\n]*		/* Discard comment. */
 [ \t\n]+		/* Discard whitespace. */
 

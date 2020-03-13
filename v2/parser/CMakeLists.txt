@@ -90,3 +90,21 @@ add_dependencies(
   quo_parser
 )
 
+# =============================================================================
+# quo_parser_test
+# =============================================================================
+add_executable(
+  quo_parser_test
+  quo_parser_test.cpp
+)
+add_test(
+  quo_parser_test
+  quo_parser_test
+)
+target_link_libraries(
+  quo_parser_test
+  quo_parser
+  absl::strings
+  gtest_main
+)
+
