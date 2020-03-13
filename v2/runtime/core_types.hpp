@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "runtime/values.hpp"
 
@@ -29,7 +30,10 @@ extern const QNullValue __QNull;
 extern QTypeInfo QFunctionTypeInfo;
 
 /** Function value representation. */
-struct QFunctionValue;
+struct QFunctionValue : QValue {
+  QValue* self;
+  void* address;
+};
 
 /** Function value constructor. */
 extern "C" QFunctionValue* __QFunctionValue_Create(QValue* self, void* address);
@@ -42,7 +46,9 @@ extern "C" QFunctionValue* __QFunctionValue_Create(QValue* self, void* address);
 extern QTypeInfo QIntTypeInfo;
 
 /** Int value representation. */
-struct QIntValue;
+struct QIntValue : QValue {
+  int64_t value;
+};
 
 /** Int value constructor. */
 extern "C" QIntValue* __QIntValue_Create(int64_t value);
@@ -55,7 +61,9 @@ extern "C" QIntValue* __QIntValue_Create(int64_t value);
 extern QTypeInfo QStringTypeInfo;
 
 /** String value representation. */
-struct QStringValue;
+struct QStringValue : QValue {
+  ::std::string value;
+};
 
 /** String value constructor. */
 extern "C" QStringValue* __QStringValue_Create(const char* value);
@@ -68,7 +76,9 @@ extern "C" QStringValue* __QStringValue_Create(const char* value);
 extern QTypeInfo QArrayTypeInfo;
 
 /** Array value representation. */
-struct QArrayValue;
+struct QArrayValue : QValue {
+  ::std::vector<QValue*> elements;
+};
 
 /** Array value constructor. */
 extern "C" QArrayValue* __QArrayValue_Create();

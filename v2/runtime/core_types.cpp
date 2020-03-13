@@ -32,11 +32,6 @@ const QNullValue __QNull = {
 //   Function
 // ============================================================================
 
-struct QFunctionValue : QValue {
-  QValue* self;
-  void* address;
-};
-
 QValue* __QFunctionValue_GetMember(QValue* self, const char* member_name) {
   return nullptr;
 }
@@ -60,10 +55,6 @@ QFunctionValue* __QFunctionValue_Create(QValue* self, void* address) {
 // ============================================================================
 //   Int
 // ============================================================================
-
-struct QIntValue : QValue {
-  int64_t value;
-};
 
 QValue* __QIntValue_GetMember(QValue* self, const char* member_name) {
   static const QMethodMap methods{
@@ -97,10 +88,6 @@ QIntValue* __QIntValue_Create(int64_t value) {
 //   String
 // ============================================================================
 
-struct QStringValue : QValue {
-  string value;
-};
-
 QValue* __QStringValue_GetMember(QValue* self, const char* member_name) {
   static const QMethodMap methods{
       {
@@ -132,10 +119,6 @@ QStringValue* __QStringValue_Create(const char* value) {
 // ============================================================================
 //   Array
 // ============================================================================
-
-struct QArrayValue : QValue {
-  vector<QValue*> elements;
-};
 
 class ArrayAccessException : public invalid_argument {
  public:

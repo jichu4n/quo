@@ -18,13 +18,13 @@ using namespace std;
 // ============================================================================
 
 QValue* __{{ t.name }}_GetMember(QValue* self, const char* member_name) {
-  static const unordered_map<string, int> fields {
+  static const QFieldMap fields {
 ## for f in t.fields
       { "{{ f.name }}", {{ loop.index }} },
 ## endfor
   };
-  // return GetMemberFromMap(&{{ t.name }}TypeInfo, fields, self, membername);
-  return nullptr;
+  return __QValue_GetMemberFromMap(
+      &{{ t.name}}TypeInfo, fields, QMethodMap(), self, member_name);
 }
 
 QTypeInfo {{ t.name }}TypeInfo = {
