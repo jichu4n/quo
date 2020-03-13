@@ -94,6 +94,11 @@
 // Emit this token as the first token to only parse expressions.
 %token ONLY_PARSE_EXPR_FOR_TEST
 
+%left OR
+%left AND
+%left ADD SUB
+%left MUL DIV MOD
+
 // ============================================================================
 //   Nonterminal symbols
 // ============================================================================
@@ -105,6 +110,12 @@
 %nterm <MemberExpr*> member_expr
 %nterm <CallExpr*> call_expr
 %nterm <::std::vector<Expr*>> expr_list
+%nterm <Expr*> arith_binary_op_expr
+%nterm <QStringValue*> arith_binary_op
+%nterm <Expr*> comp_binary_op_expr
+%nterm <QStringValue*> comp_binary_op
+%nterm <Expr*> bool_binary_op_expr
+%nterm <QStringValue*> bool_binary_op
 
 %%
 
@@ -115,7 +126,7 @@ start:
     ;
 
 expr:
-    primary_expr;
+    bool_binary_op_expr;
 
 primary_expr:
     literal_expr {
@@ -207,6 +218,76 @@ expr_list:
         $$ = ::std::vector<Expr*> { $1 };
 	$$.insert($$.end(), $3.begin(), $3.end());
     }
+    ;
+
+arith_binary_op_expr:
+    primary_expr {
+        $$ = $1;
+    }
+    | arith_binary_op_expr arith_binary_op arith_binary_op_expr {
+        $$ = __Expr_Create(
+	    "binaryOp"_Q,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    __BinaryOpExpr_Create($2, $1, $3),
+	    nullptr);
+    }
+    ;
+
+arith_binary_op:
+    ADD { $$ = "add"_Q; }
+    | SUB { $$ = "sub"_Q; }
+    | MUL { $$ = "mul"_Q; }
+    | DIV { $$ = "div"_Q; }
+    | MOD { $$ = "mod"_Q; }
+    ;
+
+comp_binary_op_expr:
+    arith_binary_op_expr {
+        $$ = $1;
+    }
+    | arith_binary_op_expr comp_binary_op arith_binary_op_expr {
+        $$ = __Expr_Create(
+	    "binaryOp"_Q,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    __BinaryOpExpr_Create($2, $1, $3),
+	    nullptr);
+    }
+    ;
+
+comp_binary_op:
+    GE { $$ = "ge"_Q; }
+    | GT { $$ = "gt"_Q; }
+    | LE { $$ = "le"_Q; }
+    | LT { $$ = "lt"_Q; }
+    | NE { $$ = "ne"_Q; }
+    | EQ { $$ = "eq"_Q; }
+    ;
+
+bool_binary_op_expr:
+    comp_binary_op_expr {
+        $$ = $1;
+    }
+    | bool_binary_op_expr bool_binary_op bool_binary_op_expr {
+        $$ = __Expr_Create(
+	    "binaryOp"_Q,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    __BinaryOpExpr_Create($2, $1, $3),
+	    nullptr);
+    }
+    ;
+
+bool_binary_op:
+    AND { $$ = "and"_Q; }
+    | OR { $$ = "or"_Q; }
     ;
 
 %%

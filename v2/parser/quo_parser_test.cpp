@@ -108,6 +108,15 @@ TEST(ParserTest, CallExprTestWithSingleArg) {
   }
 }
 
+TEST(ParserTest, ArithBinaryOpExprTest) {
+  Expr* e = ParseExpr("a + b * c - d / e");
+  ASSERT_NE(e, nullptr);
+  EXPECT_EQ(e->type->value, "binaryOp");
+  ASSERT_NE(e->binaryOp, nullptr);
+  ASSERT_NE(e->binaryOp->op, nullptr);
+  EXPECT_EQ(e->binaryOp->op->value, "sub");
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
