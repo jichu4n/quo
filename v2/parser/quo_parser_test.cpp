@@ -175,6 +175,26 @@ TEST(ParserTest, CompAndBoolBinaryOpExprTest) {
       "add");
 }
 
+TEST(ParserTest, AssignExprTest) {
+  Expr* e = ParseExpr("f(a).c = d || e");
+  ASSERT_NE(e, nullptr);
+  EXPECT_EQ(e->type->value, "assign");
+  EXPECT_EQ(e->assign->dest_expr->type->value, "member");
+  EXPECT_EQ(e->assign->dest_expr->member->parent_expr->type->value, "call");
+  EXPECT_EQ(e->assign->value_expr->type->value, "binaryOp");
+  EXPECT_EQ(e->assign->value_expr->binaryOp->op->value, "or");
+}
+
+TEST(ParserTest, AssignExprAssociativityTest) {
+  Expr* e = ParseExpr("a = f(b).c = d");
+  ASSERT_NE(e, nullptr);
+  EXPECT_EQ(e->type->value, "assign");
+  EXPECT_EQ(e->assign->dest_expr->type->value, "var");
+  EXPECT_EQ(e->assign->value_expr->type->value, "assign");
+  EXPECT_EQ(e->assign->value_expr->assign->dest_expr->type->value, "member");
+  EXPECT_EQ(e->assign->value_expr->assign->value_expr->type->value, "var");
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

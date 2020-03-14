@@ -106,6 +106,7 @@
 // Emit this token as the first token to only parse expressions.
 %token ONLY_PARSE_EXPR_FOR_TEST
 
+%right ASSIGN
 %left OR
 %left AND
 %left ADD SUB
@@ -117,6 +118,7 @@
 
 %nterm <Expr*> expr
 %nterm <Expr*> primary_expr
+%nterm <Expr*> assignable_primary_expr
 %nterm <LiteralExpr*> literal_expr
 %nterm <VarExpr*> var_expr
 %nterm <MemberExpr*> member_expr
@@ -126,6 +128,7 @@
 %nterm <Expr*> comp_binary_op_expr
 %nterm <QStringValue*> comp_binary_op
 %nterm <Expr*> bool_binary_op_expr
+%nterm <Expr*> assign_expr
 
 %%
 
@@ -136,20 +139,12 @@ start:
     ;
 
 expr:
-    bool_binary_op_expr;
+    bool_binary_op_expr
+    | assign_expr
+    ;
 
-primary_expr:
-    literal_expr {
-        $$ = __Expr_Create(
-	    "literal"_Q,
-	    $1,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    nullptr,
-	    nullptr);
-    }
-    | var_expr {
+assignable_primary_expr:
+    var_expr {
         $$ = __Expr_Create(
 	    "var"_Q,
 	    nullptr,
@@ -165,6 +160,19 @@ primary_expr:
 	    nullptr,
 	    nullptr,
 	    $1,
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    };
+
+primary_expr:
+    assignable_primary_expr
+    | literal_expr {
+        $$ = __Expr_Create(
+	    "literal"_Q,
+	    $1,
+	    nullptr,
+	    nullptr,
 	    nullptr,
 	    nullptr,
 	    nullptr);
@@ -278,6 +286,19 @@ bool_binary_op_expr:
     }
     | bool_binary_op_expr OR bool_binary_op_expr {
         $$ = CreateExprWithBinaryOpExpr("or"_Q, $1, $3);
+    }
+    ;
+
+assign_expr:
+    assignable_primary_expr ASSIGN expr {
+        $$ = __Expr_Create(
+	    "assign"_Q,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    __AssignExpr_Create($1, $3));
     }
     ;
 
