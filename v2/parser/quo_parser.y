@@ -423,7 +423,7 @@ cond_stmt:
 cond_loop_stmt:
     WHILE L_PAREN expr R_PAREN block {
         $$ = __Stmt_Create(
-	    "cond"_Q,
+	    "condLoop"_Q,
 	    nullptr,
 	    nullptr,
 	    nullptr,

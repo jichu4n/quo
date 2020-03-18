@@ -283,6 +283,14 @@ TEST(ParserTest, CondStmtTestWithNestedCondStmt) {
   EXPECT_EQ(nested_cond_stmt->cond->false_block->stmts->elements.size(), 2);
 }
 
+TEST(ParserTest, CondLoopStmt) {
+  const auto stmts = ParseStmts("while (a < b) { a = a + 1; f(a); }");
+  ASSERT_EQ(stmts.size(), 1);
+  EXPECT_EQ(stmts[0]->type->value, "condLoop");
+  EXPECT_EQ(stmts[0]->cond_loop->cond_expr->type->value, "binaryOp");
+  EXPECT_EQ(stmts[0]->cond_loop->block->stmts->elements.size(), 2);
+}
+
 int main(int argc, char** argv) {
   ::testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
