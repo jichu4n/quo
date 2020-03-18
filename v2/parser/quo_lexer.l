@@ -14,6 +14,10 @@ using namespace yy;
     ::parser_testing::ShouldOnlyParseExprForTest = false;
     return parser::make_ONLY_PARSE_EXPR_FOR_TEST();
   }
+  if (::parser_testing::ShouldOnlyParseStmtsForTest) {
+    ::parser_testing::ShouldOnlyParseStmtsForTest = false;
+    return parser::make_ONLY_PARSE_STMTS_FOR_TEST();
+  }
 %}
 
 "//"[^\n]*		/* Discard comment. */

@@ -20,8 +20,12 @@
   namespace parser_testing {
   /** For testing - enables ONLY_PARSE_EXPR_FOR_TEST. */
   extern bool ShouldOnlyParseExprForTest;
-  /** For testing - the parsed Expr if ONLY_PARSE_EXPR. */
+  /** For testing - the parsed Expr if ONLY_PARSE_EXPR_FOR_TEST. */
   extern Expr* ParsedExprForTest;
+  /** For testing - enables ONLY_PARSE_STMTS_FOR_TEST. */
+  extern bool ShouldOnlyParseStmtsForTest;
+  /** For testing - the parsed Stmt if ONLY_PARSE_STMTS_FOR_TEST. */
+  extern ::std::vector<Stmt*> ParsedStmtsForTest;
   }
 }
 
@@ -33,6 +37,8 @@
   namespace parser_testing {
   bool ShouldOnlyParseExprForTest;
   Expr* ParsedExprForTest;
+  bool ShouldOnlyParseStmtsForTest;
+  ::std::vector<Stmt*> ParsedStmtsForTest;
   }
 
   inline Expr* CreateExprWithBinaryOpExpr(
@@ -105,6 +111,8 @@
 
 // Emit this token as the first token to only parse expressions.
 %token ONLY_PARSE_EXPR_FOR_TEST
+// Emit this token as the first token to only parse statements.
+%token ONLY_PARSE_STMTS_FOR_TEST
 
 %right ASSIGN
 %left OR
@@ -130,11 +138,26 @@
 %nterm <Expr*> bool_binary_op_expr
 %nterm <Expr*> assign_expr
 
+%nterm <::std::vector<Stmt*>> stmts
+%nterm <Block*> block
+%nterm <Stmt*> stmt
+%nterm <Stmt*> expr_stmt
+%nterm <Stmt*> ret_stmt
+%nterm <Stmt*> cond_stmt
+%nterm <Stmt*> cond_loop_stmt
+%nterm <::std::vector<Stmt*>> var_decl_stmt
+%nterm <::std::vector<::std::string>> var_name_list
+
+%nterm <QStringValue*> type_spec;
+
 %%
 
 start:
     ONLY_PARSE_EXPR_FOR_TEST expr {
         ::parser_testing::ParsedExprForTest = $2;
+    }
+    | ONLY_PARSE_STMTS_FOR_TEST stmts {
+        ::parser_testing::ParsedStmtsForTest = $2;
     }
     ;
 
@@ -299,6 +322,146 @@ assign_expr:
 	    nullptr,
 	    nullptr,
 	    __AssignExpr_Create($1, $3));
+    }
+    ;
+
+block:
+    L_BRACE stmts R_BRACE {
+        $$ = __Block_Create(__QArrayValue_CreateFromContainer($2));
+    }
+    ;
+
+stmts:
+    %empty {
+        $$ = ::std::vector<Stmt*> {};
+    }
+    | stmts stmt {
+        $$ = ::std::vector<Stmt*> { $1 };
+	$$.push_back($2);
+    }
+    | stmts var_decl_stmt {
+        $$ = ::std::vector<Stmt*> { $1 };
+	$$.insert($1.end(), $2.begin(), $2.end());
+    }
+    | stmts SEMICOLON {
+        $$ = ::std::vector<Stmt*> { $1 };
+    }
+    ;
+
+stmt:
+    expr_stmt
+    | ret_stmt
+    | cond_stmt
+    | cond_loop_stmt
+    ;
+
+expr_stmt:
+    expr SEMICOLON {
+        $$ = __Stmt_Create(
+	    "expr"_Q,
+            __ExprStmt_Create($1),
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    }
+    ;
+
+ret_stmt:
+    RETURN SEMICOLON {
+        $$ = __Stmt_Create(
+	    "ret"_Q,
+	    nullptr,
+	    __RetStmt_Create(nullptr),
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    }
+    | RETURN expr SEMICOLON {
+        $$ = __Stmt_Create(
+	    "ret"_Q,
+	    nullptr,
+	    __RetStmt_Create($2),
+	    nullptr,
+	    nullptr,
+	    nullptr);
+    }
+    ;
+
+cond_stmt:
+    IF L_PAREN expr R_PAREN block {
+        $$ = __Stmt_Create(
+	    "cond"_Q,
+	    nullptr,
+	    nullptr,
+	    __CondStmt_Create($3, $5, __Block_Create(__QArrayValue_Create())),
+	    nullptr,
+	    nullptr);
+    }
+    | IF L_PAREN expr R_PAREN block ELSE block {
+        $$ = __Stmt_Create(
+	    "cond"_Q,
+	    nullptr,
+	    nullptr,
+	    __CondStmt_Create($3, $5, $7),
+	    nullptr,
+	    nullptr);
+    }
+    | IF L_PAREN expr R_PAREN block ELSE cond_stmt {
+	const ::std::vector<Stmt*> false_block { $7 };
+        $$ = __Stmt_Create(
+	    "cond"_Q,
+	    nullptr,
+	    nullptr,
+            __CondStmt_Create(
+		$3, $5, __Block_Create(__QArrayValue_CreateFromContainer(false_block))),
+	    nullptr,
+	    nullptr);
+    }
+    ;
+
+cond_loop_stmt:
+    WHILE L_PAREN expr R_PAREN block {
+        $$ = __Stmt_Create(
+	    "cond"_Q,
+	    nullptr,
+	    nullptr,
+	    nullptr,
+	    __CondLoopStmt_Create($3, $5),
+	    nullptr);
+    }
+    ;
+
+var_decl_stmt:
+    LET var_name_list COLON type_spec SEMICOLON {
+        $$ = ::std::vector<Stmt*> {};
+	for (const auto& var_name : $2) {
+	  $$.push_back(
+	      __Stmt_Create(
+	          "varDecl"_Q,
+		  nullptr,
+		  nullptr,
+		  nullptr,
+		  nullptr,
+		  __VarDeclStmt_Create(__QStringValue_Create(var_name), $4)));
+
+	}
+    }
+    ;
+
+var_name_list:
+    IDENTIFIER {
+        $$ = ::std::vector<::std::string> { $1 };
+    }
+    | var_name_list IDENTIFIER {
+        $$ = ::std::vector<::std::string> { $1 };
+	$$.push_back($2);
+    }
+    ;
+
+type_spec:
+    IDENTIFIER {
+        $$ = __QStringValue_Create($1);
     }
     ;
 

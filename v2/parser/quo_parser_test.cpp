@@ -14,6 +14,7 @@ using namespace yy;
 
 extern void yy_scan_string(const char*);
 
+/** Parse a string as an expression. */
 Expr* ParseExpr(const string& input) {
   ::parser_testing::ShouldOnlyParseExprForTest = true;
   ::parser_testing::ParsedExprForTest = nullptr;
@@ -26,6 +27,18 @@ Expr* ParseExpr(const string& input) {
   // https://stackoverflow.com/a/34699459
   assert(::parser_testing::ParsedExprForTest);
   return ::parser_testing::ParsedExprForTest;
+}
+
+/** Parse a string as a series of statements. */
+vector<Stmt*> ParseStmts(const string& input) {
+  ::parser_testing::ShouldOnlyParseStmtsForTest = true;
+  ::parser_testing::ParsedStmtsForTest.clear();
+  yy_scan_string(input.c_str());
+  parser p;
+  p.set_debug_level(1);
+  const int parse_result = p.parse();
+  EXPECT_EQ(parse_result, 0) << "Parsing failed for input: " << input;
+  return ::parser_testing::ParsedStmtsForTest;
 }
 
 TEST(ParserTest, IntLiteralTest) {
@@ -193,6 +206,81 @@ TEST(ParserTest, AssignExprAssociativityTest) {
   EXPECT_EQ(e->assign->value_expr->type->value, "assign");
   EXPECT_EQ(e->assign->value_expr->assign->dest_expr->type->value, "member");
   EXPECT_EQ(e->assign->value_expr->assign->value_expr->type->value, "var");
+}
+
+TEST(ParserTest, EmptyStmtsTest) {
+  const auto stmts = ParseStmts("");
+  EXPECT_EQ(stmts, vector<Stmt*>());
+}
+
+TEST(ParserTest, ExprStmtsTest) {
+  const auto stmts = ParseStmts("f(a + b); c.g();");
+  ASSERT_EQ(stmts.size(), 2);
+  EXPECT_EQ(stmts[0]->type->value, "expr");
+  EXPECT_EQ(stmts[0]->expr->expr->type->value, "call");
+  EXPECT_EQ(stmts[1]->type->value, "expr");
+  EXPECT_EQ(stmts[1]->expr->expr->type->value, "call");
+}
+
+TEST(ParserTest, RetStmtTest) {
+  const auto stmts = ParseStmts("return;");
+  ASSERT_EQ(stmts.size(), 1);
+  EXPECT_EQ(stmts[0]->type->value, "ret");
+  EXPECT_EQ(stmts[0]->ret->expr, nullptr);
+}
+
+TEST(ParserTest, RetExprStmtTest) {
+  const auto stmts = ParseStmts("return a + f(b);");
+  ASSERT_EQ(stmts.size(), 1);
+  EXPECT_EQ(stmts[0]->type->value, "ret");
+  EXPECT_EQ(stmts[0]->ret->expr->type->value, "binaryOp");
+}
+
+TEST(ParserTest, CondStmtTestWithNoFalseBlock) {
+  const auto stmts = ParseStmts("if (a > b) { return 42; } f();");
+  ASSERT_EQ(stmts.size(), 2);
+  EXPECT_EQ(stmts[0]->type->value, "cond");
+  EXPECT_EQ(stmts[0]->cond->cond_expr->type->value, "binaryOp");
+  EXPECT_EQ(stmts[0]->cond->true_block->stmts->elements.size(), 1);
+  ASSERT_EQ(
+      stmts[0]->cond->true_block->stmts->elements[0]->type_info, &StmtTypeInfo);
+  EXPECT_EQ(
+      static_cast<Stmt*>(stmts[0]->cond->true_block->stmts->elements[0])
+          ->type->value,
+      "ret");
+  EXPECT_EQ(stmts[0]->cond->false_block->stmts->elements.size(), 0);
+  EXPECT_EQ(stmts[1]->type->value, "expr");
+}
+
+TEST(ParserTest, CondStmtTestWithFalseBlock) {
+  const auto stmts = ParseStmts("if (a > b) { return 42; } else { f(); }");
+  ASSERT_EQ(stmts.size(), 1);
+  EXPECT_EQ(stmts[0]->type->value, "cond");
+  EXPECT_EQ(stmts[0]->cond->cond_expr->type->value, "binaryOp");
+  EXPECT_EQ(stmts[0]->cond->true_block->stmts->elements.size(), 1);
+  EXPECT_EQ(stmts[0]->cond->false_block->stmts->elements.size(), 1);
+  ASSERT_EQ(
+      stmts[0]->cond->false_block->stmts->elements[0]->type_info,
+      &StmtTypeInfo);
+  EXPECT_EQ(
+      static_cast<Stmt*>(stmts[0]->cond->false_block->stmts->elements[0])
+          ->type->value,
+      "expr");
+}
+
+TEST(ParserTest, CondStmtTestWithNestedCondStmt) {
+  const auto stmts = ParseStmts(
+      "if (a > b) { return 42; } else if (c) { f(); } else { g(); h(); }");
+  ASSERT_EQ(stmts.size(), 1);
+  EXPECT_EQ(stmts[0]->type->value, "cond");
+  EXPECT_EQ(stmts[0]->cond->false_block->stmts->elements.size(), 1);
+  const auto nested_cond_stmt =
+      static_cast<Stmt*>(stmts[0]->cond->false_block->stmts->elements[0]);
+  ASSERT_EQ(nested_cond_stmt->type_info, &StmtTypeInfo);
+  EXPECT_EQ(nested_cond_stmt->type->value, "cond");
+  EXPECT_EQ(nested_cond_stmt->cond->cond_expr->type->value, "var");
+  EXPECT_EQ(nested_cond_stmt->cond->true_block->stmts->elements.size(), 1);
+  EXPECT_EQ(nested_cond_stmt->cond->false_block->stmts->elements.size(), 2);
 }
 
 int main(int argc, char** argv) {
