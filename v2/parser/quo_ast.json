@@ -111,6 +111,7 @@
       "fields": [
 	{"name": "name", "type": "QStringValue"},
 	{"name": "params", "type": "QArrayValue", "type_arg": "VarDeclStmt"},
+	{"name": "ret_type_spec", "type": "QStringValue"},
 	{"name": "block", "type": "Block"}
       ]
     },

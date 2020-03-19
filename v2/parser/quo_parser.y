@@ -16,6 +16,8 @@
   #define YY_DECL \
     ::yy::parser::symbol_type yylex()
 
+  /** Module def from latest parse. */
+  extern ModuleDef* ParsedModuleDef;
 
   namespace parser_testing {
   /** For testing - enables ONLY_PARSE_EXPR_FOR_TEST. */
@@ -33,6 +35,8 @@
   extern YY_DECL;
 
   #define yyerror(x)
+
+  ModuleDef* ParsedModuleDef;
 
   namespace parser_testing {
   bool ShouldOnlyParseExprForTest;
@@ -148,7 +152,13 @@
 %nterm <::std::vector<Stmt*>> var_decl_stmt
 %nterm <::std::vector<::std::string>> var_name_list
 
-%nterm <QStringValue*> type_spec;
+%nterm <FnDef*> fn_def
+%nterm <QArrayValue*> param_def_list
+%nterm <VarDeclStmt*> param_def
+
+%nterm <ModuleDef*> module_def
+
+%nterm <QStringValue*> type_spec
 
 %%
 
@@ -158,6 +168,9 @@ start:
     }
     | ONLY_PARSE_STMTS_FOR_TEST stmts {
         ::parser_testing::ParsedStmtsForTest = $2;
+    }
+    | module_def {
+        ParsedModuleDef = $1;
     }
     ;
 
@@ -462,6 +475,43 @@ var_name_list:
 type_spec:
     IDENTIFIER {
         $$ = __QStringValue_Create($1);
+    }
+    ;
+
+fn_def:
+    FUNCTION IDENTIFIER L_PAREN param_def_list R_PAREN COLON type_spec block {
+        $$ = __FnDef_Create(__QStringValue_Create($2), $4, $7, $8);
+    }
+    ;
+
+param_def_list:
+    %empty {
+        $$ = __QArrayValue_Create();
+    }
+    | param_def {
+        $$ = __QArrayValue_Create();
+	$$->elements.push_back($1);
+    }
+    | param_def COMMA param_def_list {
+        $$ = __QArrayValue_Create();
+	$$->elements.push_back($1);
+	$$->elements.insert($$->elements.end(), $3->elements.begin(), $3->elements.end());
+    }
+    ;
+
+param_def:
+    IDENTIFIER COLON type_spec {
+        $$ = __VarDeclStmt_Create(__QStringValue_Create($1), $3);
+    }
+    ;
+
+module_def:
+    %empty {
+        $$ = __ModuleDef_Create("module"_Q, __QArrayValue_Create());
+    }
+    | module_def fn_def {
+        $$ = $1;
+	$$->members->elements.push_back($2);
     }
     ;
 
