@@ -341,7 +341,7 @@ stmts:
     }
     | stmts var_decl_stmt {
         $$ = ::std::vector<Stmt*> { $1 };
-	$$.insert($1.end(), $2.begin(), $2.end());
+	$$.insert($$.end(), $2.begin(), $2.end());
     }
     | stmts SEMICOLON {
         $$ = ::std::vector<Stmt*> { $1 };
@@ -453,9 +453,9 @@ var_name_list:
     IDENTIFIER {
         $$ = ::std::vector<::std::string> { $1 };
     }
-    | var_name_list IDENTIFIER {
+    | var_name_list COMMA IDENTIFIER {
         $$ = ::std::vector<::std::string> { $1 };
-	$$.push_back($2);
+	$$.push_back($3);
     }
     ;
 

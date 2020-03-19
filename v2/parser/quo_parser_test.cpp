@@ -283,12 +283,21 @@ TEST(ParserTest, CondStmtTestWithNestedCondStmt) {
   EXPECT_EQ(nested_cond_stmt->cond->false_block->stmts->elements.size(), 2);
 }
 
-TEST(ParserTest, CondLoopStmt) {
+TEST(ParserTest, CondLoopStmtTest) {
   const auto stmts = ParseStmts("while (a < b) { a = a + 1; f(a); }");
   ASSERT_EQ(stmts.size(), 1);
   EXPECT_EQ(stmts[0]->type->value, "condLoop");
   EXPECT_EQ(stmts[0]->cond_loop->cond_expr->type->value, "binaryOp");
   EXPECT_EQ(stmts[0]->cond_loop->block->stmts->elements.size(), 2);
+}
+
+TEST(ParserTest, VarDeclStmtTest) {
+  const auto stmts = ParseStmts("let a: Int; let b, c, d: String;");
+  ASSERT_EQ(stmts.size(), 4);
+  EXPECT_EQ(stmts[0]->type->value, "varDecl");
+  EXPECT_EQ(stmts[1]->type->value, "varDecl");
+  EXPECT_EQ(stmts[2]->type->value, "varDecl");
+  EXPECT_EQ(stmts[3]->type->value, "varDecl");
 }
 
 int main(int argc, char** argv) {
