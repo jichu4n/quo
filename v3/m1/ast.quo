@@ -1,0 +1,111 @@
+class StringConstExpr {
+	value: String;
+}
+
+class NumberConstExpr {
+	value: Number;
+}
+
+class VarRefExpr {
+	name: String;
+}
+
+class PropExpr {
+	expr: Expr;
+	propName: String;
+}
+
+class IndexExpr {
+	expr: Expr;
+	indexExpr: Expr;
+}
+
+class BinaryOpExpr {
+	leftExpr: Expr;
+	op: String;
+	rightExpr: Expr;
+}
+
+class UnaryOpExpr {
+	op: String;
+	expr: Expr;
+}
+
+class AssignExpr {
+	leftExpr: Expr;
+	rightExpr: Expr;
+}
+
+class Expr {
+	type: String;
+	stringConstExpr: StringConstExpr;
+	numberConstExpr: NumberConstExpr;
+	varRefExpr: VarRefExpr;
+	propExpr: PropExpr;
+	indexExpr: IndexExpr;
+	binaryOpExpr: BinaryOpExpr;
+	unaryOpExpr: UnaryOpExpr;
+	assignExpr: AssignExpr;
+}
+
+class ExprStmt {
+	expr: Expr;
+}
+
+class ReturnStmt {
+  valueExpr: Expr;
+}
+
+class IfStmt {
+	condExpr: Expr;
+	ifBlock: StmtBlock;
+	elseBlock: StmtBlock;
+}
+
+class WhileStmt {
+	condExpr: Expr;
+	block: StmtBlock;
+}
+
+class VarDecl {
+	name: String;
+	typeString: String;
+}
+
+class VarDeclStmt {
+	varDecl: VarDecl;
+	initExpr: Expr;
+}
+
+class ImportStmt {
+	moduleName: String;
+}
+
+class Stmt {
+	type: String;
+	exprStmt: ExprStmt;
+	returnStmt: ReturnStmt;
+	ifStmt: IfStmt;
+	whileStmt: WhileStmt;
+	varDeclStmt: VarDeclStmt;
+}
+
+class StmtBlock {
+	stmts: Array<Stmts>;
+}
+
+class FnDef {
+	name: String;
+	params: Array<VarDecl>;
+	returnTypeString: String;
+	body: StmtBlock;
+}
+
+class ClassDef {
+	props: Array<VarDecl>;
+}
+
+class ModuleDef {
+	classDefs: Array<ClassDef>;
+	fnDefs: Array<FnDef>;
+}

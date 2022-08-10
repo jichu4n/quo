@@ -1,0 +1,9 @@
+class Point {
+	x: Int64;
+	y: Int64;
+}
+
+fn dist(p1: Point, p2: Point): Int64 {
+	let a: Int64 = p1.x - p2.x, b: Int64 = p1.y - p2.y;
+	return sqrt(a ** 2 + b ** 2);
+}

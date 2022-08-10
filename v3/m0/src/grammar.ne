@@ -1,0 +1,332 @@
+@preprocessor typescript
+
+@{%
+import _ from 'lodash';
+import {Token} from 'moo';
+import lexer from './lexer';
+import {
+  ModuleDef,
+  Expr,
+  ExprType,
+  BinaryOpExpr,
+  UnaryOpExpr,
+  StringLiteralExpr,
+  NumberLiteralExpr,
+  VarRefExpr,
+  FnCallExpr,
+  MemberExpr,
+  SubscriptExpr,
+  Stmt,
+  Stmts,
+  StmtType,
+  VarDecl,
+  VarDeclStmt,
+  ExprStmt,
+  IfStmt,
+  WhileStmt,
+  ReturnStmt,
+  ImportDecl,
+	FnDef,
+	ClassDef,
+} from './ast';
+
+// ----
+// Helper functions.
+// ----
+
+function discard() { return null; }
+
+function buildBinaryOpExpr([$1, $2, $3]: Array<any>): BinaryOpExpr {
+  return {
+    type: ExprType.BINARY_OP,
+    op: id($2).type.toLowerCase(),
+    leftExpr: $1,
+    rightExpr: $3,
+  };
+}
+
+function buildUnaryOpExpr([$1, $2]: Array<any>): UnaryOpExpr {
+  return {
+    type: ExprType.UNARY_OP,
+    op: id($1).type.toLowerCase(),
+    rightExpr: $2,
+  };
+}
+
+/** Type of the 'reject' parameter passed to postprocessors. */
+type Reject = Object | undefined;
+
+// ----
+// Generated grammer below
+// ----
+
+%}
+
+@lexer lexer
+
+# ----
+# Program structure
+# ----
+
+module ->
+      null  {%
+          (): ModuleDef => ({
+            importDecls: [],
+            classDefs: [],
+            fnDefs: [],
+          })
+      %}
+    | module importDecl  {%
+        ([$1, $2]): ModuleDef => ({
+          ...$1,
+          importDecls: [...$1.importDecls, $2],
+        })
+      %}
+    | module classDef  {%
+        ([$1, $2]): ModuleDef => ({
+          ...$1,
+          classDefs: [...$1.classDefs, $2],
+        })
+      %}
+    | module fnDef  {%
+        ([$1, $2]): ModuleDef => ({
+          ...$1,
+          fnDefs: [...$1.fnDefs, $2],
+        })
+      %}
+
+importDecl ->
+    %IMPORT %STRING_LITERAL  {%
+        ([$1, $2]): ImportDecl => ({
+          moduleName: $2.value,
+        })
+    %}
+
+fnDef ->
+    %FN %IDENTIFIER %LPAREN params %RPAREN %COLON typeString block  {%
+        ([$1, $2, $3, $4, $5, $6, $7, $8]): FnDef => ({
+          name: $2.value,
+          params: $4,
+					returnTypeString: $7,
+          body: $8,
+        })
+    %}
+
+params ->
+      null  {% (): Array<VarDecl> => [] %}
+    | (param %COMMA):* param  {%
+        ([$1, $2]) => [...($1 ? $1.map(([$1_1, $1_2]: Array<any>) => $1_1) : []), $2]
+    %}
+
+param ->
+      %IDENTIFIER %COLON typeString  {%
+          ([$1, $2, $3]): VarDecl => ({
+            name: $1.value,
+            typeString: $3,
+            initExpr: null,
+          })
+    %}
+
+classDef ->
+    %CLASS %IDENTIFIER %LBRACE propDecl:* %RBRACE  {%
+          ([$1, $2, $3, $4, $5]): ClassDef => ({
+            name: $2.value,
+            props: $4,
+          })
+    %}
+
+propDecl ->
+    varDecl %SEMICOLON  {% id %}
+
+
+# ----
+# Statements
+# ----
+block -> %LBRACE stmts %RBRACE  {% ([$1, $2, $3]) => $2 %}
+
+stmts ->
+    stmt:*  {% id %}
+
+stmt ->
+      exprStmt  {% id %}
+    | ifStmt  {% id %}
+    | whileStmt  {% id %}
+    | returnStmt  {% id %}
+    | varDeclStmt  {% id %}
+
+exprStmt ->
+    expr %SEMICOLON  {%
+		    ([$1, $2]): ExprStmt =>
+				    ({ type: StmtType.EXPR, expr: $1 })
+		%}
+
+ifStmt ->
+    %IF %LPAREN expr %RPAREN block (%ELSE block):?  {%
+		    ([$1, $2, $3, $4, $5, $6]): IfStmt => ({
+					type: StmtType.IF,
+					condExpr: $3,
+					ifBlock: $5,
+					elseBlock: $6 ? $6[1] : [],
+				})
+		%}
+
+whileStmt ->
+    %WHILE %LPAREN expr %RPAREN block  {%
+		    ([$1, $2, $3, $4, $5]): WhileStmt => ({
+					type: StmtType.WHILE,
+					condExpr: $3,
+					block: $5,
+				})
+		%}
+
+returnStmt ->
+    %RETURN (expr):? %SEMICOLON  {%
+        ([$1, $2, $3]): ReturnStmt =>
+            ({ type: StmtType.RETURN, valueExpr: $2 })
+    %}
+
+varDeclStmt ->
+    %LET varDecls %SEMICOLON {%
+        ([$1, $2, $3]): VarDeclStmt => ({
+          type: StmtType.VAR_DECL,
+          varDecls: $2,
+        })
+    %}
+
+varDecls ->
+    (varDecl %COMMA):* varDecl {%
+        ([$1, $2]): Array<VarDecl> => [
+          ...($1 ? $1.map(([$1_1, $1_2]: Array<any>) => $1_1) : []),
+          $2,
+        ]
+    %}
+
+varDecl ->
+    %IDENTIFIER %COLON typeString (%ASSIGN expr):? {%
+        ([$1, $2, $3, $4]): VarDecl => ({
+          name: $1.value,
+          typeString: $3,
+          initExpr: $4 ? $4[1] : null,
+        })
+    %}
+
+
+# ----
+# Expressions
+# ----
+
+# An expression.
+expr ->
+    expr10  {% id %}
+
+expr10 ->
+      expr9  {% id %}
+    | expr10 (%OR) expr9  {% buildBinaryOpExpr %}
+
+expr9 ->
+      expr8  {% id %}
+    | expr9 (%AND) expr8  {% buildBinaryOpExpr %}
+
+expr8 ->
+      expr7  {% id %}
+    | (%NOT) expr7  {% buildUnaryOpExpr %}
+
+expr7 ->
+      expr6  {% id %}
+    | expr6 (%EQ | %NE | %GT | %GTE | %LT | %LTE) expr6  {% buildBinaryOpExpr %}
+
+expr6 ->
+      expr5  {% id %}
+    | expr6 (%ADD | %SUB) expr5  {% buildBinaryOpExpr %}
+
+expr5 ->
+      expr4  {% id %}
+    | expr5 (%MOD) expr4  {% buildBinaryOpExpr %}
+
+expr4 -> expr3  {% id %}
+
+expr3 ->
+      expr2  {% id %}
+    | expr3 (%MUL | %DIV) expr2  {% buildBinaryOpExpr %}
+
+expr2 ->
+      expr1  {% id %}
+    | (%SUB) expr1  {% buildUnaryOpExpr %}
+
+expr1 ->
+      expr0  {% id %}
+    | expr1 (%EXP) expr0  {% buildBinaryOpExpr %}
+
+expr0 ->
+      varRefExpr  {% id %}
+    | fnCallExpr  {% id %}
+    | literalExpr  {% id %}
+    | memberExpr  {% id %}
+    | subscriptExpr  {% id %}
+    | %LPAREN expr %RPAREN  {% ([$1, $2, $3]): Expr => $2 %}
+
+varRefExpr ->
+    %IDENTIFIER  {%
+        ([$1]): VarRefExpr =>
+            ({ type: ExprType.VAR_REF, name: $1.value })
+    %}
+
+fnCallExpr ->
+    %IDENTIFIER %LPAREN exprs %RPAREN  {%
+        ([$1, $2, $3, $4]): FnCallExpr => ({
+          type: ExprType.FN_CALL,
+          name: $1.value,
+          argExprs: $3,
+        })
+    %}
+
+literalExpr ->
+      stringLiteralExpr  {% id %}
+    | numberLiteralExpr  {% id %}
+
+stringLiteralExpr ->
+    %STRING_LITERAL  {%
+        ([$1]): StringLiteralExpr =>
+            ({ type: ExprType.STRING_LITERAL, value: $1.value })
+    %}
+
+numberLiteralExpr ->
+    %NUMBER_LITERAL  {%
+        ([$1]): NumberLiteralExpr =>
+            ({ type: ExprType.NUMBER_LITERAL, value: $1.value })
+    %}
+
+subscriptExpr ->
+    expr0 (%LBRACKET expr %RBRACKET):+  {%
+        ([$1, $2, $3, $4]): SubscriptExpr => ({
+          type: ExprType.SUBSCRIPT,
+          arrayExpr: $1,
+          indexExprs: $3.map(([$3_1, $3_2, $3_3]: Array<any>) => $3_2),
+        })
+    %}
+
+memberExpr ->
+    expr0 %DOT %IDENTIFIER  {%
+        ([$1, $2, $3]): MemberExpr => ({
+          type: ExprType.MEMBER,
+          objExpr: $1,
+          fieldName: $3.value,
+        })
+    %}
+
+exprs ->
+      null  {% (): Array<Expr> => [] %}
+    | (expr %COMMA):* expr  {%
+          ([$1, $2]): Array<Expr> =>
+              [...($1 ? $1.map(([$1_1, $1_2]: Array<any>) => $1_1) : []), $2]
+      %}
+
+# ----
+# Expressions
+# ----
+
+typeString ->
+      %IDENTIFIER  {% ([$1]) => $1.value %}
+		| %IDENTIFIER %LT typeString %GT  {%
+		      ([$1, $2, $3, $4]) => `${$1.value}< ${$3} >`
+		%}

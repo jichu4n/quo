@@ -1,0 +1,9 @@
+import 'ast';
+
+fn codegen(moduleDef: ModuleDef): String {
+  return codegenModuleDef(moduleDef);
+}
+
+fn codegenModuleDef(moduleDef: ModuleDef): String {
+	
+}
