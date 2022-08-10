@@ -78,7 +78,7 @@ class Lexer {
       token.type &&
       TOKEN_TYPES_TO_DISCARD.includes(token.type)
     );
-    console.log(`>> TOKEN ${token?.type}`);
+    // console.log(`>> TOKEN ${token?.type}`);
     return token;
   }
 

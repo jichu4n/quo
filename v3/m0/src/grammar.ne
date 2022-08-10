@@ -103,12 +103,12 @@ importDecl ->
     %}
 
 fnDef ->
-    %FN %IDENTIFIER %LPAREN params %RPAREN %COLON typeString block  {%
-        ([$1, $2, $3, $4, $5, $6, $7, $8]): FnDef => ({
+    %FN %IDENTIFIER %LPAREN params %RPAREN (%COLON typeString):? block  {%
+        ([$1, $2, $3, $4, $5, $6, $7]): FnDef => ({
           name: $2.value,
           params: $4,
-					returnTypeString: $7,
-          body: $8,
+					returnTypeString: $6 ? $6[1] : null,
+          body: $7,
         })
     %}
 

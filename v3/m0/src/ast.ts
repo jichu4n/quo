@@ -126,7 +126,7 @@ export interface ImportDecl {
 export interface FnDef {
   name: string;
   params: Array<VarDecl>;
-  returnTypeString: string;
+  returnTypeString: string | null;
   body: Stmts;
 }
 

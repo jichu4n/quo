@@ -161,12 +161,15 @@ const grammar: Grammar = {
           moduleName: $2.value,
         })
             },
-    {"name": "fnDef", "symbols": [(lexer.has("FN") ? {type: "FN"} : FN), (lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER), (lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), "params", (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN), (lexer.has("COLON") ? {type: "COLON"} : COLON), "typeString", "block"], "postprocess": 
-                ([$1, $2, $3, $4, $5, $6, $7, $8]): FnDef => ({
+    {"name": "fnDef$ebnf$1$subexpression$1", "symbols": [(lexer.has("COLON") ? {type: "COLON"} : COLON), "typeString"]},
+    {"name": "fnDef$ebnf$1", "symbols": ["fnDef$ebnf$1$subexpression$1"], "postprocess": id},
+    {"name": "fnDef$ebnf$1", "symbols": [], "postprocess": () => null},
+    {"name": "fnDef", "symbols": [(lexer.has("FN") ? {type: "FN"} : FN), (lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER), (lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), "params", (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN), "fnDef$ebnf$1", "block"], "postprocess": 
+                ([$1, $2, $3, $4, $5, $6, $7]): FnDef => ({
                   name: $2.value,
                   params: $4,
-        returnTypeString: $7,
-                  body: $8,
+        returnTypeString: $6 ? $6[1] : null,
+                  body: $7,
                 })
             },
     {"name": "params", "symbols": [], "postprocess": (): Array<VarDecl> => []},
