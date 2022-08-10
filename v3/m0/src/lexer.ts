@@ -31,7 +31,7 @@ const mooLexer = moo.states(
       },
       STRING_LITERAL: {
         match: /(?:'(?:[^']|\\')*')|(?:"(?:[^"]|\\")*")/,
-        value: (text) => text.substring(1, text.length - 2),
+        value: (text) => text.substring(1, text.length - 1),
       },
       COLON: ':',
       SEMICOLON: ';',

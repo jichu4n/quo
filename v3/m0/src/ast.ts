@@ -21,6 +21,8 @@ export type Expr =
   | SubscriptExpr
   | AssignExpr;
 
+export type LhsExpr = VarRefExpr | MemberExpr | SubscriptExpr;
+
 export interface StringLiteralExpr {
   type: ExprType.STRING_LITERAL;
   value: string;
@@ -69,7 +71,7 @@ export interface UnaryOpExpr {
 
 export interface AssignExpr {
   type: ExprType.ASSIGN;
-  leftExpr: Expr;
+  leftExpr: LhsExpr;
   rightExpr: Expr;
 }
 
@@ -88,7 +90,7 @@ export interface ExprStmt {
 
 export interface ReturnStmt {
   type: StmtType.RETURN;
-  valueExpr: Expr;
+  valueExpr: Expr | null;
 }
 
 export interface IfStmt {
@@ -136,6 +138,7 @@ export interface ClassDef {
 }
 
 export interface ModuleDef {
+  name: string;
   importDecls: Array<ImportDecl>;
   classDefs: Array<ClassDef>;
   fnDefs: Array<FnDef>;

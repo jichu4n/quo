@@ -40,7 +40,11 @@ export function parse(
           .join('\n\n')
     );
   }
-  return parser.results[0];
+  const moduleDef = parser.results[0] as ModuleDef;
+  if (opts?.sourceFileName) {
+    moduleDef.name = opts.sourceFileName;
+  }
+  return moduleDef;
 }
 
 if (require.main === module) {
@@ -51,8 +55,9 @@ if (require.main === module) {
     program.argument('<input-file>', 'Quo source file to parse');
     program.parse();
 
-    const sourceCode = await fs.readFile(program.args[0], 'utf-8');
-    const moduleDef = parse(sourceCode);
+    const sourceFileName = program.args[0];
+    const sourceCode = await fs.readFile(sourceFileName, 'utf-8');
+    const moduleDef = parse(sourceCode, {sourceFileName});
 
     console.log(JSON.stringify(moduleDef, null, 2));
   })();

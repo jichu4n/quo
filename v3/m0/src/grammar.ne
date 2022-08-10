@@ -16,6 +16,7 @@ import {
   FnCallExpr,
   MemberExpr,
   SubscriptExpr,
+  AssignExpr,
   Stmt,
   Stmts,
   StmtType,
@@ -71,6 +72,7 @@ type Reject = Object | undefined;
 module ->
       null  {%
           (): ModuleDef => ({
+            name: 'source',
             importDecls: [],
             classDefs: [],
             fnDefs: [],
@@ -96,8 +98,8 @@ module ->
       %}
 
 importDecl ->
-    %IMPORT %STRING_LITERAL  {%
-        ([$1, $2]): ImportDecl => ({
+    %IMPORT %STRING_LITERAL %SEMICOLON  {%
+        ([$1, $2, $3]): ImportDecl => ({
           moduleName: $2.value,
         })
     %}
@@ -182,7 +184,7 @@ whileStmt ->
 returnStmt ->
     %RETURN (expr):? %SEMICOLON  {%
         ([$1, $2, $3]): ReturnStmt =>
-            ({ type: StmtType.RETURN, valueExpr: $2 })
+            ({ type: StmtType.RETURN, valueExpr: $2 ? $2[0] : null })
     %}
 
 varDeclStmt ->
@@ -221,29 +223,37 @@ expr ->
 
 expr10 ->
       expr9  {% id %}
-    | expr10 (%OR) expr9  {% buildBinaryOpExpr %}
+    | lhsExpr %ASSIGN expr  {%
+        ([$1, $2, $3]): AssignExpr => ({
+          type: ExprType.ASSIGN,
+          leftExpr: $1,
+          rightExpr: $3,
+        })
+     %}
 
 expr9 ->
       expr8  {% id %}
-    | expr9 (%AND) expr8  {% buildBinaryOpExpr %}
+    | expr9 (%OR) expr8  {% buildBinaryOpExpr %}
 
 expr8 ->
       expr7  {% id %}
-    | (%NOT) expr7  {% buildUnaryOpExpr %}
+    | expr8 (%AND) expr7  {% buildBinaryOpExpr %}
 
 expr7 ->
       expr6  {% id %}
-    | expr6 (%EQ | %NE | %GT | %GTE | %LT | %LTE) expr6  {% buildBinaryOpExpr %}
+    | (%NOT) expr6  {% buildUnaryOpExpr %}
 
 expr6 ->
       expr5  {% id %}
-    | expr6 (%ADD | %SUB) expr5  {% buildBinaryOpExpr %}
+    | expr6 (%EQ | %NE | %GT | %GTE | %LT | %LTE) expr5  {% buildBinaryOpExpr %}
 
 expr5 ->
       expr4  {% id %}
-    | expr5 (%MOD) expr4  {% buildBinaryOpExpr %}
+    | expr5 (%ADD | %SUB) expr4  {% buildBinaryOpExpr %}
 
-expr4 -> expr3  {% id %}
+expr4 ->
+      expr3  {% id %}
+    | expr4 (%MOD) expr3  {% buildBinaryOpExpr %}
 
 expr3 ->
       expr2  {% id %}
@@ -264,6 +274,11 @@ expr0 ->
     | memberExpr  {% id %}
     | subscriptExpr  {% id %}
     | %LPAREN expr %RPAREN  {% ([$1, $2, $3]): Expr => $2 %}
+
+lhsExpr ->
+      varRefExpr  {% id %}
+    | memberExpr  {% id %}
+    | subscriptExpr  {% id %}
 
 varRefExpr ->
     %IDENTIFIER  {%

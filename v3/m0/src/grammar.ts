@@ -5,6 +5,7 @@
 function id(d: any[]): any { return d[0]; }
 declare var IMPORT: any;
 declare var STRING_LITERAL: any;
+declare var SEMICOLON: any;
 declare var FN: any;
 declare var IDENTIFIER: any;
 declare var LPAREN: any;
@@ -14,7 +15,6 @@ declare var COMMA: any;
 declare var CLASS: any;
 declare var LBRACE: any;
 declare var RBRACE: any;
-declare var SEMICOLON: any;
 declare var IF: any;
 declare var ELSE: any;
 declare var WHILE: any;
@@ -56,6 +56,7 @@ import {
   FnCallExpr,
   MemberExpr,
   SubscriptExpr,
+  AssignExpr,
   Stmt,
   Stmts,
   StmtType,
@@ -133,6 +134,7 @@ const grammar: Grammar = {
   ParserRules: [
     {"name": "module", "symbols": [], "postprocess": 
         (): ModuleDef => ({
+          name: 'source',
           importDecls: [],
           classDefs: [],
           fnDefs: [],
@@ -156,8 +158,8 @@ const grammar: Grammar = {
           fnDefs: [...$1.fnDefs, $2],
         })
               },
-    {"name": "importDecl", "symbols": [(lexer.has("IMPORT") ? {type: "IMPORT"} : IMPORT), (lexer.has("STRING_LITERAL") ? {type: "STRING_LITERAL"} : STRING_LITERAL)], "postprocess": 
-        ([$1, $2]): ImportDecl => ({
+    {"name": "importDecl", "symbols": [(lexer.has("IMPORT") ? {type: "IMPORT"} : IMPORT), (lexer.has("STRING_LITERAL") ? {type: "STRING_LITERAL"} : STRING_LITERAL), (lexer.has("SEMICOLON") ? {type: "SEMICOLON"} : SEMICOLON)], "postprocess": 
+        ([$1, $2, $3]): ImportDecl => ({
           moduleName: $2.value,
         })
             },
@@ -231,7 +233,7 @@ const grammar: Grammar = {
     {"name": "returnStmt$ebnf$1", "symbols": [], "postprocess": () => null},
     {"name": "returnStmt", "symbols": [(lexer.has("RETURN") ? {type: "RETURN"} : RETURN), "returnStmt$ebnf$1", (lexer.has("SEMICOLON") ? {type: "SEMICOLON"} : SEMICOLON)], "postprocess": 
         ([$1, $2, $3]): ReturnStmt =>
-            ({ type: StmtType.RETURN, valueExpr: $2 })
+            ({ type: StmtType.RETURN, valueExpr: $2 ? $2[0] : null })
             },
     {"name": "varDeclStmt", "symbols": [(lexer.has("LET") ? {type: "LET"} : LET), "varDecls", (lexer.has("SEMICOLON") ? {type: "SEMICOLON"} : SEMICOLON)], "postprocess": 
         ([$1, $2, $3]): VarDeclStmt => ({
@@ -260,30 +262,37 @@ const grammar: Grammar = {
             },
     {"name": "expr", "symbols": ["expr10"], "postprocess": id},
     {"name": "expr10", "symbols": ["expr9"], "postprocess": id},
-    {"name": "expr10$subexpression$1", "symbols": [(lexer.has("OR") ? {type: "OR"} : OR)]},
-    {"name": "expr10", "symbols": ["expr10", "expr10$subexpression$1", "expr9"], "postprocess": buildBinaryOpExpr},
+    {"name": "expr10", "symbols": ["lhsExpr", (lexer.has("ASSIGN") ? {type: "ASSIGN"} : ASSIGN), "expr"], "postprocess": 
+        ([$1, $2, $3]): AssignExpr => ({
+          type: ExprType.ASSIGN,
+          leftExpr: $1,
+          rightExpr: $3,
+        })
+             },
     {"name": "expr9", "symbols": ["expr8"], "postprocess": id},
-    {"name": "expr9$subexpression$1", "symbols": [(lexer.has("AND") ? {type: "AND"} : AND)]},
+    {"name": "expr9$subexpression$1", "symbols": [(lexer.has("OR") ? {type: "OR"} : OR)]},
     {"name": "expr9", "symbols": ["expr9", "expr9$subexpression$1", "expr8"], "postprocess": buildBinaryOpExpr},
     {"name": "expr8", "symbols": ["expr7"], "postprocess": id},
-    {"name": "expr8$subexpression$1", "symbols": [(lexer.has("NOT") ? {type: "NOT"} : NOT)]},
-    {"name": "expr8", "symbols": ["expr8$subexpression$1", "expr7"], "postprocess": buildUnaryOpExpr},
+    {"name": "expr8$subexpression$1", "symbols": [(lexer.has("AND") ? {type: "AND"} : AND)]},
+    {"name": "expr8", "symbols": ["expr8", "expr8$subexpression$1", "expr7"], "postprocess": buildBinaryOpExpr},
     {"name": "expr7", "symbols": ["expr6"], "postprocess": id},
-    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("EQ") ? {type: "EQ"} : EQ)]},
-    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("NE") ? {type: "NE"} : NE)]},
-    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("GT") ? {type: "GT"} : GT)]},
-    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("GTE") ? {type: "GTE"} : GTE)]},
-    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("LT") ? {type: "LT"} : LT)]},
-    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("LTE") ? {type: "LTE"} : LTE)]},
-    {"name": "expr7", "symbols": ["expr6", "expr7$subexpression$1", "expr6"], "postprocess": buildBinaryOpExpr},
+    {"name": "expr7$subexpression$1", "symbols": [(lexer.has("NOT") ? {type: "NOT"} : NOT)]},
+    {"name": "expr7", "symbols": ["expr7$subexpression$1", "expr6"], "postprocess": buildUnaryOpExpr},
     {"name": "expr6", "symbols": ["expr5"], "postprocess": id},
-    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("ADD") ? {type: "ADD"} : ADD)]},
-    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("SUB") ? {type: "SUB"} : SUB)]},
+    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("EQ") ? {type: "EQ"} : EQ)]},
+    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("NE") ? {type: "NE"} : NE)]},
+    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("GT") ? {type: "GT"} : GT)]},
+    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("GTE") ? {type: "GTE"} : GTE)]},
+    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("LT") ? {type: "LT"} : LT)]},
+    {"name": "expr6$subexpression$1", "symbols": [(lexer.has("LTE") ? {type: "LTE"} : LTE)]},
     {"name": "expr6", "symbols": ["expr6", "expr6$subexpression$1", "expr5"], "postprocess": buildBinaryOpExpr},
     {"name": "expr5", "symbols": ["expr4"], "postprocess": id},
-    {"name": "expr5$subexpression$1", "symbols": [(lexer.has("MOD") ? {type: "MOD"} : MOD)]},
+    {"name": "expr5$subexpression$1", "symbols": [(lexer.has("ADD") ? {type: "ADD"} : ADD)]},
+    {"name": "expr5$subexpression$1", "symbols": [(lexer.has("SUB") ? {type: "SUB"} : SUB)]},
     {"name": "expr5", "symbols": ["expr5", "expr5$subexpression$1", "expr4"], "postprocess": buildBinaryOpExpr},
     {"name": "expr4", "symbols": ["expr3"], "postprocess": id},
+    {"name": "expr4$subexpression$1", "symbols": [(lexer.has("MOD") ? {type: "MOD"} : MOD)]},
+    {"name": "expr4", "symbols": ["expr4", "expr4$subexpression$1", "expr3"], "postprocess": buildBinaryOpExpr},
     {"name": "expr3", "symbols": ["expr2"], "postprocess": id},
     {"name": "expr3$subexpression$1", "symbols": [(lexer.has("MUL") ? {type: "MUL"} : MUL)]},
     {"name": "expr3$subexpression$1", "symbols": [(lexer.has("DIV") ? {type: "DIV"} : DIV)]},
@@ -300,6 +309,9 @@ const grammar: Grammar = {
     {"name": "expr0", "symbols": ["memberExpr"], "postprocess": id},
     {"name": "expr0", "symbols": ["subscriptExpr"], "postprocess": id},
     {"name": "expr0", "symbols": [(lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), "expr", (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN)], "postprocess": ([$1, $2, $3]): Expr => $2},
+    {"name": "lhsExpr", "symbols": ["varRefExpr"], "postprocess": id},
+    {"name": "lhsExpr", "symbols": ["memberExpr"], "postprocess": id},
+    {"name": "lhsExpr", "symbols": ["subscriptExpr"], "postprocess": id},
     {"name": "varRefExpr", "symbols": [(lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER)], "postprocess": 
         ([$1]): VarRefExpr =>
             ({ type: ExprType.VAR_REF, name: $1.value })
