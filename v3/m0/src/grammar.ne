@@ -76,6 +76,7 @@ module ->
             importDecls: [],
             classDefs: [],
             fnDefs: [],
+            varDecls: [],
           })
       %}
     | module importDecl  {%
@@ -94,6 +95,12 @@ module ->
         ([$1, $2]): ModuleDef => ({
           ...$1,
           fnDefs: [...$1.fnDefs, $2],
+        })
+      %}
+    | module varDeclStmt  {%
+        ([$1, $2]): ModuleDef => ({
+          ...$1,
+          varDecls: [...$1.varDecls, ...$2.varDecls],
         })
       %}
 

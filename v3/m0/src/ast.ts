@@ -142,4 +142,5 @@ export interface ModuleDef {
   importDecls: Array<ImportDecl>;
   classDefs: Array<ClassDef>;
   fnDefs: Array<FnDef>;
+  varDecls: Array<VarDecl>;
 }

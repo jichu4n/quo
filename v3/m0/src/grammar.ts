@@ -138,6 +138,7 @@ const grammar: Grammar = {
           importDecls: [],
           classDefs: [],
           fnDefs: [],
+          varDecls: [],
         })
               },
     {"name": "module", "symbols": ["module", "importDecl"], "postprocess": 
@@ -156,6 +157,12 @@ const grammar: Grammar = {
         ([$1, $2]): ModuleDef => ({
           ...$1,
           fnDefs: [...$1.fnDefs, $2],
+        })
+              },
+    {"name": "module", "symbols": ["module", "varDeclStmt"], "postprocess": 
+        ([$1, $2]): ModuleDef => ({
+          ...$1,
+          varDecls: [...$1.varDecls, ...$2.varDecls],
         })
               },
     {"name": "importDecl", "symbols": [(lexer.has("IMPORT") ? {type: "IMPORT"} : IMPORT), (lexer.has("STRING_LITERAL") ? {type: "STRING_LITERAL"} : STRING_LITERAL), (lexer.has("SEMICOLON") ? {type: "SEMICOLON"} : SEMICOLON)], "postprocess": 

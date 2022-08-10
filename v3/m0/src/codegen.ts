@@ -20,6 +20,7 @@ import {
   StringLiteralExpr,
   SubscriptExpr,
   UnaryOpExpr,
+  VarDecl,
   VarDeclStmt,
   VarRefExpr,
   WhileStmt,
@@ -56,6 +57,10 @@ export function generateHeaderCode(module: ModuleDef): string {
   );
 
   l.append(...module.classDefs.map(generateClassDef), null);
+
+  if (module.varDecls.length) {
+    l.append(...module.varDecls.map(generateVarDecl), null);
+  }
 
   if (module.fnDefs.length) {
     l.append(
@@ -100,9 +105,22 @@ function generateFnDecl(fnDef: FnDef) {
   return `${generateFnSig(fnDef)};`;
 }
 
+function generateVarDecl(varDecl: VarDecl) {
+  return `extern ${varDecl.typeString}* ${varDecl.name};`;
+}
+
 export function generateCppCode(moduleDef: ModuleDef): string {
   const l = lines();
   l.append(`#include "${getHeaderFileName(moduleDef.name)}"`, null);
+  if (moduleDef.varDecls.length) {
+    l.append(
+      generateVarDeclStmt({
+        type: StmtType.VAR_DECL,
+        varDecls: moduleDef.varDecls,
+      }),
+      null
+    );
+  }
   l.append(...moduleDef.fnDefs.map(generateFnDef));
   return l.toString();
 }
