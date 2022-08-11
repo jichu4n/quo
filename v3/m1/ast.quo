@@ -1,9 +1,112 @@
-let STRING_LITERAL: String = 'stringLiteral',
-		NUMBER_LITERAL: String = 'numberLiteral',
-		VAR_REF: String = 'varRef',
-		FN_CALL: String = 'fnCall',
-		BINARY_OP: String = 'binaryOp',
-		UNARY_OP: String = 'unaryOp',
-		SUBSCRIPT: String = 'subscript',
-		MEMBER: String = 'member',
-		ASSIGN: String = 'assign';
+// Expression types
+let STRING_LITERAL_EXPR: String = 'stringLiteral',
+		NUMBER_LITERAL_EXPR: String = 'numberLiteral',
+		VAR_REF_EXPR: String = 'varRef',
+		FN_CALL_EXPR: String = 'fnCall',
+		BINARY_OP_EXPR: String = 'binaryOp',
+		UNARY_OP_EXPR: String = 'unaryOp',
+		SUBSCRIPT_EXPR: String = 'subscript',
+		MEMBER_EXPR: String = 'member',
+		ASSIGN_EXPR: String = 'assign';
+
+class StringLiteralExpr {
+  value: String;
+}
+
+class NumberLiteralExpr {
+  value: Int64;
+}
+
+class VarRefExpr {
+  name: String;
+}
+
+class FnCallExpr {
+  name: String;
+  argExprs: Array<Expr>;
+}
+
+class MemberExpr {
+  objExpr: Expr;
+  fieldName: String;
+}
+
+class SubscriptExpr {
+  arrayExpr: Expr;
+  indexExprs: Array<Expr>;
+}
+
+class BinaryOpExpr {
+  leftExpr: Expr;
+  op: String;
+  rightExpr: Expr;
+}
+
+class UnaryOpExpr {
+  op: String;
+  rightExpr: Expr;
+}
+
+class AssignExpr {
+  leftExpr: Expr;
+  rightExpr: Expr;
+}
+
+class Expr {
+	type: String;
+	stringLiteralExpr: StringLiteralExpr;
+	numberLiteralExpr: NumberLiteralExpr;
+	varRefExpr: VarRefExpr;
+	fnCallExpr: FnCallExpr;
+	memberExpr: MemberExpr;
+	subscriptExpr: SubscriptExpr;
+	binaryOpExpr: BinaryOpExpr;
+	unaryOpExpr: UnaryOpExpr;
+	assignExpr: AssignExpr;
+}
+
+// Statement types
+let EXPR_STMT: String = 'expr',
+		RETURN_STMT: String = 'return',
+		IF_STMT: String = 'if',
+		WHILE_STMT: String = 'while',
+		VAR_DECL_STMT: String = 'varDecl';
+
+class ExprStmt {
+  expr: Expr;
+}
+
+class ReturnStmt {
+  valueExpr: Expr;
+}
+
+class IfStmt {
+  condExpr: Expr;
+  ifBlock: Array<Stmt>;
+  elseBlock: Array<Stmt>;
+}
+
+class WhileStmt {
+  condExpr: Expr;
+  block: Array<Stmt>;
+}
+
+class VarDecl {
+  name: String;
+  typeString: String;
+  initExpr: Expr;
+}
+
+class VarDeclStmt {
+  varDecls: Array<VarDecl>;
+}
+
+class Stmt {
+	type: String;
+	exprStmt: ExprStmt;
+	returnStmt: ReturnStmt; 
+	ifStmt: IfStmt; 
+	whileStmt: WhileStmt; 
+	varDecl: VarDecl; 
+	varDeclStmt: VarDeclStmt; 
+}

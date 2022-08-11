@@ -368,7 +368,7 @@ const grammar: Grammar = {
               },
     {"name": "typeString", "symbols": [(lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER)], "postprocess": ([$1]) => $1.value},
     {"name": "typeString", "symbols": [(lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER), (lexer.has("LT") ? {type: "LT"} : LT), "typeString", (lexer.has("GT") ? {type: "GT"} : GT)], "postprocess": 
-        ([$1, $2, $3, $4]) => `${$1.value}< ${$3} >`
+        ([$1, $2, $3, $4]) => `${$1.value}<${$3}*>`
         		}
   ],
   ParserStart: "module",

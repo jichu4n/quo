@@ -350,5 +350,5 @@ exprs ->
 typeString ->
       %IDENTIFIER  {% ([$1]) => $1.value %}
 		| %IDENTIFIER %LT typeString %GT  {%
-		      ([$1, $2, $3, $4]) => `${$1.value}< ${$3} >`
+		      ([$1, $2, $3, $4]) => `${$1.value}<${$3}*>`
 		%}

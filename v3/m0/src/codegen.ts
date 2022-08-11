@@ -56,7 +56,11 @@ export function generateHeaderCode(module: ModuleDef): string {
     null
   );
 
-  l.append(...module.classDefs.map(generateClassDef), null);
+
+  if (module.classDefs.length) {
+    l.append(...module.classDefs.map(generateClassDecl), null);
+    l.append(...module.classDefs.map(generateClassDef), null);
+  }
 
   if (module.varDecls.length) {
     l.append(...module.varDecls.map(generateVarDecl), null);
@@ -75,6 +79,10 @@ export function generateHeaderCode(module: ModuleDef): string {
   l.append(null, `#endif`);
 
   return l.toString().trim();
+}
+
+function generateClassDecl(classDef: ClassDef) {
+  return `struct ${classDef.name};`;
 }
 
 function generateClassDef(classDef: ClassDef) {
