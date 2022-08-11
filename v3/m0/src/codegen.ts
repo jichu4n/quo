@@ -13,6 +13,7 @@ import {
   IfStmt,
   MemberExpr,
   ModuleDef,
+  NewExpr,
   NumberLiteralExpr,
   ReturnStmt,
   Stmt,
@@ -55,7 +56,6 @@ export function generateHeaderCode(module: ModuleDef): string {
     ...module.importDecls.map(({moduleName}) => `#include "${moduleName}.h"`),
     null
   );
-
 
   if (module.classDefs.length) {
     l.append(...module.classDefs.map(generateClassDecl), null);
@@ -224,6 +224,8 @@ function generateExpr(expr: Expr): string {
       return generateMemberExpr(expr);
     case ExprType.ASSIGN:
       return generateAssignExpr(expr);
+    case ExprType.NEW:
+      return generateNewExpr(expr);
     default:
       throw new Error(JSON.stringify(expr));
   }
@@ -296,6 +298,10 @@ function generateMemberExpr(expr: MemberExpr) {
 
 function generateAssignExpr(expr: AssignExpr) {
   return `${generateExpr(expr.leftExpr)} = ${generateExpr(expr.rightExpr)}`;
+}
+
+function generateNewExpr(expr: NewExpr) {
+  return `new ${expr.typeString}()`;
 }
 
 export async function codegen(sourceFilePath: string) {

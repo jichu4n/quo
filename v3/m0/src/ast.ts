@@ -8,6 +8,7 @@ export enum ExprType {
   SUBSCRIPT = 'subscript',
   MEMBER = 'member',
   ASSIGN = 'assign',
+  NEW = 'new',
 }
 
 export type Expr =
@@ -19,7 +20,8 @@ export type Expr =
   | UnaryOpExpr
   | MemberExpr
   | SubscriptExpr
-  | AssignExpr;
+  | AssignExpr
+  | NewExpr;
 
 export type LhsExpr = VarRefExpr | MemberExpr | SubscriptExpr;
 
@@ -73,6 +75,11 @@ export interface AssignExpr {
   type: ExprType.ASSIGN;
   leftExpr: LhsExpr;
   rightExpr: Expr;
+}
+
+export interface NewExpr {
+  type: ExprType.NEW;
+  typeString: string;
 }
 
 export enum StmtType {

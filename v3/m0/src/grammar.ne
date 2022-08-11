@@ -17,6 +17,7 @@ import {
   MemberExpr,
   SubscriptExpr,
   AssignExpr,
+  NewExpr,
   Stmt,
   Stmts,
   StmtType,
@@ -281,6 +282,7 @@ expr0 ->
     | memberExpr  {% id %}
     | subscriptExpr  {% id %}
     | %LPAREN expr %RPAREN  {% ([$1, $2, $3]): Expr => $2 %}
+    | newExpr  {% id %}
 
 lhsExpr ->
       varRefExpr  {% id %}
@@ -333,6 +335,14 @@ memberExpr ->
           type: ExprType.MEMBER,
           objExpr: $1,
           fieldName: $3.value,
+        })
+    %}
+
+newExpr ->
+    %NEW typeString %LPAREN %RPAREN  {%
+        ([$1, $2, $3, $4]): NewExpr => ({
+          type: ExprType.NEW,
+          typeString: $2,
         })
     %}
 

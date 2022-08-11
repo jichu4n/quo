@@ -40,6 +40,7 @@ declare var NUMBER_LITERAL: any;
 declare var LBRACKET: any;
 declare var RBRACKET: any;
 declare var DOT: any;
+declare var NEW: any;
 
 import _ from 'lodash';
 import {Token} from 'moo';
@@ -57,6 +58,7 @@ import {
   MemberExpr,
   SubscriptExpr,
   AssignExpr,
+  NewExpr,
   Stmt,
   Stmts,
   StmtType,
@@ -316,6 +318,7 @@ const grammar: Grammar = {
     {"name": "expr0", "symbols": ["memberExpr"], "postprocess": id},
     {"name": "expr0", "symbols": ["subscriptExpr"], "postprocess": id},
     {"name": "expr0", "symbols": [(lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), "expr", (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN)], "postprocess": ([$1, $2, $3]): Expr => $2},
+    {"name": "expr0", "symbols": ["newExpr"], "postprocess": id},
     {"name": "lhsExpr", "symbols": ["varRefExpr"], "postprocess": id},
     {"name": "lhsExpr", "symbols": ["memberExpr"], "postprocess": id},
     {"name": "lhsExpr", "symbols": ["subscriptExpr"], "postprocess": id},
@@ -356,6 +359,12 @@ const grammar: Grammar = {
           type: ExprType.MEMBER,
           objExpr: $1,
           fieldName: $3.value,
+        })
+            },
+    {"name": "newExpr", "symbols": [(lexer.has("NEW") ? {type: "NEW"} : NEW), "typeString", (lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN)], "postprocess": 
+        ([$1, $2, $3, $4]): NewExpr => ({
+          type: ExprType.NEW,
+          typeString: $2,
         })
             },
     {"name": "exprs", "symbols": [], "postprocess": (): Array<Expr> => []},

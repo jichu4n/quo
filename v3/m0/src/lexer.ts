@@ -7,6 +7,7 @@ export enum Keywords {
   IF = 'if',
   IMPORT = 'import',
   LET = 'let',
+  NEW = 'new',
   RETURN = 'return',
   WHILE = 'while',
 }

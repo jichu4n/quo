@@ -8,6 +8,9 @@ fn dist(p1: Point, p2: Point): Int64 {
 	return sqrt(a ** 2 + b ** 2);
 }
 
-fn printPoint(p: Point) {
-  // TODO
+fn origin(): Point {
+	let p: Point = new Point();
+	p.x = 0;
+	p.y = 0;
+	return p;
 }
