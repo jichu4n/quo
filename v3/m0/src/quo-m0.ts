@@ -1,7 +1,7 @@
-import {codegen, getFileNameWithoutExt} from './codegen';
-import path from 'path';
 import execa from 'execa';
 import glob from 'glob-promise';
+import path from 'path';
+import {codegen} from './codegen';
 
 function getObjectFilePath(cppFilePath: string) {
   return path.join(
@@ -25,9 +25,19 @@ export async function build(
     cxx = process.env['CXX'] || 'g++';
   }
   const objectFilePaths: Array<string> = [];
-  for (const sourceFilePath of sourceFilePaths) {
+  for (const sourceFilePath of [
+    ...sourceFilePaths,
+    ...(await glob(path.join(RT_DIR_PATH, '*.cpp'))),
+  ]) {
     console.log(`> ${sourceFilePath}`);
-    const {cppFilePath} = await codegen(sourceFilePath);
+    let cppFilePath;
+    if (sourceFilePath.match(/\.quo$/i)) {
+      ({cppFilePath} = await codegen(sourceFilePath));
+    } else if (sourceFilePath.match(/\.cpp$/i)) {
+      cppFilePath = sourceFilePath;
+    } else {
+      throw new Error(`Unrecognized file extension: '${sourceFilePath}'`);
+    }
     const objectFilePath = getObjectFilePath(cppFilePath);
     const cxxArgs = [
       '-c',
@@ -47,7 +57,6 @@ export async function build(
     binaryFilePath,
     ...(linkFlags ?? []),
     ...objectFilePaths,
-    ...(await glob(path.join(RT_DIR_PATH, '*.cpp'))),
   ];
   console.log(`> ${cxx} ${linkArgs.join(' ')}`);
   await execa(cxx, linkArgs, {stderr: 'inherit', stdout: 'inherit'});
@@ -58,7 +67,7 @@ if (require.main === module) {
     const {program} = await import('commander');
 
     program.option('-o <binary>', 'Output binary file');
-    program.argument('<input-files...>', 'Quo source files');
+    program.argument('<input-files...>', 'Quo / C++ source files');
     program.parse();
 
     const sourceFilePaths = program.args;

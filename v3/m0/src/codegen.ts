@@ -305,7 +305,6 @@ function generateNewExpr(expr: NewExpr) {
 }
 
 export async function codegen(sourceFilePath: string) {
-  sourceFilePath = path.resolve(sourceFilePath);
   const sourceFileName = path.basename(sourceFilePath);
   const sourceFileDirPath = path.dirname(sourceFilePath);
   const headerFilePath = path.join(

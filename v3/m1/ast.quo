@@ -7,7 +7,8 @@ let STRING_LITERAL_EXPR: String = 'stringLiteral',
 		UNARY_OP_EXPR: String = 'unaryOp',
 		SUBSCRIPT_EXPR: String = 'subscript',
 		MEMBER_EXPR: String = 'member',
-		ASSIGN_EXPR: String = 'assign';
+		ASSIGN_EXPR: String = 'assign',
+		NEW_EXPR: String = 'new';
 
 class StringLiteralExpr {
   value: String;
@@ -52,6 +53,10 @@ class AssignExpr {
   rightExpr: Expr;
 }
 
+class NewExpr {
+  typeString: String;
+}
+
 class Expr {
 	type: String;
 	stringLiteralExpr: StringLiteralExpr;
@@ -63,6 +68,7 @@ class Expr {
 	binaryOpExpr: BinaryOpExpr;
 	unaryOpExpr: UnaryOpExpr;
 	assignExpr: AssignExpr;
+	newExpr: NewExpr;
 }
 
 // Statement types
@@ -109,4 +115,28 @@ class Stmt {
 	whileStmt: WhileStmt; 
 	varDecl: VarDecl; 
 	varDeclStmt: VarDeclStmt; 
+}
+
+class ImportDecl {
+  moduleName: String;
+}
+
+class FnDef {
+  name: String;
+  params: Array<VarDecl>;
+  returnTypeString: String;
+  body: Array<Stmt>;
+}
+
+class ClassDef {
+  name: String;
+  props: Array<VarDecl>;
+}
+
+class ModuleDef {
+  name: String;
+  importDecls: Array<ImportDecl>;
+  classDefs: Array<ClassDef>;
+  fnDefs: Array<FnDef>;
+  varDecls: Array<VarDecl>;
 }

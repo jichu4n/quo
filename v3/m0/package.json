@@ -7,7 +7,7 @@
     "build:tsc": "tsc",
     "build": "npm run build:grammar && npm run build:tsc"
   },
-  "bin": "./dist/index.js",
+  "bin": "./dist/quo-m0.js",
   "dependencies": {
     "commander": "^9.4.0",
     "execa": "^5.1.1",
