@@ -15,9 +15,8 @@
 %code provides {
   #define YY_DECL \
     ::yy::parser::symbol_type yylex()
-
-  /** Module def from latest parse. */
-  extern ModuleDef* ParsedModuleDef;
+  
+  extern ModuleDef* Parse(String* input);
 }
 
 %code {
@@ -38,10 +37,34 @@
 
 %%
 
-module: CLASS  { $$ = nullptr; }
+start: module  { ParsedModuleDef = $1; }
+
+module: %empty  {
+      $$ = new ModuleDef();
+      $$->name = new String("source");
+      $$->importDecls = new Array<ImportDecl*>();
+      $$->classDefs = new Array<ClassDef*>();
+      $$->fnDefs = new Array<FnDef*>();
+      $$->varDecls = new Array<VarDecl*>();
+    }
+    ;
 
 %% 
 
 void ::yy::parser::error (const std::string& m) {
   ::std::cerr << m << ::std::endl;
+}
+
+extern void yy_scan_string(const char*);
+
+ModuleDef* Parse(String* input) {
+  yy_scan_string(input->c_str());
+  ::yy::parser p;
+  // p.set_debug_level(1);
+  const int parse_result = p.parse();
+  if (parse_result != 0) {
+    ::std::cerr << "Parse failed";
+    return nullptr;
+  }
+  return ParsedModuleDef;
 }

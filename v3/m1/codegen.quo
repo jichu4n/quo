@@ -2,5 +2,6 @@ import 'ast';
 import 'parser';
 
 fn Main() {
-  Print("Hello, world!");
+  let moduleDef: ModuleDef = Parse("");
+  Print(moduleDef.name);
 }
