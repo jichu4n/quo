@@ -36,9 +36,13 @@
 %nterm <ModuleDef*> module
 %nterm <ImportDecl*> importDecl
 %nterm <FnDef*> fnDef fnSig voidFnSig
-%nterm <Array<VarDecl*>*> params optParams
-%nterm <VarDecl*> param
+%nterm <Array<VarDecl*>*> params optParams propDecls varDecls
+%nterm <VarDecl*> param propDecl varDecl
+%nterm <Expr*> optInitExpr
+%nterm <ClassDef*> classDef
 %nterm <Array<Stmt*>*> block
+%nterm <VarDeclStmt*> varDeclStmt
+%nterm <Expr*> expr
 %nterm <::std::string> typeString
 
 %%
@@ -57,22 +61,18 @@ module: %empty  {
         $$ = $1;
         $$->importDecls->add($2);
     }
-    /*
     | module classDef  {
         $$ = $1;
         $$->classDefs->add($2);
     }
-    */
     | module fnDef  {
         $$ = $1;
         $$->fnDefs->add($2);
     }
-    /*
     | module varDeclStmt  {
         $$ = $1;
         $$->varDecls->addAll($2->varDecls);
     }
-    */
     ;
 
 importDecl:
@@ -131,8 +131,61 @@ param:
     }
     ;
 
+classDef:
+    CLASS IDENTIFIER LBRACE propDecls RBRACE  {
+          $$ = new ClassDef();
+          $$->name = new String($2);
+          $$->props = $4;
+    }
+    ;
+
+propDecls:
+    %empty  { $$ = new Array<VarDecl*>(); }
+    | propDecls propDecl  { $$ = $1; $1->add($2); }
+    ;
+
+propDecl:
+    varDecl SEMICOLON  { $$ = $1; }
+    ;
+
+
 block:
     LBRACE RBRACE  { $$ = new Array<Stmt*>(); }
+    ;
+
+varDeclStmt:
+    LET varDecls SEMICOLON {
+        $$ = new VarDeclStmt();
+        $$->varDecls = $2;
+    }
+    ;
+
+varDecls:
+    varDecl  {
+        $$ = new Array<VarDecl*>();
+        $$->add($1);
+    }
+    | varDecls COMMA varDecl {
+        $$ = $1;
+        $$->add($3);
+    }
+    ;
+
+varDecl:
+    IDENTIFIER COLON typeString optInitExpr  {
+        $$ = new VarDecl();
+        $$->name = new String($1);
+        $$->typeString = new String($3);
+        $$->initExpr = $4;
+    }
+    ;
+
+optInitExpr:
+    %empty  { $$ = nullptr; }
+    | ASSIGN expr  { $$ = $2; }
+    ;
+
+expr: IDENTIFIER  { $$ = nullptr; }
     ;
 
 

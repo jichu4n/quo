@@ -27,7 +27,10 @@ class Array {
     }
 
     void addAll(Array<T>* otherElements) {
-      elements.insert(elements.end(), otherElements->begin(), otherElements->end());
+      elements.insert(
+          elements.end(),
+          otherElements->elements.begin(),
+          otherElements->elements.end());
     }
 
     T& operator[](Int64 index) {

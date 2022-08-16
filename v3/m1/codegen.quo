@@ -2,7 +2,7 @@ import 'ast';
 import 'parser';
 
 fn Main() {
-  let moduleDef: ModuleDef = Parse("fn hello() {} fn world(t: Int64) {}");
+  let moduleDef: ModuleDef = Parse("fn hello() {} fn world(t: Int64) {} class M { x: Int64; y: Int64; }");
   Println(moduleDef.name);
   let i: Int64 = 0;
   while (i < moduleDef.fnDefs.length()) {
