@@ -41,6 +41,7 @@ export async function build(
     const objectFilePath = getObjectFilePath(cppFilePath);
     const cxxArgs = [
       '-c',
+      '-g',
       '-o',
       objectFilePath,
       `-I${RT_DIR_PATH}`,

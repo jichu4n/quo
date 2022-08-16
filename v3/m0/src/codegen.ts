@@ -244,7 +244,7 @@ function generateVarRefExpr(expr: VarRefExpr) {
 }
 
 function generateFnCallExpr(expr: FnCallExpr) {
-  return `${expr.name}(${expr.argExprs.map(generateExpr).join(', ')})`;
+  return `${generateExpr(expr.fnExpr)}(${expr.argExprs.map(generateExpr).join(', ')})`;
 }
 
 function generateBinaryOpExpr(expr: BinaryOpExpr) {
@@ -287,7 +287,7 @@ function generateUnaryOpExpr(expr: UnaryOpExpr) {
 function generateSubscriptExpr(expr: SubscriptExpr) {
   let exprString = generateExpr(expr.arrayExpr);
   for (const indexExpr of expr.indexExprs) {
-    exprString = `*(${exprString})[*(${generateExpr(indexExpr)})]`;
+    exprString = `(*(${exprString}))[*(${generateExpr(indexExpr)})]`;
   }
   return exprString;
 }

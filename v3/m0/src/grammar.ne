@@ -296,10 +296,10 @@ varRefExpr ->
     %}
 
 fnCallExpr ->
-    %IDENTIFIER %LPAREN exprs %RPAREN  {%
+    expr0 %LPAREN exprs %RPAREN  {%
         ([$1, $2, $3, $4]): FnCallExpr => ({
           type: ExprType.FN_CALL,
-          name: $1.value,
+          fnExpr: $1,
           argExprs: $3,
         })
     %}
@@ -325,7 +325,7 @@ subscriptExpr ->
         ([$1, $2, $3, $4]): SubscriptExpr => ({
           type: ExprType.SUBSCRIPT,
           arrayExpr: $1,
-          indexExprs: $3.map(([$3_1, $3_2, $3_3]: Array<any>) => $3_2),
+          indexExprs: $2.map(([$2_1, $2_2, $2_3]: Array<any>) => $2_2),
         })
     %}
 

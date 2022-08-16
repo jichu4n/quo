@@ -2,6 +2,11 @@ import 'ast';
 import 'parser';
 
 fn Main() {
-  let moduleDef: ModuleDef = Parse("");
-  Print(moduleDef.name);
+  let moduleDef: ModuleDef = Parse("fn hello() {} fn world(t: Int64) {}");
+  Println(moduleDef.name);
+  let i: Int64 = 0;
+  while (i < moduleDef.fnDefs.length()) {
+    Println(moduleDef.fnDefs[i].name);
+    i = i + 1;
+  }
 }

@@ -42,7 +42,7 @@ export interface VarRefExpr {
 
 export interface FnCallExpr {
   type: ExprType.FN_CALL;
-  name: string;
+  fnExpr: Expr;
   argExprs: Array<Expr>;
 }
 

@@ -15,9 +15,31 @@ void Print(T* v) {
 }
 
 template<typename T>
+void Println(T* v) {
+	::std::cout << *v << ::std::endl;
+}
+
+template<typename T>
 class Array {
-	private:
-	  ::std::vector<T> elements;
+  public:
+    void add(T element) {
+      elements.push_back(element);
+    }
+
+    void addAll(Array<T>* otherElements) {
+      elements.insert(elements.end(), otherElements->begin(), otherElements->end());
+    }
+
+    T& operator[](Int64 index) {
+      return elements[index];
+    }
+
+    Int64* length() {
+      return new Int64(elements.size());
+    }
+
+  private:
+    ::std::vector<T> elements;
 };
 
 #endif

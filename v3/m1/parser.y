@@ -34,18 +34,112 @@
 %token AND OR NOT ADD SUB EXP MUL DIV MOD EQ NE GTE LTE GT LT ASSIGN
 
 %nterm <ModuleDef*> module
+%nterm <ImportDecl*> importDecl
+%nterm <FnDef*> fnDef fnSig voidFnSig
+%nterm <Array<VarDecl*>*> params optParams
+%nterm <VarDecl*> param
+%nterm <Array<Stmt*>*> block
+%nterm <::std::string> typeString
 
 %%
 
 start: module  { ParsedModuleDef = $1; }
 
 module: %empty  {
-      $$ = new ModuleDef();
-      $$->name = new String("source");
-      $$->importDecls = new Array<ImportDecl*>();
-      $$->classDefs = new Array<ClassDef*>();
-      $$->fnDefs = new Array<FnDef*>();
-      $$->varDecls = new Array<VarDecl*>();
+        $$ = new ModuleDef();
+        $$->name = new String("source");
+        $$->importDecls = new Array<ImportDecl*>();
+        $$->classDefs = new Array<ClassDef*>();
+        $$->fnDefs = new Array<FnDef*>();
+        $$->varDecls = new Array<VarDecl*>();
+    }
+    | module importDecl  {
+        $$ = $1;
+        $$->importDecls->add($2);
+    }
+    /*
+    | module classDef  {
+        $$ = $1;
+        $$->classDefs->add($2);
+    }
+    */
+    | module fnDef  {
+        $$ = $1;
+        $$->fnDefs->add($2);
+    }
+    /*
+    | module varDeclStmt  {
+        $$ = $1;
+        $$->varDecls->addAll($2->varDecls);
+    }
+    */
+    ;
+
+importDecl:
+    IMPORT STRING_LITERAL SEMICOLON  {
+        $$ = new ImportDecl();
+        $$->moduleName = new String($2);
+    }
+    ;
+
+fnDef:
+    fnSig block  {
+        $$ = $1;
+        $$->body = $2;
+    }
+    ;
+
+fnSig:
+    voidFnSig  { $$ = $1; }
+    | voidFnSig COLON typeString  {
+        $$ = $1;
+        $$->returnTypeString = new String($3);
+    }
+    ;
+
+voidFnSig:
+    FN IDENTIFIER LPAREN optParams RPAREN   {
+        $$ = new FnDef();
+        $$->name = new String($2);
+        $$->params = $4;
+        $$->returnTypeString = nullptr;
+    }
+    ;
+
+optParams:
+    %empty  { $$ = new Array<VarDecl*>(); }
+    | params  { $$ = $1; }
+    ;
+
+params:
+    param  {
+        $$ = new Array<VarDecl*>();
+        $$->add($1);
+    }
+    | params COMMA param  {
+        $$ = $1;
+        $$->add($3);
+    }
+    ;
+
+param:
+    IDENTIFIER COLON typeString  {
+        $$ = new VarDecl();
+        $$->name = new String($1);
+        $$->typeString = new String($3);
+        $$->initExpr = nullptr;
+    }
+    ;
+
+block:
+    LBRACE RBRACE  { $$ = new Array<Stmt*>(); }
+    ;
+
+
+typeString:
+      IDENTIFIER  { $$ = $1; }
+    | IDENTIFIER LT typeString GT  {
+        $$ = $1 + "<" + $3 + "*>";
     }
     ;
 

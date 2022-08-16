@@ -326,10 +326,10 @@ const grammar: Grammar = {
         ([$1]): VarRefExpr =>
             ({ type: ExprType.VAR_REF, name: $1.value })
             },
-    {"name": "fnCallExpr", "symbols": [(lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER), (lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), "exprs", (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN)], "postprocess": 
+    {"name": "fnCallExpr", "symbols": ["expr0", (lexer.has("LPAREN") ? {type: "LPAREN"} : LPAREN), "exprs", (lexer.has("RPAREN") ? {type: "RPAREN"} : RPAREN)], "postprocess": 
         ([$1, $2, $3, $4]): FnCallExpr => ({
           type: ExprType.FN_CALL,
-          name: $1.value,
+          fnExpr: $1,
           argExprs: $3,
         })
             },
@@ -351,7 +351,7 @@ const grammar: Grammar = {
         ([$1, $2, $3, $4]): SubscriptExpr => ({
           type: ExprType.SUBSCRIPT,
           arrayExpr: $1,
-          indexExprs: $3.map(([$3_1, $3_2, $3_3]: Array<any>) => $3_2),
+          indexExprs: $2.map(([$2_1, $2_2, $2_3]: Array<any>) => $2_2),
         })
             },
     {"name": "memberExpr", "symbols": ["expr0", (lexer.has("DOT") ? {type: "DOT"} : DOT), (lexer.has("IDENTIFIER") ? {type: "IDENTIFIER"} : IDENTIFIER)], "postprocess": 

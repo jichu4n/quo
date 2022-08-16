@@ -23,7 +23,7 @@ class VarRefExpr {
 }
 
 class FnCallExpr {
-  name: String;
+  fnExpr: Expr;
   argExprs: Array<Expr>;
 }
 
