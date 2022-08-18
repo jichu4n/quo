@@ -34,7 +34,7 @@ class MemberExpr {
 
 class SubscriptExpr {
   arrayExpr: Expr;
-  indexExprs: Array<Expr>;
+  indexExpr: Expr;
 }
 
 class BinaryOpExpr {
