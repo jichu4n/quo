@@ -2,8 +2,24 @@
 
 #include <fstream>
 #include <sstream>
+#include <regex>
 
 using namespace std;
+
+String::String(): string() {}
+
+String::String(const string& other)
+    : string(other) {
+}
+
+String::String(const String& other)
+    : string(other) {
+}
+
+String* String::replace(String* regexString, String* replacementString) const {
+  regex re(*regexString);
+  return new String(regex_replace(*this, re, *replacementString));
+}
 
 String* ReadFile(String* path) {
   ifstream inputFile(*path);
@@ -12,6 +28,25 @@ String* ReadFile(String* path) {
   }
   stringstream buffer;
   buffer << inputFile.rdbuf();
+  return new String(buffer.str());
+}
+
+Int64* WriteFile(String* path, String* content) {
+  ofstream outputFile(*path);
+  if (outputFile.fail()) {
+    return new Int64(false);
+  }
+  outputFile << *content;
+  outputFile.close();
+  return new Int64(true);
+}
+
+String* Join(Array<String*>* strings) {
+  ostringstream buffer;
+  const Int64 length = *strings->length();
+  for (Int64 i = 0; i < length; ++i) {
+    buffer << *((*strings)[i]);
+  }
   return new String(buffer.str());
 }
 

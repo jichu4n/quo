@@ -1,15 +1,15 @@
 // Expression types
 let STRING_LITERAL_EXPR: String = 'stringLiteral',
-		NUMBER_LITERAL_EXPR: String = 'numberLiteral',
-                NULL_EXPR: String = 'null',
-		VAR_REF_EXPR: String = 'varRef',
-		FN_CALL_EXPR: String = 'fnCall',
-		BINARY_OP_EXPR: String = 'binaryOp',
-		UNARY_OP_EXPR: String = 'unaryOp',
-		SUBSCRIPT_EXPR: String = 'subscript',
-		MEMBER_EXPR: String = 'member',
-		ASSIGN_EXPR: String = 'assign',
-		NEW_EXPR: String = 'new';
+    NUMBER_LITERAL_EXPR: String = 'numberLiteral',
+    NULL_EXPR: String = 'null',
+    VAR_REF_EXPR: String = 'varRef',
+    FN_CALL_EXPR: String = 'fnCall',
+    BINARY_OP_EXPR: String = 'binaryOp',
+    UNARY_OP_EXPR: String = 'unaryOp',
+    SUBSCRIPT_EXPR: String = 'subscript',
+    MEMBER_EXPR: String = 'member',
+    ASSIGN_EXPR: String = 'assign',
+    NEW_EXPR: String = 'new';
 
 class StringLiteralExpr {
   value: String;
@@ -59,25 +59,25 @@ class NewExpr {
 }
 
 class Expr {
-	type: String;
-	stringLiteralExpr: StringLiteralExpr;
-	numberLiteralExpr: NumberLiteralExpr;
-	varRefExpr: VarRefExpr;
-	fnCallExpr: FnCallExpr;
-	memberExpr: MemberExpr;
-	subscriptExpr: SubscriptExpr;
-	binaryOpExpr: BinaryOpExpr;
-	unaryOpExpr: UnaryOpExpr;
-	assignExpr: AssignExpr;
-	newExpr: NewExpr;
+  type: String;
+  stringLiteralExpr: StringLiteralExpr;
+  numberLiteralExpr: NumberLiteralExpr;
+  varRefExpr: VarRefExpr;
+  fnCallExpr: FnCallExpr;
+  memberExpr: MemberExpr;
+  subscriptExpr: SubscriptExpr;
+  binaryOpExpr: BinaryOpExpr;
+  unaryOpExpr: UnaryOpExpr;
+  assignExpr: AssignExpr;
+  newExpr: NewExpr;
 }
 
 // Statement types
 let EXPR_STMT: String = 'expr',
-		RETURN_STMT: String = 'return',
-		IF_STMT: String = 'if',
-		WHILE_STMT: String = 'while',
-		VAR_DECL_STMT: String = 'varDecl';
+    RETURN_STMT: String = 'return',
+    IF_STMT: String = 'if',
+    WHILE_STMT: String = 'while',
+    VAR_DECL_STMT: String = 'varDecl';
 
 class ExprStmt {
   expr: Expr;
@@ -109,13 +109,13 @@ class VarDeclStmt {
 }
 
 class Stmt {
-	type: String;
-	exprStmt: ExprStmt;
-	returnStmt: ReturnStmt; 
-	ifStmt: IfStmt; 
-	whileStmt: WhileStmt; 
-	varDecl: VarDecl; 
-	varDeclStmt: VarDeclStmt; 
+  type: String;
+  exprStmt: ExprStmt;
+  returnStmt: ReturnStmt; 
+  ifStmt: IfStmt; 
+  whileStmt: WhileStmt; 
+  varDecl: VarDecl; 
+  varDeclStmt: VarDeclStmt; 
 }
 
 class ImportDecl {

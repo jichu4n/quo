@@ -1,0 +1,6 @@
+fn Main(): Int64 {
+  let s1: String = 'hello' + ', ' + 'world!';
+  let s2: String = 'foo';
+  Print(s1 + '\n' + s2 + '\n');
+  return 0;
+}

@@ -261,7 +261,9 @@ function generateVarRefExpr(expr: VarRefExpr) {
 }
 
 function generateFnCallExpr(expr: FnCallExpr) {
-  return `${generateExpr(expr.fnExpr)}(${expr.argExprs.map(generateExpr).join(', ')})`;
+  return `${generateExpr(expr.fnExpr)}(${expr.argExprs
+    .map(generateExpr)
+    .join(', ')})`;
 }
 
 function generateBinaryOpExpr(expr: BinaryOpExpr) {
@@ -286,14 +288,31 @@ function generateBinaryOpExpr(expr: BinaryOpExpr) {
   }
   let leftExprString: string;
   let rightExprString: string;
-  if (expr.leftExpr.type === ExprType.NULL || expr.rightExpr.type === ExprType.NULL) {
+  if (
+    expr.leftExpr.type === ExprType.NULL ||
+    expr.rightExpr.type === ExprType.NULL
+  ) {
     leftExprString = generateExpr(expr.leftExpr);
     rightExprString = generateExpr(expr.rightExpr);
   } else {
     leftExprString = generateValueExpr(expr.leftExpr);
     rightExprString = generateValueExpr(expr.rightExpr);
   }
-  return `new Int64((${leftExprString}) ${op} (${rightExprString}))`;
+  const hasStringLiteralExpr = (expr: Expr): boolean => {
+    switch (expr.type) {
+      case ExprType.STRING_LITERAL:
+        return true;
+      case ExprType.BINARY_OP:
+        return (
+          hasStringLiteralExpr(expr.leftExpr) ||
+          hasStringLiteralExpr(expr.rightExpr)
+        );
+      default:
+        return false;
+    }
+  };
+  const resultDataType = hasStringLiteralExpr(expr) ? 'String' : 'Int64';
+  return `new ${resultDataType}((${leftExprString}) ${op} (${rightExprString}))`;
 }
 
 function generateUnaryOpExpr(expr: UnaryOpExpr) {

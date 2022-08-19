@@ -7,7 +7,14 @@
 #include <vector>
 
 typedef int64_t Int64;
-typedef ::std::string String;
+
+class String : public ::std::string {
+  public:
+    String();
+    String(const ::std::string& other);
+    String(const String& other);
+    String* replace(String* regex, String* replacement) const;
+};
 
 template<typename T>
 void Print(T* v) {
@@ -48,6 +55,9 @@ class Array {
 extern "C" {
 
 extern String* ReadFile(String* path);
+extern Int64* WriteFile(String* path, String* content);
+
+extern String* Join(Array<String*>* strings);
 
 }
 
