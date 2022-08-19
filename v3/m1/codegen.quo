@@ -1,12 +1,21 @@
 import 'ast';
 import 'parser';
 
-fn Main() {
-  let moduleDef: ModuleDef = Parse("fn hello() {} fn world(t: Int64) {} class M { x: Int64; y: Int64; }");
-  Println(moduleDef.name);
-  let i: Int64 = 0;
-  while (i < moduleDef.fnDefs.length()) {
-    Println(moduleDef.fnDefs[i].name);
+fn codegen(sourceFilePath: String) {
+  let source: String = ReadFile(sourceFilePath);
+  if (source == null) {
+    Print("Failed to open ");
+    Print(sourceFilePath);
+    return;
+  }
+  Print(source);
+}
+
+fn Main(argv: Array<String>): Int64 {
+  let i: Int64 = 1;
+  while (i < argv.length()) {
+    codegen(argv[i]);
     i = i + 1;
   }
+  return 0;
 }

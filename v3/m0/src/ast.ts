@@ -1,6 +1,7 @@
 export enum ExprType {
   STRING_LITERAL = 'stringLiteral',
   NUMBER_LITERAL = 'numberLiteral',
+  NULL = 'null',
   VAR_REF = 'varRef',
   FN_CALL = 'fnCall',
   BINARY_OP = 'binaryOp',
@@ -14,6 +15,7 @@ export enum ExprType {
 export type Expr =
   | StringLiteralExpr
   | NumberLiteralExpr
+  | NullExpr
   | VarRefExpr
   | FnCallExpr
   | BinaryOpExpr
@@ -33,6 +35,10 @@ export interface StringLiteralExpr {
 export interface NumberLiteralExpr {
   type: ExprType.NUMBER_LITERAL;
   value: number;
+}
+
+export interface NullExpr {
+  type: ExprType.NULL;
 }
 
 export interface VarRefExpr {

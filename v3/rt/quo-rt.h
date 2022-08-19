@@ -45,4 +45,11 @@ class Array {
     ::std::vector<T> elements;
 };
 
+extern "C" {
+
+extern String* ReadFile(String* path);
+
+}
+
 #endif
+

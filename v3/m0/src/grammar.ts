@@ -37,6 +37,7 @@ declare var MUL: any;
 declare var DIV: any;
 declare var EXP: any;
 declare var NUMBER_LITERAL: any;
+declare var NULL: any;
 declare var LBRACKET: any;
 declare var RBRACKET: any;
 declare var DOT: any;
@@ -53,6 +54,7 @@ import {
   UnaryOpExpr,
   StringLiteralExpr,
   NumberLiteralExpr,
+  NullExpr,
   VarRefExpr,
   FnCallExpr,
   MemberExpr,
@@ -335,6 +337,7 @@ const grammar: Grammar = {
             },
     {"name": "literalExpr", "symbols": ["stringLiteralExpr"], "postprocess": id},
     {"name": "literalExpr", "symbols": ["numberLiteralExpr"], "postprocess": id},
+    {"name": "literalExpr", "symbols": ["nullExpr"], "postprocess": id},
     {"name": "stringLiteralExpr", "symbols": [(lexer.has("STRING_LITERAL") ? {type: "STRING_LITERAL"} : STRING_LITERAL)], "postprocess": 
         ([$1]): StringLiteralExpr =>
             ({ type: ExprType.STRING_LITERAL, value: $1.value })
@@ -342,6 +345,10 @@ const grammar: Grammar = {
     {"name": "numberLiteralExpr", "symbols": [(lexer.has("NUMBER_LITERAL") ? {type: "NUMBER_LITERAL"} : NUMBER_LITERAL)], "postprocess": 
         ([$1]): NumberLiteralExpr =>
             ({ type: ExprType.NUMBER_LITERAL, value: $1.value })
+            },
+    {"name": "nullExpr", "symbols": [(lexer.has("NULL") ? {type: "NULL"} : NULL)], "postprocess": 
+        ([$1]): NullExpr =>
+            ({ type: ExprType.NULL })
             },
     {"name": "subscriptExpr$ebnf$1$subexpression$1", "symbols": [(lexer.has("LBRACKET") ? {type: "LBRACKET"} : LBRACKET), "expr", (lexer.has("RBRACKET") ? {type: "RBRACKET"} : RBRACKET)]},
     {"name": "subscriptExpr$ebnf$1", "symbols": ["subscriptExpr$ebnf$1$subexpression$1"]},

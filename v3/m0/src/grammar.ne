@@ -12,6 +12,7 @@ import {
   UnaryOpExpr,
   StringLiteralExpr,
   NumberLiteralExpr,
+  NullExpr,
   VarRefExpr,
   FnCallExpr,
   MemberExpr,
@@ -307,6 +308,7 @@ fnCallExpr ->
 literalExpr ->
       stringLiteralExpr  {% id %}
     | numberLiteralExpr  {% id %}
+    | nullExpr  {% id %}
 
 stringLiteralExpr ->
     %STRING_LITERAL  {%
@@ -318,6 +320,12 @@ numberLiteralExpr ->
     %NUMBER_LITERAL  {%
         ([$1]): NumberLiteralExpr =>
             ({ type: ExprType.NUMBER_LITERAL, value: $1.value })
+    %}
+
+nullExpr ->
+    %NULL  {%
+        ([$1]): NullExpr =>
+            ({ type: ExprType.NULL })
     %}
 
 subscriptExpr ->

@@ -15,6 +15,7 @@ import {
   ModuleDef,
   NewExpr,
   NumberLiteralExpr,
+  NullExpr,
   ReturnStmt,
   Stmt,
   StmtType,
@@ -175,7 +176,7 @@ function generateReturnStmt(stmt: ReturnStmt): LinesBuilder {
 
 function generateIfStmt(stmt: IfStmt): LinesBuilder {
   const l = lines(
-    `if (*(${generateExpr(stmt.condExpr)})) {`,
+    `if (${generateValueExpr(stmt.condExpr)}) {`,
     generateBlock(stmt.ifBlock)
   );
   if (stmt.elseBlock.length) {
@@ -187,7 +188,7 @@ function generateIfStmt(stmt: IfStmt): LinesBuilder {
 
 function generateWhileStmt(stmt: WhileStmt): LinesBuilder {
   return lines(
-    `while (*(${generateExpr(stmt.condExpr)})) {`,
+    `while (${generateValueExpr(stmt.condExpr)}) {`,
     generateBlock(stmt.block),
     '}'
   );
@@ -210,6 +211,8 @@ function generateExpr(expr: Expr): string {
       return generateStringLiteralExpr(expr);
     case ExprType.NUMBER_LITERAL:
       return generateNumberLiteralExpr(expr);
+    case ExprType.NULL:
+      return generateNullExpr(expr);
     case ExprType.VAR_REF:
       return generateVarRefExpr(expr);
     case ExprType.FN_CALL:
@@ -231,12 +234,26 @@ function generateExpr(expr: Expr): string {
   }
 }
 
+function generateValueExpr(expr: Expr): string {
+  const exprString = generateExpr(expr);
+  switch (expr.type) {
+    case ExprType.NULL:
+      return exprString;
+    default:
+      return `*(${exprString})`;
+  }
+}
+
 function generateStringLiteralExpr(expr: StringLiteralExpr) {
   return `new String("${expr.value}")`;
 }
 
 function generateNumberLiteralExpr(expr: NumberLiteralExpr) {
   return `new Int64(${expr.value})`;
+}
+
+function generateNullExpr(_: NullExpr) {
+  return 'nullptr';
 }
 
 function generateVarRefExpr(expr: VarRefExpr) {
@@ -267,9 +284,16 @@ function generateBinaryOpExpr(expr: BinaryOpExpr) {
   if (!op) {
     throw new Error(JSON.stringify(expr));
   }
-  return `new Int64((*(${generateExpr(expr.leftExpr)})) ${op} (*(${generateExpr(
-    expr.rightExpr
-  )})))`;
+  let leftExprString: string;
+  let rightExprString: string;
+  if (expr.leftExpr.type === ExprType.NULL || expr.rightExpr.type === ExprType.NULL) {
+    leftExprString = generateExpr(expr.leftExpr);
+    rightExprString = generateExpr(expr.rightExpr);
+  } else {
+    leftExprString = generateValueExpr(expr.leftExpr);
+    rightExprString = generateValueExpr(expr.rightExpr);
+  }
+  return `new Int64((${leftExprString}) ${op} (${rightExprString}))`;
 }
 
 function generateUnaryOpExpr(expr: UnaryOpExpr) {
@@ -281,13 +305,13 @@ function generateUnaryOpExpr(expr: UnaryOpExpr) {
   if (!op) {
     throw new Error(JSON.stringify(expr));
   }
-  return `new Int64(${op}(*(${generateExpr(expr.rightExpr)})))`;
+  return `new Int64(${op}(${generateValueExpr(expr.rightExpr)}))`;
 }
 
 function generateSubscriptExpr(expr: SubscriptExpr) {
-  let exprString = generateExpr(expr.arrayExpr);
+  let exprString = generateValueExpr(expr.arrayExpr);
   for (const indexExpr of expr.indexExprs) {
-    exprString = `(*(${exprString}))[*(${generateExpr(indexExpr)})]`;
+    exprString = `(${exprString})[${generateValueExpr(indexExpr)}]`;
   }
   return exprString;
 }
