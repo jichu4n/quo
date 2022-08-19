@@ -1,6 +1,7 @@
 // Expression types
 let STRING_LITERAL_EXPR: String = 'stringLiteral',
 		NUMBER_LITERAL_EXPR: String = 'numberLiteral',
+                NULL_EXPR: String = 'null',
 		VAR_REF_EXPR: String = 'varRef',
 		FN_CALL_EXPR: String = 'fnCall',
 		BINARY_OP_EXPR: String = 'binaryOp',

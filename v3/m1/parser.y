@@ -48,7 +48,7 @@
   }
 }
 
-%token CLASS ELSE FN IF IMPORT LET NEW RETURN WHILE
+%token CLASS ELSE FN IF IMPORT LET NEW RETURN WHILE NULL_LITERAL
 %token <::std::string> IDENTIFIER STRING_LITERAL
 %token <int64_t> NUMBER_LITERAL
 %token COLON SEMICOLON COMMA DOT LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
@@ -73,7 +73,7 @@
 %nterm <Expr*> expr10 expr9 expr8 expr7 expr6 expr5 expr4 expr3
 %nterm <Expr*> expr2 expr1 expr0
 %nterm <Expr*> varRefExpr fnCallExpr stringLiteralExpr numberLiteralExpr
-%nterm <Expr*> memberExpr subscriptExpr newExpr
+%nterm <Expr*> memberExpr subscriptExpr newExpr nullExpr
 %nterm <Array<Expr*>*> exprs optExprs
 %nterm <::std::string> typeString
 
@@ -362,8 +362,9 @@ expr0:
     | numberLiteralExpr  { $$ = $1; }
     | memberExpr  { $$ = $1; }
     | subscriptExpr  { $$ = $1; }
-    | LPAREN expr RPAREN  { $$ = $2; }
     | newExpr  { $$ = $1; }
+    | nullExpr  { $$ = $1; }
+    | LPAREN expr RPAREN  { $$ = $2; }
     ;
 
 lhsExpr:
@@ -434,6 +435,13 @@ newExpr:
         $$->type = new String("new");
         $$->newExpr = new NewExpr();
         $$->newExpr->typeString = new String($2);
+    }
+    ;
+
+nullExpr:
+    NULL_LITERAL  {
+        $$ = new Expr();
+        $$->type = new String("null");
     }
     ;
 

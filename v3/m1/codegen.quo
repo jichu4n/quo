@@ -8,7 +8,13 @@ fn codegen(sourceFilePath: String) {
     Print(sourceFilePath);
     return;
   }
-  Print(source);
+
+  let moduleDef: ModuleDef = Parse(source);
+  let i: Int64 = 0;
+  while (i < moduleDef.classDefs.length()) {
+    Println(moduleDef.classDefs[i].name);
+    i = i + 1;
+  }
 }
 
 fn Main(argv: Array<String>): Int64 {

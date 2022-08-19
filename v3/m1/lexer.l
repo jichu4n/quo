@@ -20,6 +20,7 @@ using namespace yy;
 "import"			{ return parser::make_IMPORT(); }
 "let"			{ return parser::make_LET(); }
 "new"			{ return parser::make_NEW(); }
+"null"			{ return parser::make_NULL_LITERAL(); }
 "return"		{ return parser::make_RETURN(); }
 "while"			{ return parser::make_WHILE(); }
   /* Other classes of tokens. */
