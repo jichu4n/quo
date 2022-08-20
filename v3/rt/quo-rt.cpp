@@ -21,6 +21,14 @@ String* String::replace(String* regexString, String* replacementString) const {
   return new String(regex_replace(*this, re, *replacementString));
 }
 
+String* String::toUpperCase() {
+  ostringstream buffer;
+  for (int i = 0; i < length(); ++i) {
+    buffer << static_cast<char>(toupper((*this)[i]));
+  }
+  return new String(buffer.str());
+}
+
 String* ReadFile(String* path) {
   ifstream inputFile(*path);
   if (inputFile.fail()) {

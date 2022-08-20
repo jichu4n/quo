@@ -1,6 +1,33 @@
 import 'ast';
 import 'parser';
 
+fn getModuleName(sourceFilePath: String): String {
+  return sourceFilePath.replace('^.*/', '').replace('[.]quo$', '');
+}
+
+fn getHeaderFilePath(sourceFilePath: String): String {
+  return sourceFilePath.replace('[.]quo$', '.h');
+}
+
+fn generateHeaderCode(module: ModuleDef): String {
+  let lines: Array<String> = new Array<String>();
+  let includeGuard: String = '__' +
+    module.name.toUpperCase().replace('[^a-zA-Z0-9]+', '_') + '_H__';
+  lines.add('#ifndef ' + includeGuard + '\n');
+  lines.add('#define ' + includeGuard + '\n\n');
+  lines.add('#include \"quo-rt.h\"\n\n');
+
+  let i: Int64 = 0;
+  while (i < module.importDecls.length()) {
+    lines.add('#include \"' + module.importDecls[i].moduleName + '.h\"\n');
+    i = i + 1;
+  }
+  lines.add('\n');
+
+  lines.add('\n#endif');
+  return Join(lines);
+}
+
 fn codegen(sourceFilePath: String) {
   let source: String = ReadFile(sourceFilePath);
   if (source == null) {
@@ -10,11 +37,13 @@ fn codegen(sourceFilePath: String) {
   }
 
   let moduleDef: ModuleDef = Parse(source);
-  let i: Int64 = 0;
-  while (i < moduleDef.classDefs.length()) {
-    Println(moduleDef.classDefs[i].name);
-    i = i + 1;
-  }
+  moduleDef.name = getModuleName(sourceFilePath);
+
+  let headerFileName: String = getHeaderFilePath(sourceFilePath);
+  let headerCode: String = generateHeaderCode(moduleDef);
+  Print(headerCode);
+  
+  let cppFileName: String = sourceFilePath.replace('[.]quo$', '.cpp');
 }
 
 fn Main(argv: Array<String>): Int64 {

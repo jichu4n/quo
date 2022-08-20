@@ -14,6 +14,7 @@ class String : public ::std::string {
     String(const ::std::string& other);
     String(const String& other);
     String* replace(String* regex, String* replacement) const;
+    String* toUpperCase();
 };
 
 template<typename T>
