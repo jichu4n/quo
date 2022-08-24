@@ -24,8 +24,72 @@ fn generateHeaderCode(module: ModuleDef): String {
   }
   lines.add('\n');
 
+  if (module.classDefs.length()) {
+    i = 0;
+    while (i < module.classDefs.length()) {
+      lines.add('struct ' + module.classDefs[i].name + ';\n');
+      i = i + 1;
+    }
+    lines.add('\n');
+
+    i = 0;
+    while (i < module.classDefs.length()) {
+      lines.add('struct ' + module.classDefs[i].name + ' {\n');
+      let j: Int64 = 0;
+      while (j < module.classDefs[i].props.length()) {
+        let prop: VarDecl = module.classDefs[i].props[j];
+        lines.add('  ' + prop.typeString + '* ' + prop.name + ';\n');
+        j = j + 1;
+      }
+      lines.add('};\n');
+      i = i + 1;
+    }
+    lines.add('\n');
+  }
+  
+  if (module.varDecls.length()) {
+    i = 0;
+    while (i < module.varDecls.length()) {
+      lines.add('extern ' + module.varDecls[i].typeString + '* ' +
+          module.varDecls[i].name + ';\n');
+      i = i + 1;
+    }
+    lines.add('\n');
+  }
+  
+  if (module.fnDefs.length()) {
+    lines.add('extern \"C\" {\n\n');
+    i = 0;
+    while (i < module.fnDefs.length()) {
+      lines.add(generateFnSig(module.fnDefs[i]) + ';\n');
+      i = i + 1;
+    }
+    lines.add('\n}\n');
+  }
+
   lines.add('\n#endif');
   return Join(lines);
+}
+
+fn generateFnSig(fnDef: FnDef): String {
+  let fnSig: String;
+  if (fnDef.returnTypeString == null) {
+    fnSig = 'void';
+  } else {
+    fnSig = fnDef.returnTypeString + '*';
+  }
+  fnSig = fnSig + ' ' + fnDef.name + '(';
+  let i: Int64 = 0;
+  while (i < fnDef.params.length()) {
+    let param: VarDecl = fnDef.params[i];
+    fnSig = fnSig + '' + param.typeString + '* ' + param.name;
+    if (i < fnDef.params.length() - 1) {
+      fnSig = fnSig + ', ';
+    }
+    i = i + 1;
+  }
+  fnSig = fnSig + ')';
+  return fnSig;
 }
 
 fn codegen(sourceFilePath: String) {

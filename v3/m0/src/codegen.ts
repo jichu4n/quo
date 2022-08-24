@@ -79,7 +79,7 @@ export function generateHeaderCode(module: ModuleDef): string {
 
   l.append(null, `#endif`);
 
-  return l.toString().trim();
+  return l.toString();
 }
 
 function generateClassDecl(classDef: ClassDef) {
