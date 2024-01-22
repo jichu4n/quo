@@ -1,0 +1,30 @@
+{
+  "name": "quo",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:tsc": "tsc",
+    "build:wasm": "wat2wasm src/main.wat -o dist/main.wasm",
+    "build": "npm run build:tsc && npm run build:wasm",
+    "watch:ts": "tsc -w",
+    "watch:wasm": "chokidar src/*.wat -c \"npm run build:wasm\"",
+    "watch": "concurrently -n \"TypeScript,WASM\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run watch:ts\" \"npm run watch:wasm\"",
+    "start": "node dist/main.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chuan Ji <chuan@jichu4n.com>",
+  "license": "ISC",
+  "dependencies": {
+    "fs-extra": "^11.2.0",
+    "wabt": "^1.0.32"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.11.5",
+    "chokidar-cli": "^3.0.0",
+    "concurrently": "^8.2.2",
+    "prettier": "^3.2.4",
+    "typescript": "^5.3.3"
+  }
+}
