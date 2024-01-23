@@ -26,7 +26,9 @@ function setWasmString(memory: WebAssembly.Memory, ptr: number, str: string) {
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
 async function setupWasmModule() {
-  const wasmFile = await fs.readFile(path.join(__dirname, wasmFileName));
+  const wasmFile = await fs.readFile(
+    path.join(__dirname, '..', 'dist', wasmFileName)
+  );
   const wasmMemory = new WebAssembly.Memory({initial: 256});
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
@@ -53,12 +55,12 @@ class WebAssemblyError extends Error {
   }
 }
 
-interface Token {
+export interface Token {
   type: number;
   value?: number | string;
 }
 
-async function tokenize(input: string): Promise<Array<Token>> {
+export async function tokenize(input: string): Promise<Array<Token>> {
   const {wasmModule, wasmMemory} = await setupWasmModule();
   const init = wasmModule.instance.exports.init as CallableFunction;
   const nextToken = wasmModule.instance.exports.nextToken as CallableFunction;

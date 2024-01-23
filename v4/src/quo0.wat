@@ -30,7 +30,7 @@
     (local.get $newPtr)
   )
 
-  ;; Tokenizer.
+  ;; Lexer.
   ;;
   ;; Token types:
   ;;   00 - EOF
