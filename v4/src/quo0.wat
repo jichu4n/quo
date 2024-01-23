@@ -30,6 +30,268 @@
     (local.get $newPtr)
   )
 
+  ;; Parser & code generator.
+  (func $compileExpr0 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+
+    ;; Number literal.
+    (if (i32.eq (local.get $token) (i32.const 1))
+      (then
+        (local.set $outputPtr (call $alloc (i32.const 128)))
+        (call $strcpy (local.get $outputPtr) (i32.const 15729796))
+        (call $strcat (local.get $outputPtr) (local.get $tokenValuePtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729792))
+        (return (local.get $outputPtr))
+      )
+    )
+
+    ;; Parenthesis.
+    (if (i32.eq (local.get $token) (i32.const 40)) ;; (
+      (then
+        (local.set $outputPtr (call $compileExpr))
+        (call $expectToken (i32.const 41) (local.get $tokenValuePtr)) ;; )
+        (return (local.get $outputPtr))
+      )
+    )
+
+    (throw $error (i32.const 15728688))
+    ;; TODO: String literal, identifier, function call
+  )
+  (func $compileExpr1 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local $rightOutputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $origInputPtr (global.get $inputPtr))
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+    (block $if_end
+      (if (i32.eq (local.get $token) (i32.const 45)) ;; -
+        (then (local.set $outputPrefixPtr (i32.const 15730212)) (br $if_end))
+      )
+      (if (i32.eq (local.get $token) (i32.const 33)) ;; !
+        (then (local.set $outputPrefixPtr (i32.const 15730244)) (br $if_end))
+      )
+      (global.set $inputPtr (local.get $origInputPtr))
+      (return (call $compileExpr0))
+    )
+    (local.set $rightOutputPtr (call $compileExpr0))
+    (local.set $outputPtr (call $alloc (i32.const 1024)))
+    (call $strcpy (local.get $outputPtr) (local.get $outputPrefixPtr))
+    (call $strcat (local.get $outputPtr) (local.get $rightOutputPtr))
+    (call $strcat (local.get $outputPtr) (i32.const 15729792))
+    (local.get $outputPtr)
+  )
+  (func $compileExpr2 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local $leftOutputPtr i32)
+    (local $rightOutputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $leftOutputPtr (call $compileExpr1))
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (block $loop_end
+      (loop $loop
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+        (block $if_end
+          (if (i32.eq (local.get $token) (i32.const 42)) ;; *
+            (then (local.set $outputPrefixPtr (i32.const 15729828)) (br $if_end))
+          )
+          (if (i32.eq (local.get $token) (i32.const 47)) ;; /
+            (then (local.set $outputPrefixPtr (i32.const 15729860)) (br $if_end))
+          )
+          (global.set $inputPtr (local.get $origInputPtr))
+          (br $loop_end)
+        )
+        (local.set $rightOutputPtr (call $compileExpr1))
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
+        (call $strcpy (local.get $outputPtr) (local.get $outputPrefixPtr))
+        (call $strcat (local.get $outputPtr) (local.get $leftOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729794))
+        (call $strcat (local.get $outputPtr) (local.get $rightOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729792))
+        (local.set $leftOutputPtr (local.get $outputPtr))
+        (br $loop)
+      )
+    )
+    (local.get $leftOutputPtr)
+  )
+  (func $compileExpr3 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local $leftOutputPtr i32)
+    (local $rightOutputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $leftOutputPtr (call $compileExpr2))
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (block $loop_end
+      (loop $loop
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+        (block $if_end
+          (if (i32.eq (local.get $token) (i32.const 43)) ;; +
+            (then (local.set $outputPrefixPtr (i32.const 15729892)) (br $if_end))
+          )
+          (if (i32.eq (local.get $token) (i32.const 45)) ;; -
+            (then (local.set $outputPrefixPtr (i32.const 15729924)) (br $if_end))
+          )
+          (global.set $inputPtr (local.get $origInputPtr))
+          (br $loop_end)
+        )
+        (local.set $rightOutputPtr (call $compileExpr2))
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
+        (call $strcpy (local.get $outputPtr) (local.get $outputPrefixPtr))
+        (call $strcat (local.get $outputPtr) (local.get $leftOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729794))
+        (call $strcat (local.get $outputPtr) (local.get $rightOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729792))
+        (local.set $leftOutputPtr (local.get $outputPtr))
+        (br $loop)
+      )
+    )
+    (local.get $leftOutputPtr)
+  )
+  (func $compileExpr4 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local $leftOutputPtr i32)
+    (local $rightOutputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $leftOutputPtr (call $compileExpr3))
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (local.set $origInputPtr (global.get $inputPtr))
+    (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+    (block $loop_end
+      (block $if_end
+        (if (i32.eq (local.get $token) (i32.const 189)) ;; ==
+          (then (local.set $outputPrefixPtr (i32.const 15729956)) (br $if_end))
+        )
+        (if (i32.eq (local.get $token) (i32.const 161)) ;; !=
+          (then (local.set $outputPrefixPtr (i32.const 15729988)) (br $if_end))
+        )
+        (if (i32.eq (local.get $token) (i32.const 62)) ;; >
+          (then (local.set $outputPrefixPtr (i32.const 15730020)) (br $if_end))
+        )
+        (if (i32.eq (local.get $token) (i32.const 60)) ;; <
+          (then (local.set $outputPrefixPtr (i32.const 15730052)) (br $if_end))
+        )
+        (if (i32.eq (local.get $token) (i32.const 190)) ;; >=
+          (then (local.set $outputPrefixPtr (i32.const 15730084)) (br $if_end))
+        )
+        (if (i32.eq (local.get $token) (i32.const 188)) ;; <=
+          (then (local.set $outputPrefixPtr (i32.const 15730116)) (br $if_end))
+        )
+        (global.set $inputPtr (local.get $origInputPtr))
+        (br $loop_end)
+      )
+      (local.set $rightOutputPtr (call $compileExpr2))
+      (local.set $outputPtr (call $alloc (i32.const 1024)))
+      (call $strcpy (local.get $outputPtr) (local.get $outputPrefixPtr))
+      (call $strcat (local.get $outputPtr) (local.get $leftOutputPtr))
+      (call $strcat (local.get $outputPtr) (i32.const 15729794))
+      (call $strcat (local.get $outputPtr) (local.get $rightOutputPtr))
+      (call $strcat (local.get $outputPtr) (i32.const 15729792))
+      (local.set $leftOutputPtr (local.get $outputPtr))
+    )
+    (local.get $leftOutputPtr)
+  )
+  (func $compileExpr5 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local $leftOutputPtr i32)
+    (local $rightOutputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $leftOutputPtr (call $compileExpr4))
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (block $loop_end
+      (loop $loop
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+        (block $if_end
+          (if (i32.eq (local.get $token) (i32.const 166)) ;; &&
+            (then (local.set $outputPrefixPtr (i32.const 15730148)) (br $if_end))
+          )
+          (global.set $inputPtr (local.get $origInputPtr))
+          (br $loop_end)
+        )
+        (local.set $rightOutputPtr (call $compileExpr4))
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
+        (call $strcpy (local.get $outputPtr) (local.get $outputPrefixPtr))
+        (call $strcat (local.get $outputPtr) (local.get $leftOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729794))
+        (call $strcat (local.get $outputPtr) (local.get $rightOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729792))
+        (local.set $leftOutputPtr (local.get $outputPtr))
+        (br $loop)
+      )
+    )
+    (local.get $leftOutputPtr)
+  )
+  (func $compileExpr6 (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $outputPtr i32)
+    (local $leftOutputPtr i32)
+    (local $rightOutputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $leftOutputPtr (call $compileExpr5))
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (block $loop_end
+      (loop $loop
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+        (block $if_end
+          (if (i32.eq (local.get $token) (i32.const 252)) ;; ||
+            (then (local.set $outputPrefixPtr (i32.const 15730180)) (br $if_end))
+          )
+          (global.set $inputPtr (local.get $origInputPtr))
+          (br $loop_end)
+        )
+        (local.set $rightOutputPtr (call $compileExpr5))
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
+        (call $strcpy (local.get $outputPtr) (local.get $outputPrefixPtr))
+        (call $strcat (local.get $outputPtr) (local.get $leftOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729794))
+        (call $strcat (local.get $outputPtr) (local.get $rightOutputPtr))
+        (call $strcat (local.get $outputPtr) (i32.const 15729792))
+        (local.set $leftOutputPtr (local.get $outputPtr))
+        (br $loop)
+      )
+    )
+    (local.get $leftOutputPtr)
+  )
+  (func $expectToken (param $expectedToken i32) (param $tokenValuePtr i32)
+    (if (i32.ne (call $nextToken (local.get $tokenValuePtr)) (local.get $expectedToken))
+      (then (throw $error (i32.const 15728720)))
+    )
+  )
+  (func $compileExpr (result i32)
+    (call $compileExpr6)
+  )
+  (export "compileExpr" (func $compileExpr))
+
   ;; Lexer.
   ;;
   ;; Token types:
@@ -49,7 +311,6 @@
   (global $inputPtr (mut i32) (i32.const 0))
   (func $nextToken (param $tokenValuePtr i32) (result i32)
     (local $c i32)
-    (local $numberValue i32)
     (local $stringValuePtr i32)
     (call $skipWhitespaceAndComments)
     (local.set $c (i32.load8_u (global.get $inputPtr)))
@@ -60,21 +321,24 @@
     )
 
     ;; Number literal
-    (if (call $isdigit (local.get $c))
+    (if
+      (i32.or
+        (call $isdigit (local.get $c))
+        (i32.and
+          (i32.eq (local.get $c) (i32.const 45)) ;; -
+          (call $isdigit (i32.load8_u (i32.add (global.get $inputPtr) (i32.const 1))))
+        )
+      )
       (then
-        (local.set $numberValue (i32.const 0))
+        (local.set $stringValuePtr (local.get $tokenValuePtr))
         (loop $loop
-          (local.set $numberValue
-            (i32.add
-              (i32.mul (local.get $numberValue) (i32.const 10))
-              (i32.sub (local.get $c) (i32.const 48))
-            )
-          )
+          (i32.store8 (local.get $stringValuePtr) (local.get $c))
+          (local.set $stringValuePtr (i32.add (local.get $stringValuePtr) (i32.const 1)))
           (call $inputPtrInc)
           (local.set $c (i32.load8_u (global.get $inputPtr)))
           (br_if $loop (call $isdigit (local.get $c)))
         )
-        (i32.store (local.get $tokenValuePtr) (local.get $numberValue))
+        (i32.store8 (local.get $stringValuePtr) (i32.const 0))
         (return (i32.const 1))
       )
     )
@@ -111,9 +375,7 @@
           (local.set $stringValuePtr (i32.add (local.get $stringValuePtr) (i32.const 1)))
           (call $inputPtrInc)
           (local.set $c (i32.load8_u (global.get $inputPtr)))
-          (if (call $isident (local.get $c))
-            (then (br $loop))
-          )
+          (br_if $loop (call $isident (local.get $c)))
         )
         (i32.store8 (local.get $stringValuePtr) (i32.const 0))
         (return
@@ -164,6 +426,14 @@
     (throw $error (i32.const 15728768))
   )
   (export "nextToken" (func $nextToken))
+  (func $peekNextToken (param $tokenValuePtr i32) (result i32)
+    (local $origInputPtr i32)
+    (local $token i32)
+    (local.set $origInputPtr (global.get $inputPtr))
+    (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+    (global.set $inputPtr (local.get $origInputPtr))
+    (return (local.get $token))
+  )
   (func $skipWhitespaceAndComments
     (local $c i32)
     (block $loop_end
@@ -343,6 +613,13 @@
       (i32.add (local.get $len2) (i32.const 1))
     )
   )
+  (func $strcpy (param $dest i32) (param $src i32)
+    (memory.copy
+      (local.get $dest)
+      (local.get $src)
+      (i32.add (call $strlen (local.get $src)) (i32.const 1))
+    )
+  )
 
   ;; Entry point.
   (func (export "main") (param $input i32) (result i32)
@@ -378,6 +655,12 @@
   (data (i32.const 15728656)
     "Unterminated string literal\00"
   )
+  (data (i32.const 15728688)
+    "Expected expression\00"
+  )
+  (data (i32.const 15728720)
+    "Unexpected token type\00"
+  )
   ;; Invalid token error message
   (data (i32.const 15728768)
     "Unrecognized character: \00"
@@ -405,5 +688,57 @@
   ;; 1-letter operators and symbols
   (data (i32.const 15729536)
     "(){}[]<>=+-*/%!&|.,;:^\00"
+  )
+  ;; WAT strings.
+  (data (i32.const 15729792)
+    ")\00"
+  )
+  (data (i32.const 15729794)
+    " \00"
+  )
+  (data (i32.const 15729796)
+    "(i32.const \00"
+  )
+  (data (i32.const 15729828)
+    "(i32.mul \00"
+  )
+  (data (i32.const 15729860)
+    "(i32.div_s \00"
+  )
+  (data (i32.const 15729892)
+    "(i32.add \00"
+  )
+  (data (i32.const 15729924)
+    "(i32.sub \00"
+  )
+  (data (i32.const 15729956)
+    "(i32.eq \00"
+  )
+  (data (i32.const 15729988)
+    "(i32.ne \00"
+  )
+  (data (i32.const 15730020)
+    "(i32.gt_s \00"
+  )
+  (data (i32.const 15730052)
+    "(i32.lt_s \00"
+  )
+  (data (i32.const 15730084)
+    "(i32.ge_s \00"
+  )
+  (data (i32.const 15730116)
+    "(i32.le_s \00"
+  )
+  (data (i32.const 15730148)
+    "(i32.and \00"
+  )
+  (data (i32.const 15730180)
+    "(i32.or \00"
+  )
+  (data (i32.const 15730212)
+    "(i32.neg \00"
+  )
+  (data (i32.const 15730244)
+    "(i32.xor (i32.const -1) \00"
   )
 )

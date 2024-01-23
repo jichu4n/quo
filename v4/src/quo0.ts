@@ -72,20 +72,9 @@ export async function tokenize(input: string): Promise<Array<Token>> {
     init(0);
     do {
       const tokenType = nextToken(tokenValuePtr);
-      let tokenValue: Token['value'];
-      switch (tokenType) {
-        case 0: // EOF
-          break;
-        case 1: // Number literal
-          tokenValue = new Uint32Array(wasmMemory.buffer, tokenValuePtr, 1)[0];
-          break;
-        default:
-          tokenValue = getWasmString(wasmMemory, tokenValuePtr);
-          break;
-      }
       const token = {
         type: tokenType,
-        ...(tokenValue !== undefined ? {value: tokenValue} : {}),
+        ...(tokenType === 0 ? {} : {value: getWasmString(wasmMemory, tokenValuePtr)}),
       };
       tokens.push(token);
     } while (tokens[tokens.length - 1].type !== 0);
@@ -93,6 +82,19 @@ export async function tokenize(input: string): Promise<Array<Token>> {
     throw new WebAssemblyError(wasmMemory, e);
   }
   return tokens;
+}
+
+export async function compileExpr(input: string): Promise<string> {
+  const {wasmModule, wasmMemory} = await setupWasmModule();
+  const init = wasmModule.instance.exports.init as CallableFunction;
+  const compileExpr = wasmModule.instance.exports.compileExpr as CallableFunction;
+  setWasmString(wasmMemory, 0, input);
+  try {
+    init(0);
+    return getWasmString(wasmMemory, compileExpr());
+  } catch (e) {
+    throw new WebAssemblyError(wasmMemory, e);
+  }
 }
 
 if (require.main === module) {
