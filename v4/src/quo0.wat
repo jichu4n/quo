@@ -55,6 +55,7 @@
     (local $origInputPtr i32)
     (local $token2 i32)
     (local $tokenValuePtr2 i32)
+    (local $outputPrefixPtr i32)
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $token (call $nextToken (local.get $tokenValuePtr)))
 
@@ -110,25 +111,20 @@
           (else
             ;; Identifier
             (global.set $inputPtr (local.get $origInputPtr))
-            (if (call $isLocalVar (local.get $tokenValuePtr))
-              (then
-                (local.set $outputPtr (call $alloc (i32.const 128)))
-                (call $strcpy (local.get $outputPtr) (i32.const 128) (i32.const 15730276))
-                (call $strcat (local.get $outputPtr) (i32.const 128) (local.get $tokenValuePtr))
-                (call $strcat (local.get $outputPtr) (i32.const 128) (i32.const 15729792))
-                (return (local.get $outputPtr))
+            (block $block_end
+              (if (call $isLocalVar (local.get $tokenValuePtr))
+                (then (local.set $outputPrefixPtr (i32.const 15730276)) (br $block_end))
               )
-            )
-            (if (call $isGlobalVar (local.get $tokenValuePtr))
-              (then
-                (local.set $outputPtr (call $alloc (i32.const 128)))
-                (call $strcpy (local.get $outputPtr) (i32.const 128) (i32.const 15730308))
-                (call $strcat (local.get $outputPtr) (i32.const 128) (local.get $tokenValuePtr))
-                (call $strcat (local.get $outputPtr) (i32.const 128) (i32.const 15729792))
-                (return (local.get $outputPtr))
+              (if (call $isGlobalVar (local.get $tokenValuePtr))
+                (then (local.set $outputPrefixPtr (i32.const 15730308)) (br $block_end))
               )
+              (throw $error (i32.const 15730340))
             )
-            (throw $error (i32.const 15730340))
+            (local.set $outputPtr (call $alloc (i32.const 128)))
+            (call $strcpy (local.get $outputPtr) (i32.const 128) (local.get $outputPrefixPtr))
+            (call $strcat (local.get $outputPtr) (i32.const 128) (local.get $tokenValuePtr))
+            (call $strcat (local.get $outputPtr) (i32.const 128) (i32.const 15729792))
+            (return (local.get $outputPtr))
           )
         )
       )
@@ -370,7 +366,10 @@
   (func $compileStmt (result i32)
     (local $token i32)
     (local $tokenValuePtr i32)
+    (local $token2 i32)
+    (local $tokenValuePtr2 i32)
     (local $outputPtr i32)
+    (local $outputPrefixPtr i32)
     (local $origInputPtr i32)
 
     (local.set $origInputPtr (global.get $inputPtr))
@@ -399,6 +398,35 @@
           )
         )
         (return (local.get $outputPtr))
+      )
+    )
+
+    ;; Assignment
+    (if (i32.eq (local.get $token) (i32.const 3))
+      (then
+        (local.set $tokenValuePtr2 (call $alloc (i32.const 128)))
+        (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
+        (if (i32.eq (local.get $token2) (i32.const 61)) ;; =
+          (then
+            (block $block_end
+              (if (call $isLocalVar (local.get $tokenValuePtr))
+                (then (local.set $outputPrefixPtr (i32.const 15730564)) (br $block_end))
+              )
+              (if (call $isGlobalVar (local.get $tokenValuePtr))
+                (then (local.set $outputPrefixPtr (i32.const 15730596)) (br $block_end))
+              )
+              (throw $error (i32.const 15730340))
+            )
+            (local.set $outputPtr (call $alloc (i32.const 1024)))
+            (call $strcpy (local.get $outputPtr) (i32.const 1024) (local.get $outputPrefixPtr))
+            (call $strcat (local.get $outputPtr) (i32.const 1024) (local.get $tokenValuePtr))
+            (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15729794))
+            (call $strcat (local.get $outputPtr) (i32.const 1024) (call $compileExpr))
+            (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15729792))
+            (call $expectToken (i32.const 59) (local.get $tokenValuePtr)) ;; ;
+            (return (local.get $outputPtr))
+          )
+        )
       )
     )
 
@@ -1009,5 +1037,11 @@
   )
   (data (i32.const 15730532)
     "\n\00"
+  )
+  (data (i32.const 15730564)
+    "(local.set $\00"
+  )
+  (data (i32.const 15730596)
+    "(global.set $\00"
   )
 )

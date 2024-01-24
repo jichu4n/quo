@@ -25,9 +25,11 @@ describe('quo0-compile-stmt-block', () => {
   });
   test('block', async () => {
     await testCompileBlock([
+      ['{ }', ''],
+      ['{ f(); }', '(call $f)\n'],
       [
-        '{ let x; x + 1; }',
-        '(local $x i32)\n(i32.add (local.get $x) (i32.const 1))\n',
+        '{ let x; x = x + 1; }',
+        '(local $x i32)\n(local.set $x (i32.add (local.get $x) (i32.const 1)))\n',
       ],
     ]);
   });
