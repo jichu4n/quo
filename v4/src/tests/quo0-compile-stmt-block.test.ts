@@ -23,6 +23,13 @@ describe('quo0-compile-stmt-block', () => {
       ['let x, y, z;', '(local $x i32) (local $y i32) (local $z i32)'],
     ]);
   });
+  test('return', async () => {
+    await testCompileStmt([
+      ['return;', '(return)'],
+      ['return 0;', '(return (i32.const 0))'],
+      ['return 10 * 5;', '(return (i32.mul (i32.const 10) (i32.const 5)))'],
+    ]);
+  });
   test('block', async () => {
     await testCompileBlock([
       ['{ }', ''],

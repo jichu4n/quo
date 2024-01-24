@@ -376,7 +376,8 @@
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $token (call $nextToken (local.get $tokenValuePtr)))
 
-    (if (i32.eq (local.get $token) (i32.const 5)) ;; let
+    ;; Let.
+    (if (i32.eq (local.get $token) (i32.const 5))
       (then
         (local.set $outputPtr (call $alloc (i32.const 1024)))
         (block $loop_end
@@ -397,6 +398,25 @@
             (throw $error (i32.const 15730436))
           )
         )
+        (return (local.get $outputPtr))
+      )
+    )
+
+    ;; Return.
+    (if (i32.eq (local.get $token) (i32.const 9))
+      (then
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $tokenValuePtr2 (call $alloc (i32.const 128)))
+        (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
+        (if (i32.eq (local.get $token2) (i32.const 59)) ;; ;
+          (then (return (i32.const 15730660)))
+        )
+        (global.set $inputPtr (local.get $origInputPtr))
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
+        (call $strcpy (local.get $outputPtr) (i32.const 1024) (i32.const 15730628))
+        (call $strcat (local.get $outputPtr) (i32.const 1024) (call $compileExpr))
+        (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15729792))
+        (call $expectToken (i32.const 59) (local.get $tokenValuePtr)) ;; ;
         (return (local.get $outputPtr))
       )
     )
@@ -1043,5 +1063,11 @@
   )
   (data (i32.const 15730596)
     "(global.set $\00"
+  )
+  (data (i32.const 15730628)
+    "(return \00"
+  )
+  (data (i32.const 15730660)
+    "(return)\00"
   )
 )
