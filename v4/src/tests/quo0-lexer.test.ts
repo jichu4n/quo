@@ -96,4 +96,8 @@ describe('quo0-lexer', () => {
       ],
     ]);
   });
+
+  test('token length too long', async () => {
+    await expect(async () => await tokenize('a'.repeat(256))).rejects.toThrow();
+  });
 });

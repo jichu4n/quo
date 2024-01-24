@@ -71,4 +71,11 @@ describe('quo0-compile-expr', () => {
       ],
     ]);
   });
+
+  test('expression too long', async () => {
+    expect((await compileExpr('1 + '.repeat(10) + '1')).length).toBeGreaterThan(
+      0
+    );
+    await expect(compileExpr('1 + '.repeat(100) + '1')).rejects.toThrow();
+  });
 });
