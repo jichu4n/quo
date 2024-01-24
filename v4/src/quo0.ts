@@ -129,19 +129,31 @@ export async function compileFn(input: string): Promise<string> {
   );
 }
 
+export async function compileModule(input: string): Promise<string> {
+  return await runCompileFn(
+    ({compileModule}) => (compileModule as CallableFunction)(),
+    input
+  );
+}
+
+export async function compileFile(inputFile: string): Promise<string> {
+  const input = await fs.readFile(inputFile, 'utf8');
+  const output = await compileModule(input);
+  const outputFile = path.format({
+    ...path.parse(inputFile),
+    base: '',
+    ext: '.wat',
+  });
+  await fs.writeFile(outputFile, output);
+  return outputFile;
+}
+
 if (require.main === module) {
   (async () => {
-    /*
-    const {wasmModule, wasmMemory} = await setupWasmModule();
-    const main = wasmModule.instance.exports.main as CallableFunction;
-    setWasmString(wasmMemory, 0, input);
-    try {
-      const output = getWasmString(wasmMemory, main(0));
-      console.log(output);
-    } catch (e) {
-      throw new WebAssemblyError(wasmMemory, e);
+    if (process.argv.length < 3) {
+      console.error('Usage: quo0 <input>');
+      process.exit(1);
     }
-    */
-    console.log(await tokenize(input));
+    await compileFile(process.argv[2]);
   })();
 }

@@ -48,20 +48,26 @@ describe('quo0-compile-stmt-block-fn', () => {
   });
   test('fn', async () => {
     await testCompileFn([
-      ['fn foo() {}', '  (func $foo\n  )\n'],
-      ['fn foo(x) {}', '  (func $foo (param $x i32)\n  )\n'],
-      ['fn foo(x, y) {}', '  (func $foo (param $x i32) (param $y i32)\n  )\n'],
+      ['fn foo() {}', '  (func $foo\n  )\n  (export "foo" (func $foo))\n'],
+      [
+        'fn foo(x) {}',
+        '  (func $foo (param $x i32)\n  )\n  (export "foo" (func $foo))\n',
+      ],
+      [
+        'fn foo(x, y) {}',
+        '  (func $foo (param $x i32) (param $y i32)\n  )\n  (export "foo" (func $foo))\n',
+      ],
       [
         'fn foo(x, y, z) {}',
-        '  (func $foo (param $x i32) (param $y i32) (param $z i32)\n  )\n',
+        '  (func $foo (param $x i32) (param $y i32) (param $z i32)\n  )\n  (export "foo" (func $foo))\n',
       ],
       [
         'fn foo(): Int { return 42; }',
-        '  (func $foo (result i32)\n    (return (i32.const 42))\n  )\n',
+        '  (func $foo (result i32)\n    (return (i32.const 42))\n  )\n  (export "foo" (func $foo))\n',
       ],
       [
         'fn foo(x): Int { return x; }',
-        '  (func $foo (param $x i32) (result i32)\n    (return (local.get $x))\n  )\n',
+        '  (func $foo (param $x i32) (result i32)\n    (return (local.get $x))\n  )\n  (export "foo" (func $foo))\n',
       ],
     ]);
   });
