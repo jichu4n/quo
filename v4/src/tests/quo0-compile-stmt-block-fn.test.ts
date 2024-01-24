@@ -20,7 +20,7 @@ async function testCompileFn(testCases: Array<[string, string]>) {
 
 describe('quo0-compile-stmt-block-fn', () => {
   test('expr', async () => {
-    await testCompileStmt([['42;', '(i32.const 42)']]);
+    await testCompileStmt([['42;', '(drop (i32.const 42))']]);
   });
   test('let', async () => {
     await testCompileStmt([
@@ -39,7 +39,7 @@ describe('quo0-compile-stmt-block-fn', () => {
   test('block', async () => {
     await testCompileBlock([
       ['{ }', ''],
-      ['{ f(); }', '(call $f)\n'],
+      ['{ f(); }', '(drop (call $f))\n'],
       [
         '{ let x; x = x + 1; }',
         '(local $x i32)\n(local.set $x (i32.add (local.get $x) (i32.const 1)))\n',

@@ -2,3 +2,16 @@ let g;
 fn getAnswer(): Int {
   return 42;
 }
+fn getAnswerStr(): String {
+  let l;
+  l = "42";
+  "hello";
+  "world";
+  return l;
+}
+fn dummy() {}
+fn main() {
+  getAnswer();
+  getAnswerStr();
+  dummy();
+}
