@@ -1,20 +1,35 @@
 import {compileStmt, compileBlock, compileFn} from '../quo0';
 
-async function testCompileStmt(testCases: Array<[string, string]>) {
+type TestCase = [string, string | Array<string>];
+type TestCases = Array<TestCase>;
+
+function expectedOutputToString(expectedOutput: string | Array<string>) {
+  return Array.isArray(expectedOutput)
+    ? expectedOutput.join('\n') + '\n'
+    : expectedOutput;
+}
+
+async function testCompileStmt(testCases: TestCases) {
   for (const [input, expectedOutput] of testCases) {
-    expect(await compileStmt(input)).toStrictEqual(expectedOutput);
+    expect(await compileStmt(input)).toStrictEqual(
+      expectedOutputToString(expectedOutput)
+    );
   }
 }
 
-async function testCompileBlock(testCases: Array<[string, string]>) {
+async function testCompileBlock(testCases: TestCases) {
   for (const [input, expectedOutput] of testCases) {
-    expect(await compileBlock(input)).toStrictEqual(expectedOutput);
+    expect(await compileBlock(input)).toStrictEqual(
+      expectedOutputToString(expectedOutput)
+    );
   }
 }
 
-async function testCompileFn(testCases: Array<[string, string]>) {
+async function testCompileFn(testCases: TestCases) {
   for (const [input, expectedOutput] of testCases) {
-    expect(await compileFn(input)).toStrictEqual(expectedOutput);
+    expect(await compileFn(input)).toStrictEqual(
+      expectedOutputToString(expectedOutput)
+    );
   }
 }
 
@@ -27,6 +42,23 @@ describe('quo0-compile-stmt-block-fn', () => {
       ['let x;', '(local $x i32)'],
       ['let x, y;', '(local $x i32) (local $y i32)'],
       ['let x, y, z;', '(local $x i32) (local $y i32) (local $z i32)'],
+    ]);
+  });
+  test('if', async () => {
+    await testCompileStmt([
+      ['if (1) {}', '(if (i32.const 1)\n  (then\n  )\n)'],
+      [
+        'if (1 > 0) { foo(); }',
+        '(if (i32.gt_s (i32.const 1) (i32.const 0))\n  (then\n    (drop (call $foo))\n  )\n)',
+      ],
+      [
+        'if (1 > 0) { foo(); } else {}',
+        '(if (i32.gt_s (i32.const 1) (i32.const 0))\n  (then\n    (drop (call $foo))\n  )\n  (else\n  )\n)',
+      ],
+      [
+        'if (1 > 0) { foo(); } else { bar(); }',
+        '(if (i32.gt_s (i32.const 1) (i32.const 0))\n  (then\n    (drop (call $foo))\n  )\n  (else\n    (drop (call $bar))\n  )\n)',
+      ],
     ]);
   });
   test('return', async () => {

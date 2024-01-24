@@ -398,7 +398,7 @@
     (call $compileExpr6)
   )
   (export "compileExpr" (func $compileExpr))
-  (func $compileStmt (result i32)
+  (func $compileStmt (param $indentLevel i32) (result i32)
     (local $token i32)
     (local $tokenValuePtr i32)
     (local $token2 i32)
@@ -410,11 +410,11 @@
     (local.set $origInputPtr (global.get $inputPtr))
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $token (call $nextToken (local.get $tokenValuePtr)))
-    (local.set $outputPtr (call $alloc (i32.const 1024)))
 
     ;; Let.
     (if (i32.eq (local.get $token) (i32.const 5))
       (then
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
         (block $loop_end
           (loop $loop
             (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
@@ -437,9 +437,50 @@
       )
     )
 
+    ;; If.
+    (if (i32.eq (local.get $token) (i32.const 6))
+      (then
+        (local.set $outputPtr (call $alloc (i32.const 8192)))
+        ;; Condition
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15731140))
+        (call $expectToken (i32.const 40) (local.get $tokenValuePtr)) ;; (
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileExpr))
+        (call $expectToken (i32.const 41) (local.get $tokenValuePtr)) ;; )
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
+        ;; Then
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15731172))
+        (call $strcat (local.get $outputPtr) (i32.const 8192)
+          (call $compileBlock (i32.add (local.get $indentLevel) (i32.const 2))))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15731204))
+        ;; Else
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+        (if (i32.eq (local.get $token) (i32.const 7))
+          (then
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15731236))
+            (call $strcat (local.get $outputPtr) (i32.const 8192)
+              (call $compileBlock (i32.add (local.get $indentLevel) (i32.const 2))))
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15731204))
+          )
+          (else
+            (global.set $inputPtr (local.get $origInputPtr))
+          )
+        )
+        ;; Closing parenthesis
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15729792))
+        (return (local.get $outputPtr))
+      )
+    )
+
     ;; Return.
     (if (i32.eq (local.get $token) (i32.const 9))
       (then
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
         (local.set $origInputPtr (global.get $inputPtr))
         (local.set $tokenValuePtr2 (call $alloc (i32.const 128)))
         (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
@@ -458,6 +499,7 @@
     ;; Assignment
     (if (i32.eq (local.get $token) (i32.const 3))
       (then
+        (local.set $outputPtr (call $alloc (i32.const 1024)))
         (local.set $tokenValuePtr2 (call $alloc (i32.const 128)))
         (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
         (if (i32.eq (local.get $token2) (i32.const 61)) ;; =
@@ -483,9 +525,10 @@
       )
     )
 
-    ;; TODO: if, while
+    ;; TODO: while
 
     ;; Expression.
+    (local.set $outputPtr (call $alloc (i32.const 1024)))
     (call $strcpy (local.get $outputPtr) (i32.const 1024) (i32.const 15731108))
     (global.set $inputPtr (local.get $origInputPtr))
     (call $strcat (local.get $outputPtr) (i32.const 1024) (call $compileExpr))
@@ -504,7 +547,7 @@
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $token (call $nextToken (local.get $tokenValuePtr)))
 
-    (local.set $outputPtr (call $alloc (i32.const 4096)))
+    (local.set $outputPtr (call $alloc (i32.const 8192)))
     (if (i32.eq (local.get $token) (i32.const 123)) ;; {
       (then
         (block $loop_end
@@ -513,18 +556,18 @@
             (local.set $token (call $nextToken (local.get $tokenValuePtr)))
             (br_if $loop_end (i32.eq (local.get $token) (i32.const 125))) ;; }
             (global.set $inputPtr (local.get $origInputPtr))
-            (call $strcat (local.get $outputPtr) (i32.const 4096) (call $indent (local.get $indentLevel)))
-            (call $strcat (local.get $outputPtr) (i32.const 4096) (call $compileStmt))
-            (call $strcat (local.get $outputPtr) (i32.const 4096) (i32.const 15730532))
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileStmt (local.get $indentLevel)))
+            (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
             (br $loop)
           )
         )
       )
       (else
         (global.set $inputPtr (local.get $origInputPtr))
-        (call $strcat (local.get $outputPtr) (i32.const 4096) (call $indent (local.get $indentLevel)))
-        (call $strcat (local.get $outputPtr) (i32.const 4096) (call $compileStmt))
-        (call $strcat (local.get $outputPtr) (i32.const 4096) (i32.const 15730532))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileStmt (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
       )
     )
     (local.get $outputPtr)
@@ -1313,6 +1356,18 @@
   )
   (data (i32.const 15731108)
     "(drop \00"
+  )
+  (data (i32.const 15731140)
+    "(if \00"
+  )
+  (data (i32.const 15731172)
+    "  (then\n\00"
+  )
+  (data (i32.const 15731204)
+    "  )\n\00"
+  )
+  (data (i32.const 15731236)
+    "  (else\n\00"
   )
   (data (i32.const 15731844)
     ";; Generated by quo stage 0\n"

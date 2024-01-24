@@ -99,7 +99,7 @@ export async function compileExpr(input: string): Promise<string> {
 
 export async function compileStmt(input: string): Promise<string> {
   return await runCompileFn(
-    ({compileStmt}) => (compileStmt as CallableFunction)(),
+    ({compileStmt}) => (compileStmt as CallableFunction)(0),
     input
   );
 }

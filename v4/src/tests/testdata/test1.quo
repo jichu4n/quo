@@ -11,7 +11,9 @@ fn getAnswerStr(): String {
 }
 fn dummy() {}
 fn main() {
-  getAnswer();
-  getAnswerStr();
-  dummy();
+  if (getAnswer() > 0) {
+    getAnswerStr();
+  } else {
+    dummy();
+  }
 }

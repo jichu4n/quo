@@ -25,9 +25,14 @@
   )
   (export "dummy" (func $dummy))
   (func $main
-    (drop (call $getAnswer))
-    (drop (call $getAnswerStr))
-    (drop (call $dummy))
+    (if (i32.gt_s (call $getAnswer) (i32.const 0))
+      (then
+        (drop (call $getAnswerStr))
+      )
+      (else
+        (drop (call $dummy))
+      )
+    )
   )
   (export "main" (func $main))
   (data (i32.const 15728640) "42\00")
