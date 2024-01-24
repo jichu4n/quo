@@ -1,17 +1,8 @@
 import fs from 'fs-extra';
 import path from 'path';
+import wabt from 'wabt';
 
-const wasmFileName = 'quo0.wasm';
-const input = `
-// Test program
-fn factorial(x) {
-  if (x == 0) {
-    return 1;
-  } else {
-    return x * factorial(x - 1);
-  }
-}
-`;
+const quo0 = 'quo0.wasm';
 
 function getWasmString(memory: WebAssembly.Memory, ptr: number) {
   const bytes = new Uint8Array(memory.buffer, ptr);
@@ -27,7 +18,7 @@ const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
 async function setupWasmModule() {
   const wasmFile = await fs.readFile(
-    path.join(__dirname, '..', 'dist', wasmFileName)
+    path.join(__dirname, '..', 'dist', quo0)
   );
   const wasmMemory = new WebAssembly.Memory({initial: 256});
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
@@ -136,16 +127,23 @@ export async function compileModule(input: string): Promise<string> {
   );
 }
 
-export async function compileFile(inputFile: string): Promise<string> {
+export async function compileQuoFile(inputFile: string) {
   const input = await fs.readFile(inputFile, 'utf8');
-  const output = await compileModule(input);
-  const outputFile = path.format({
+  const watOutput = await compileModule(input);
+  const watOutputFile = path.format({
     ...path.parse(inputFile),
     base: '',
     ext: '.wat',
   });
-  await fs.writeFile(outputFile, output);
-  return outputFile;
+  await fs.writeFile(watOutputFile, watOutput);
+  const wasmModule = (await wabt()).parseWat(watOutputFile, watOutput);
+  const wasmOutputFile = path.format({
+    ...path.parse(inputFile),
+    base: '',
+    ext: '.wasm',
+  });
+  await fs.writeFile(wasmOutputFile, wasmModule.toBinary({}).buffer);
+  return {watOutputFile, wasmOutputFile};
 }
 
 if (require.main === module) {
@@ -154,6 +152,6 @@ if (require.main === module) {
       console.error('Usage: quo0 <input>');
       process.exit(1);
     }
-    await compileFile(process.argv[2]);
+    await compileQuoFile(process.argv[2]);
   })();
 }

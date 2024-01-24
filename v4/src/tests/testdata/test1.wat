@@ -8,6 +8,7 @@
   (func $store8 (param $addr i32) (param $value i32)
     (i32.store8 (local.get $addr) (local.get $value)))
 
+  (global $g (mut i32) (i32.const 0))
   (func $getAnswer (result i32)
     (return (i32.const 42))
   )
