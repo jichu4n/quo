@@ -122,6 +122,13 @@ export async function compileBlock(input: string): Promise<string> {
   );
 }
 
+export async function compileFn(input: string): Promise<string> {
+  return await runCompileFn(
+    ({compileFn}) => (compileFn as CallableFunction)(),
+    input
+  );
+}
+
 if (require.main === module) {
   (async () => {
     /*

@@ -40,6 +40,9 @@
   (func $isLocalVar (param $name i32) (result i32)
     (i32.ge_s (call $strlistFind (global.get $localVars) (local.get $name)) (i32.const 0))
   )
+  (func $clearLocalVars
+    (i32.store8 (global.get $localVars) (i32.const 0))
+  )
   (func $addGlobalVar (param $name i32)
     (call $strlistAppend (global.get $globalVars) (i32.const 8192) (local.get $name))
   )
@@ -492,6 +495,64 @@
     (local.get $outputPtr)
   )
   (export "compileBlock" (func $compileBlock))
+  (func $compileFn (result i32)
+    (local $token i32)
+    (local $tokenValuePtr i32)
+    (local $token2 i32)
+    (local $tokenValuePtr2 i32)
+    (local $outputPtr i32)
+    (local $origInputPtr i32)
+    (local $outputPrefixPtr i32)
+
+    (local.set $tokenValuePtr (call $alloc (i32.const 128)))
+    (local.set $tokenValuePtr2 (call $alloc (i32.const 128)))
+
+    (local.set $outputPtr (call $alloc (i32.const 8192)))
+    (call $expectToken (i32.const 4) (local.get $tokenValuePtr)) ;; fn
+    (call $strcpy (local.get $outputPtr) (i32.const 8192) (i32.const 15730692))
+    (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
+    (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $tokenValuePtr))
+
+    ;; Args
+    (call $clearLocalVars)
+    (call $expectToken (i32.const 40) (local.get $tokenValuePtr)) ;; (
+    (block $loop_end
+      (local.set $origInputPtr (global.get $inputPtr))
+      (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+      (br_if $loop_end (i32.eq (local.get $token) (i32.const 41)))
+      (global.set $inputPtr (local.get $origInputPtr))
+      (loop $loop
+        (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
+        (call $addLocalVar (local.get $tokenValuePtr))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730724))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $tokenValuePtr))
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730500))
+        (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+        (br_if $loop_end (i32.eq (local.get $token) (i32.const 41))) ;; )
+        (br_if $loop (i32.eq (local.get $token) (i32.const 44))) ;; ,
+        (throw $error (i32.const 15730788))
+      )
+    )
+
+    ;; Return type
+    (local.set $origInputPtr (global.get $inputPtr))
+    (local.set $token (call $nextToken (local.get $tokenValuePtr)))
+    (if (i32.eq (local.get $token) (i32.const 58)) ;; :
+      (then
+        (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
+        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730756))
+      )
+      (else (global.set $inputPtr (local.get $origInputPtr)))
+    )
+    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
+
+    ;; Body
+    (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileBlock (i32.const 2)))
+    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730820))
+
+    (local.get $outputPtr)
+  )
+  (export "compileFn" (func $compileFn))
   (func $indent (param $indentLevel i32) (result i32)
     (local $outputPtr i32)
     (local $p i32)
@@ -1069,5 +1130,20 @@
   )
   (data (i32.const 15730660)
     "(return)\00"
+  )
+  (data (i32.const 15730692)
+    "  (func $\00"
+  )
+  (data (i32.const 15730724)
+    " (param $\00"
+  )
+  (data (i32.const 15730756)
+    " (result i32)\00"
+  )
+  (data (i32.const 15730788)
+    "Expected ',' or ')'\00"
+  )
+  (data (i32.const 15730820)
+    "  )\n\00"
   )
 )
