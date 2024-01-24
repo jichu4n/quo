@@ -74,7 +74,9 @@ export async function tokenize(input: string): Promise<Array<Token>> {
       const tokenType = nextToken(tokenValuePtr);
       const token = {
         type: tokenType,
-        ...(tokenType === 0 ? {} : {value: getWasmString(wasmMemory, tokenValuePtr)}),
+        ...(tokenType === 0
+          ? {}
+          : {value: getWasmString(wasmMemory, tokenValuePtr)}),
       };
       tokens.push(token);
     } while (tokens[tokens.length - 1].type !== 0);
@@ -84,17 +86,40 @@ export async function tokenize(input: string): Promise<Array<Token>> {
   return tokens;
 }
 
-export async function compileExpr(input: string): Promise<string> {
+async function runCompileFn(
+  compileFn: (exports: WebAssembly.Exports) => number,
+  input: string
+): Promise<string> {
   const {wasmModule, wasmMemory} = await setupWasmModule();
   const init = wasmModule.instance.exports.init as CallableFunction;
-  const compileExpr = wasmModule.instance.exports.compileExpr as CallableFunction;
   setWasmString(wasmMemory, 0, input);
   try {
     init(0);
-    return getWasmString(wasmMemory, compileExpr());
+    return getWasmString(wasmMemory, compileFn(wasmModule.instance.exports));
   } catch (e) {
     throw new WebAssemblyError(wasmMemory, e);
   }
+}
+
+export async function compileExpr(input: string): Promise<string> {
+  return await runCompileFn(
+    ({compileExpr}) => (compileExpr as CallableFunction)(),
+    input
+  );
+}
+
+export async function compileStmt(input: string): Promise<string> {
+  return await runCompileFn(
+    ({compileStmt}) => (compileStmt as CallableFunction)(),
+    input
+  );
+}
+
+export async function compileBlock(input: string): Promise<string> {
+  return await runCompileFn(
+    ({compileBlock}) => (compileBlock as CallableFunction)(0),
+    input
+  );
 }
 
 if (require.main === module) {
