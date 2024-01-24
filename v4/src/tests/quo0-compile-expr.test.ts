@@ -12,6 +12,14 @@ describe('quo0-compile-expr', () => {
       ['-100', '(i32.const -100)'],
       ['42', '(i32.const 42)'],
       ['(32)', '(i32.const 32)'],
+      ['hello()', '(call $hello)'],
+      ['hello(1)', '(call $hello (i32.const 1))'],
+      ['hello(1, 2)', '(call $hello (i32.const 1) (i32.const 2))'],
+      [
+        'hello(1, 2, 3)',
+        '(call $hello (i32.const 1) (i32.const 2) (i32.const 3))',
+      ],
+      ['(f(g()))', '(call $f (call $g))'],
     ]);
   });
   test('compileExpr1', async () => {

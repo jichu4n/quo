@@ -30,11 +30,31 @@
     (local.get $newPtr)
   )
 
-  ;; Parser & code generator.
+  ;; Symbol tables used by parser / code generator.
+  (global $globalVars (mut i32) (i32.const 0))
+  (global $localVars (mut i32) (i32.const 0))
+  (global $fns (mut i32) (i32.const 0))
+  (func $addLocalVar (param $name i32)
+    (call $strlistAppend (global.get $localVars) (i32.const 8192) (local.get $name))
+  )
+  (func $isLocalVar (param $name i32) (result i32)
+    (i32.ge_s (call $strlistFind (global.get $localVars) (local.get $name)) (i32.const 0))
+  )
+  (func $addGlobalVar (param $name i32)
+    (call $strlistAppend (global.get $globalVars) (i32.const 8192) (local.get $name))
+  )
+  (func $isGlobalVar (param $name i32) (result i32)
+    (i32.ge_s (call $strlistFind (global.get $globalVars) (local.get $name)) (i32.const 0))
+  )
+
+  ;; Single pass parser / code generator.
   (func $compileExpr0 (result i32)
     (local $token i32)
     (local $tokenValuePtr i32)
     (local $outputPtr i32)
+    (local $origInputPtr i32)
+    (local $token2 i32)
+    (local $tokenValuePtr2 i32)
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $token (call $nextToken (local.get $tokenValuePtr)))
 
@@ -58,8 +78,64 @@
       )
     )
 
+    ;; Identifier or function call
+    (if (i32.eq (local.get $token) (i32.const 3))
+      (then
+        (local.set $origInputPtr (global.get $inputPtr))
+        (local.set $tokenValuePtr2 (call $alloc (i32.const 128)))
+        (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
+        (if (i32.eq (local.get $token2) (i32.const 40)) ;; (
+          (then
+            ;; Function call
+            (local.set $outputPtr (call $alloc (i32.const 1024)))
+            (call $strcpy (local.get $outputPtr) (i32.const 1024) (i32.const 15730372))
+            (call $strcat (local.get $outputPtr) (i32.const 1024) (local.get $tokenValuePtr))
+            (block $loop_end
+              (local.set $origInputPtr (global.get $inputPtr))
+              (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
+              (br_if $loop_end (i32.eq (local.get $token2) (i32.const 41)))
+              (global.set $inputPtr (local.get $origInputPtr))
+              (loop $loop
+                (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15729794))
+                (call $strcat (local.get $outputPtr) (i32.const 1024) (call $compileExpr))
+                (local.set $token2 (call $nextToken (local.get $tokenValuePtr2)))
+                (br_if $loop (i32.eq (local.get $token2) (i32.const 44))) ;; ,
+                (br_if $loop_end (i32.eq (local.get $token2) (i32.const 41)))
+                (throw $error (i32.const 15730404))
+              )
+            )
+            (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15729792))
+            (return (local.get $outputPtr))
+          )
+          (else
+            ;; Identifier
+            (global.set $inputPtr (local.get $origInputPtr))
+            (if (call $isLocalVar (local.get $tokenValuePtr))
+              (then
+                (local.set $outputPtr (call $alloc (i32.const 128)))
+                (call $strcpy (local.get $outputPtr) (i32.const 128) (i32.const 15730276))
+                (call $strcat (local.get $outputPtr) (i32.const 128) (local.get $tokenValuePtr))
+                (call $strcat (local.get $outputPtr) (i32.const 128) (i32.const 15729792))
+                (return (local.get $outputPtr))
+              )
+            )
+            (if (call $isGlobalVar (local.get $tokenValuePtr))
+              (then
+                (local.set $outputPtr (call $alloc (i32.const 128)))
+                (call $strcpy (local.get $outputPtr) (i32.const 128) (i32.const 15730308))
+                (call $strcat (local.get $outputPtr) (i32.const 128) (local.get $tokenValuePtr))
+                (call $strcat (local.get $outputPtr) (i32.const 128) (i32.const 15729792))
+                (return (local.get $outputPtr))
+              )
+            )
+            (throw $error (i32.const 15730340))
+          )
+        )
+      )
+    )
+
     (throw $error (i32.const 15728688))
-    ;; TODO: String literal, identifier, function call
+    ;; TODO: String literal, function call
   )
   (func $compileExpr1 (result i32)
     (local $token i32)
@@ -390,7 +466,7 @@
         (return
           (i32.add
             (i32.const 4)
-            (call $strfind (local.get $tokenValuePtr) (i32.const 15728896))
+            (call $strlistFind (i32.const 15729248) (local.get $tokenValuePtr))
           )
         )
       )
@@ -411,7 +487,7 @@
         )
         (if
           (i32.ge_s
-            (call $strfind (local.get $tokenValuePtr) (i32.const 15729408))
+            (call $strlistFind (i32.const 15729504) (local.get $tokenValuePtr))
             (i32.const 0)
           )
           (then
@@ -574,7 +650,7 @@
     )
     (i32.sub (local.get $c1) (local.get $c2))
   )
-  (func $strfind (param $str i32) (param $strlist i32) (result i32)
+  (func $strlistFind (param $strlist i32) (param $str i32) (result i32)
     (local $index i32)
     (local $c i32)
     (local.set $index (i32.const 0))
@@ -595,6 +671,37 @@
       )
     )
     (i32.const -1)
+  )
+  (func $strlistAppend (param $strlist i32) (param $strlistSize i32) (param $str i32)
+    (local $p i32)
+    (local $len i32)
+    (local.set $p (local.get $strlist))
+    (block $loop_end
+      (loop $loop
+        (br_if $loop_end (i32.eqz (i32.load8_u (local.get $p))))
+        (local.set $p
+          (i32.add (i32.add (local.get $p) (call $strlen (local.get $p))) (i32.const 1))
+        )
+        (br $loop)
+      )
+    )
+    (local.set $len (call $strlen (local.get $str)))
+    (if
+      (i32.ge_u
+        (i32.add (i32.add (i32.sub (local.get $p) (local.get $strlist)) (local.get $len)) (i32.const 2))
+        (local.get $strlistSize)
+      )
+      (then (throw $error (i32.const 15728896)))
+    )
+    (memory.copy
+      (local.get $p)
+      (local.get $str)
+      (i32.add (local.get $len) (i32.const 1))
+    )
+    (i32.store8
+      (i32.add (i32.add (local.get $p) (local.get $len)) (i32.const 2))
+      (i32.const 0)
+    )
   )
   (func $strchr (param $str i32) (param $c i32) (result i32)
     (local $c2 i32)
@@ -656,6 +763,7 @@
 
     (local.get $output)
   )
+
   (func $init (param $input i32)
     ;; Set initial memory offset to after input string.
     (global.set
@@ -664,6 +772,10 @@
     ;; Set up tokenizer state
     (global.set $input (local.get $input))
     (global.set $inputPtr (local.get $input))
+    ;; Set up symbol table state
+    (global.set $globalVars (call $alloc (i32.const 8192)))
+    (global.set $localVars (call $alloc (i32.const 8192)))
+    (global.set $fns (call $alloc (i32.const 8192)))
   )
   (export "init" (func $init))
 
@@ -693,8 +805,11 @@
   (data (i32.const 15728864)
     "token length out of bounds\00"
   )
-  ;; Keywords
   (data (i32.const 15728896)
+    "strlistAppend out of bounds\00"
+  )
+  ;; Keywords
+  (data (i32.const 15729248)
     "fn\00"
     "let\00"
     "if\00"
@@ -704,7 +819,7 @@
     "\00"
   )
   ;; 2-letter operators
-  (data (i32.const 15729408)
+  (data (i32.const 15729504)
     "==\00"
     "!=\00"
     "<=\00"
@@ -768,5 +883,20 @@
   )
   (data (i32.const 15730244)
     "(i32.xor (i32.const -1) \00"
+  )
+  (data (i32.const 15730276)
+    "(local.get $\00"
+  )
+  (data (i32.const 15730308)
+    "(global.get $\00"
+  )
+  (data (i32.const 15730340)
+    "Unrecognized variable\00"
+  )
+  (data (i32.const 15730372)
+    "(call $\00"
+  )
+  (data (i32.const 15730404)
+    "Expected ',' or ')'\00"
   )
 )
