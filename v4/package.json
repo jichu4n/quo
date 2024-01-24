@@ -4,14 +4,10 @@
   "description": "",
   "main": "dist/quo0.js",
   "scripts": {
-    "build:tsc": "tsc",
-    "build:wasm": "mkdir -p dist && wat2wasm --enable-exceptions src/quo0.wat -o dist/quo0.wasm",
-    "build": "npm run build:tsc && npm run build:wasm",
-    "watch:ts": "tsc -w",
-    "watch:wasm": "chokidar --initial src/*.wat -c \"npm run build:wasm\"",
-    "watch": "concurrently -n \"TypeScript,WASM\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run watch:ts\" \"npm run watch:wasm\"",
-    "quo0": "node dist/quo0.js",
-    "test": "npm run build:wasm && jest"
+    "build": "make",
+    "watch": "chokidar --initial src -c \"make\"",
+    "quo0": "make && node dist/quo0.js",
+    "test": "make && jest"
   },
   "author": "Chuan Ji <chuan@jichu4n.com>",
   "license": "ISC",

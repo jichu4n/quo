@@ -453,6 +453,8 @@
       )
     )
 
+    ;; TODO: if, while
+
     (global.set $inputPtr (local.get $origInputPtr))
     (local.set $outputPtr (call $compileExpr))
     (call $expectToken (i32.const 59) (local.get $tokenValuePtr)) ;; ;
@@ -561,8 +563,8 @@
     (local $token i32)
     (local $tokenValuePtr i32)
 
-    (local.set $outputPtr (call $alloc (i32.const 16384)))
-    (call $strcpy (local.get $outputPtr) (i32.const 16384) (i32.const 15731844))
+    (local.set $outputPtr (call $alloc (i32.const 131072)))
+    (call $strcpy (local.get $outputPtr) (i32.const 131072) (i32.const 15731844))
 
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (block $loop_end
@@ -572,7 +574,7 @@
         ;; Fn
         (if (i32.eq (local.get $token) (i32.const 4))
           (then
-            (call $strcat (local.get $outputPtr) (i32.const 16384) (call $compileFn))
+            (call $strcat (local.get $outputPtr) (i32.const 131072) (call $compileFn))
             (br $loop)
           )
         )
@@ -585,21 +587,21 @@
                 (call $expectToken (i32.const 5) (local.get $tokenValuePtr)) ;; let
                 (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
                 (call $addGlobalVar (local.get $tokenValuePtr))
-                (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15730948))
-                (call $strcat (local.get $outputPtr) (i32.const 1024) (local.get $tokenValuePtr))
-                (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15730980))
+                (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15730948))
+                (call $strcat (local.get $outputPtr) (i32.const 131072) (local.get $tokenValuePtr))
+                (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15730980))
                 (local.set $token (call $nextToken (local.get $tokenValuePtr)))
                 (br_if $let_loop_end (i32.eq (local.get $token) (i32.const 59))) ;; ;
                 (if (i32.eq (local.get $token) (i32.const 44)) ;; ,
                   (then
-                    (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15729794))
+                    (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15729794))
                     (br $let_loop)
                   )
                 )
                 (throw $error (i32.const 15730436))
               )
             )
-            (call $strcat (local.get $outputPtr) (i32.const 1024) (i32.const 15730532))
+            (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15730532))
             (br $loop)
           )
         )
@@ -608,7 +610,7 @@
         (throw $error (i32.const 15730916))
       )
     )
-    (call $strcat (local.get $outputPtr) (i32.const 16384) (i32.const 15729792))
+    (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15729792))
     (local.get $outputPtr)
   )
   (export "compileModule" (func $compileModule))

@@ -17,9 +17,7 @@ function setWasmString(memory: WebAssembly.Memory, ptr: number, str: string) {
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
 async function setupWasmModule() {
-  const wasmFile = await fs.readFile(
-    path.join(__dirname, '..', 'dist', quo0)
-  );
+  const wasmFile = await fs.readFile(path.join(__dirname, '..', 'dist', quo0));
   const wasmMemory = new WebAssembly.Memory({initial: 256});
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
@@ -152,6 +150,10 @@ if (require.main === module) {
       console.error('Usage: quo0 <input>');
       process.exit(1);
     }
-    await compileQuoFile(process.argv[2]);
+    const inputFile = process.argv[2];
+    console.log(`Compiling ${inputFile}`);
+    const {watOutputFile, wasmOutputFile} = await compileQuoFile(inputFile);
+    console.log(`-> ${watOutputFile}`);
+    console.log(`-> ${wasmOutputFile}`);
   })();
 }
