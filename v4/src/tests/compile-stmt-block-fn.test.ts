@@ -1,6 +1,6 @@
 import {compileStmt, compileBlock, compileFn} from '../quo-driver';
 
-const stages = [0];
+const stages = ['0'];
 
 type TestCase = [string, string | Array<string>];
 type TestCases = Array<TestCase>;
@@ -143,7 +143,7 @@ for (const stage of stages) {
     });
     test('return', async () => {
       await testCompileStmt([
-        ['return;', '(return)'],
+        ['return;', '(return (i32.const 0))'],
         ['return 0;', '(return (i32.const 0))'],
         ['return 10 * 5;', '(return (i32.mul (i32.const 10) (i32.const 5)))'],
       ]);

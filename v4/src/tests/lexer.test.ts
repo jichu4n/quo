@@ -1,6 +1,6 @@
 import {Token, tokenize} from '../quo-driver';
 
-const stages = [0];
+const stages = ['0'];
 
 for (const stage of stages) {
   const testTokenize = async (testCases: Array<[string, Array<Token>]>) => {

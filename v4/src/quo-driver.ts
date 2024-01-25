@@ -2,19 +2,23 @@ import fs from 'fs-extra';
 import path from 'path';
 import wabt from 'wabt';
 
-function getWasmString(memory: WebAssembly.Memory, ptr: number) {
+export function getWasmString(memory: WebAssembly.Memory, ptr: number) {
   const bytes = new Uint8Array(memory.buffer, ptr);
   const len = bytes.findIndex((byte) => byte === 0);
   return new TextDecoder().decode(new Uint8Array(memory.buffer, ptr, len));
 }
 
-function setWasmString(memory: WebAssembly.Memory, ptr: number, str: string) {
+export function setWasmString(
+  memory: WebAssembly.Memory,
+  ptr: number,
+  str: string
+) {
   new TextEncoder().encodeInto(str, new Uint8Array(memory.buffer, ptr));
 }
 
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
-async function setupWasmModule(stage: number) {
+export async function setupWasmModule(stage: string) {
   const wasmFile = await fs.readFile(
     path.join(__dirname, '..', 'dist', `quo${stage}.wasm`)
   );
@@ -22,15 +26,20 @@ async function setupWasmModule(stage: number) {
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
     debug: {
-      puts(ptr: number) {
+      puts(ptr: number): number {
         console.log(getWasmString(wasmMemory, ptr));
+        return 0;
+      },
+      putn(n: number): number {
+        console.log(n);
+        return 0;
       },
     },
   });
   return {wasmModule, wasmMemory};
 }
 
-class WebAssemblyError extends Error {
+export class WebAssemblyError extends Error {
   constructor(wasmMemory: WebAssembly.Memory, e: unknown) {
     if (e instanceof WebAssembly.Exception && e.is(wasmExceptionTag)) {
       super(getWasmString(wasmMemory, e.getArg(wasmExceptionTag, 0)));
@@ -44,13 +53,26 @@ class WebAssemblyError extends Error {
   }
 }
 
+export function wrapWebAssemblyFn(
+  wasmMemory: WebAssembly.Memory,
+  fn: CallableFunction
+): CallableFunction {
+  return (...args: Array<unknown>) => {
+    try {
+      return fn(...args);
+    } catch (e) {
+      throw new WebAssemblyError(wasmMemory, e);
+    }
+  };
+}
+
 export interface Token {
   type: number;
   value?: number | string;
 }
 
 export async function tokenize(
-  stage: number,
+  stage: string,
   input: string
 ): Promise<Array<Token>> {
   const {wasmModule, wasmMemory} = await setupWasmModule(stage);
@@ -79,7 +101,7 @@ export async function tokenize(
 }
 
 async function runCompileFn(
-  stage: number,
+  stage: string,
   compileFn: (exports: WebAssembly.Exports) => number,
   input: string
 ): Promise<string> {
@@ -95,7 +117,7 @@ async function runCompileFn(
 }
 
 export async function compileExpr(
-  stage: number,
+  stage: string,
   input: string
 ): Promise<string> {
   return await runCompileFn(
@@ -106,7 +128,7 @@ export async function compileExpr(
 }
 
 export async function compileStmt(
-  stage: number,
+  stage: string,
   input: string
 ): Promise<string> {
   return await runCompileFn(
@@ -117,7 +139,7 @@ export async function compileStmt(
 }
 
 export async function compileBlock(
-  stage: number,
+  stage: string,
   input: string
 ): Promise<string> {
   return await runCompileFn(
@@ -127,7 +149,7 @@ export async function compileBlock(
   );
 }
 
-export async function compileFn(stage: number, input: string): Promise<string> {
+export async function compileFn(stage: string, input: string): Promise<string> {
   return await runCompileFn(
     stage,
     ({compileFn}) => (compileFn as CallableFunction)(),
@@ -136,7 +158,7 @@ export async function compileFn(stage: number, input: string): Promise<string> {
 }
 
 export async function compileModule(
-  stage: number,
+  stage: string,
   input: string
 ): Promise<string> {
   return await runCompileFn(
@@ -147,7 +169,7 @@ export async function compileModule(
 }
 
 export async function compileQuoFile(
-  stage: number,
+  stage: string,
   inputFile: string,
   outputFile?: string
 ) {
@@ -179,7 +201,7 @@ if (require.main === module) {
       console.error('Usage: quo-driver.js <stage> <input> [output]');
       process.exit(1);
     }
-    const stage = parseInt(process.argv[2], 10);
+    const stage = process.argv[2];
     const inputFile = process.argv[3];
     const outputFile = process.argv[4];
     console.log(`Compiling ${inputFile} with stage ${stage}`);

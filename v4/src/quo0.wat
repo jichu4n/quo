@@ -2,7 +2,8 @@
   ;; Main memory - 16MB.
   (import "env" "memory" (memory 256))
   (import "env" "tag" (tag $error (param i32)))
-  (import "debug" "puts" (func $puts (param i32)))
+  (import "debug" "puts" (func $puts (param i32) (result i32)))
+  (import "debug" "putn" (func $putn (param i32) (result i32)))
 
   ;; Memory allocation.
   ;;
@@ -303,7 +304,7 @@
         (global.set $inputPtr (local.get $origInputPtr))
         (br $loop_end)
       )
-      (local.set $rightOutputPtr (call $compileExpr2))
+      (local.set $rightOutputPtr (call $compileExpr3))
       (local.set $outputPtr (call $alloc (i32.const 1024)))
       (call $strcpy (local.get $outputPtr) (i32.const 1024) (local.get $outputPrefixPtr))
       (call $strcat (local.get $outputPtr) (i32.const 1024) (local.get $leftOutputPtr))
@@ -1331,10 +1332,10 @@
     "(i32.le_s \00"
   )
   (data (i32.const 15730148)
-    "(i32.and \00"
+    "(call $and \00"
   )
   (data (i32.const 15730180)
-    "(i32.or \00"
+    "(call $or \00"
   )
   (data (i32.const 15730212)
     "(i32.neg \00"
@@ -1379,7 +1380,7 @@
     "(return \00"
   )
   (data (i32.const 15730660)
-    "(return)\00"
+    "(return (i32.const 0))\00"
   )
   (data (i32.const 15730692)
     "  (func $\00"
@@ -1476,12 +1477,18 @@
     "(module\n"
     "  (import \"env\" \"memory\" (memory 256))\n"
     "  (import \"env\" \"tag\" (tag $error (param i32)))\n"
-    "  (import \"debug\" \"puts\" (func $puts (param i32)))\n"
+    "  (import \"debug\" \"puts\" (func $puts (param i32) (result i32)))\n"
+    "  (import \"debug\" \"putn\" (func $putn (param i32) (result i32)))\n"
     "\n"
     "  (func $load8_u (param $addr i32) (result i32)\n"
     "    (i32.load8_u (local.get $addr)))\n"
     "  (func $store8 (param $addr i32) (param $value i32) (result i32)\n"
     "    (i32.store8 (local.get $addr) (local.get $value))\n"
+    "    (i32.const 0))\n"
+    "  (func $load (param $addr i32) (result i32)\n"
+    "    (i32.load (local.get $addr)))\n"
+    "  (func $store (param $addr i32) (param $value i32) (result i32)\n"
+    "    (i32.store (local.get $addr) (local.get $value))\n"
     "    (i32.const 0))\n"
     "  (func $memcpy (param $dest i32) (param $src i32) (param $len i32) (result i32)\n"
     "    (memory.copy (local.get $dest) (local.get $src) (local.get $len))\n"
@@ -1489,6 +1496,10 @@
     "  (func $throw (param $message i32) (result i32)\n"
     "    (throw $error (local.get $message))\n"
     "    (i32.const 0))\n"
+    "  (func $and (param $left i32) (param $right i32) (result i32)\n"
+    "    (i32.and (i32.eqz (i32.eqz (local.get $left))) (i32.eqz (i32.eqz (local.get $right)))))\n"
+    "  (func $or (param $left i32) (param $right i32) (result i32)\n"
+    "    (i32.or (i32.eqz (i32.eqz (local.get $left))) (i32.eqz (i32.eqz (local.get $right)))))\n"
     "\n"
   )
 )

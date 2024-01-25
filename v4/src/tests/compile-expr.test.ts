@@ -1,6 +1,6 @@
 import {compileExpr} from '../quo-driver';
 
-const stages = [0];
+const stages = ['0'];
 
 for (const stage of stages) {
   const testCompileExpr = async (testCases: Array<[string, string]>) => {
@@ -74,11 +74,11 @@ for (const stage of stages) {
       await testCompileExpr([
         [
           '1 == 2 || 3 == 4 && 5 == 6 || 7 == 8',
-          '(i32.or (i32.or (i32.eq (i32.const 1) (i32.const 2)) (i32.and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8)))',
+          '(call $or (call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8)))',
         ],
         [
           '!(1 == 2 && 3 >= 4)',
-          '(i32.eqz (i32.and (i32.eq (i32.const 1) (i32.const 2)) (i32.ge_s (i32.const 3) (i32.const 4))))',
+          '(i32.eqz (call $and (i32.eq (i32.const 1) (i32.const 2)) (i32.ge_s (i32.const 3) (i32.const 4))))',
         ],
       ]);
     });
