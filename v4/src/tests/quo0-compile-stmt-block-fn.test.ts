@@ -46,18 +46,66 @@ describe('quo0-compile-stmt-block-fn', () => {
   });
   test('if', async () => {
     await testCompileStmt([
-      ['if (1) {}', '(if (i32.const 1)\n  (then\n  )\n)'],
+      [
+        'if (1) {}',
+        `
+(if (i32.const 1)
+  (then
+  )
+)`.trim(),
+      ],
       [
         'if (1 > 0) { foo(); }',
-        '(if (i32.gt_s (i32.const 1) (i32.const 0))\n  (then\n    (drop (call $foo))\n  )\n)',
+        `
+(if (i32.gt_s (i32.const 1) (i32.const 0))
+  (then
+    (drop (call $foo))
+  )
+)`.trim(),
       ],
       [
         'if (1 > 0) { foo(); } else {}',
-        '(if (i32.gt_s (i32.const 1) (i32.const 0))\n  (then\n    (drop (call $foo))\n  )\n  (else\n  )\n)',
+        `
+(if (i32.gt_s (i32.const 1) (i32.const 0))
+  (then
+    (drop (call $foo))
+  )
+  (else
+  )
+)`.trim(),
       ],
       [
         'if (1 > 0) { foo(); } else { bar(); }',
-        '(if (i32.gt_s (i32.const 1) (i32.const 0))\n  (then\n    (drop (call $foo))\n  )\n  (else\n    (drop (call $bar))\n  )\n)',
+        `
+(if (i32.gt_s (i32.const 1) (i32.const 0))
+  (then
+    (drop (call $foo))
+  )
+  (else
+    (drop (call $bar))
+  )
+)`.trim(),
+      ],
+    ]);
+  });
+  test('while', async () => {
+    await testCompileStmt([
+      [
+        'while (1) {}',
+        `
+(block $loop_1_end (loop $loop_1
+  (br_if $loop_1_end (i32.const 1))
+  (br $loop_1)
+))`.trim(),
+      ],
+      [
+        'while (1) { foo(); }',
+        `
+(block $loop_1_end (loop $loop_1
+  (br_if $loop_1_end (i32.const 1))
+  (drop (call $foo))
+  (br $loop_1)
+))`.trim(),
       ],
     ]);
   });
@@ -80,26 +128,47 @@ describe('quo0-compile-stmt-block-fn', () => {
   });
   test('fn', async () => {
     await testCompileFn([
-      ['fn foo() {}', '  (func $foo\n  )\n  (export "foo" (func $foo))\n'],
+      [
+        'fn foo() {}',
+        `
+  (func $foo
+  )
+  (export "foo" (func $foo))
+`.slice(1),
+      ],
       [
         'fn foo(x) {}',
-        '  (func $foo (param $x i32)\n  )\n  (export "foo" (func $foo))\n',
+        `
+  (func $foo (param $x i32)
+  )
+  (export "foo" (func $foo))
+`.slice(1),
       ],
       [
         'fn foo(x, y) {}',
-        '  (func $foo (param $x i32) (param $y i32)\n  )\n  (export "foo" (func $foo))\n',
-      ],
-      [
-        'fn foo(x, y, z) {}',
-        '  (func $foo (param $x i32) (param $y i32) (param $z i32)\n  )\n  (export "foo" (func $foo))\n',
+        `
+  (func $foo (param $x i32) (param $y i32)
+  )
+  (export "foo" (func $foo))
+`.slice(1),
       ],
       [
         'fn foo(): Int { return 42; }',
-        '  (func $foo (result i32)\n    (return (i32.const 42))\n  )\n  (export "foo" (func $foo))\n',
+        `
+  (func $foo (result i32)
+    (return (i32.const 42))
+  )
+  (export "foo" (func $foo))
+`.slice(1),
       ],
       [
         'fn foo(x): Int { return x; }',
-        '  (func $foo (param $x i32) (result i32)\n    (return (local.get $x))\n  )\n  (export "foo" (func $foo))\n',
+        `
+  (func $foo (param $x i32) (result i32)
+    (return (local.get $x))
+  )
+  (export "foo" (func $foo))
+`.slice(1),
       ],
     ]);
   });

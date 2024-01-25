@@ -9,7 +9,9 @@ fn getAnswerStr(): String {
   "world";
   return l;
 }
-fn dummy() {}
+fn dummy() {
+  while (1) {}
+}
 fn main() {
   if (getAnswer() > 0) {
     getAnswerStr();
