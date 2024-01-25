@@ -163,7 +163,8 @@ for (const stage of stages) {
         [
           'fn foo() {}',
           `
-  (func $foo
+  (func $foo (result i32)
+    (i32.const 0)
   )
   (export "foo" (func $foo))
 `.slice(1),
@@ -171,7 +172,8 @@ for (const stage of stages) {
         [
           'fn foo(x) {}',
           `
-  (func $foo (param $x i32)
+  (func $foo (param $x i32) (result i32)
+    (i32.const 0)
   )
   (export "foo" (func $foo))
 `.slice(1),
@@ -179,7 +181,8 @@ for (const stage of stages) {
         [
           'fn foo(x, y) {}',
           `
-  (func $foo (param $x i32) (param $y i32)
+  (func $foo (param $x i32) (param $y i32) (result i32)
+    (i32.const 0)
   )
   (export "foo" (func $foo))
 `.slice(1),
@@ -189,6 +192,7 @@ for (const stage of stages) {
           `
   (func $foo (result i32)
     (return (i32.const 42))
+    (i32.const 0)
   )
   (export "foo" (func $foo))
 `.slice(1),
@@ -198,6 +202,7 @@ for (const stage of stages) {
           `
   (func $foo (param $x i32) (result i32)
     (return (local.get $x))
+    (i32.const 0)
   )
   (export "foo" (func $foo))
 `.slice(1),
