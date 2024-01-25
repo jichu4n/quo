@@ -94,7 +94,7 @@ describe('quo0-compile-stmt-block-fn', () => {
         'while (1) {}',
         `
 (block $loop_1_end (loop $loop_1
-  (br_if $loop_1_end (i32.const 1))
+  (br_if $loop_1_end (i32.eqz (i32.const 1)))
   (br $loop_1)
 ))`.trim(),
       ],
@@ -102,7 +102,7 @@ describe('quo0-compile-stmt-block-fn', () => {
         'while (1) { foo(); }',
         `
 (block $loop_1_end (loop $loop_1
-  (br_if $loop_1_end (i32.const 1))
+  (br_if $loop_1_end (i32.eqz (i32.const 1)))
   (drop (call $foo))
   (br $loop_1)
 ))`.trim(),
@@ -111,7 +111,7 @@ describe('quo0-compile-stmt-block-fn', () => {
         'while (1) { foo(); break; }',
         `
 (block $loop_1_end (loop $loop_1
-  (br_if $loop_1_end (i32.const 1))
+  (br_if $loop_1_end (i32.eqz (i32.const 1)))
   (drop (call $foo))
   (br $loop_1_end)
   (br $loop_1)
@@ -121,10 +121,10 @@ describe('quo0-compile-stmt-block-fn', () => {
         'while (1) { foo(); while (2) { if (3) continue; break; } }',
         `
 (block $loop_1_end (loop $loop_1
-  (br_if $loop_1_end (i32.const 1))
+  (br_if $loop_1_end (i32.eqz (i32.const 1)))
   (drop (call $foo))
   (block $loop_2_end (loop $loop_2
-    (br_if $loop_2_end (i32.const 2))
+    (br_if $loop_2_end (i32.eqz (i32.const 2)))
     (if (i32.const 3)
       (then
         (br $loop_2)

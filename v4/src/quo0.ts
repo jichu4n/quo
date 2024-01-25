@@ -134,7 +134,9 @@ export async function compileQuoFile(inputFile: string) {
     ext: '.wat',
   });
   await fs.writeFile(watOutputFile, watOutput);
-  const wasmModule = (await wabt()).parseWat(watOutputFile, watOutput);
+  const wasmModule = (await wabt()).parseWat(watOutputFile, watOutput, {
+    exceptions: true,
+  });
   const wasmOutputFile = path.format({
     ...path.parse(inputFile),
     base: '',

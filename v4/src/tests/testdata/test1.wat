@@ -23,7 +23,7 @@
   (export "getAnswerStr" (func $getAnswerStr))
   (func $dummy
     (block $loop_1_end (loop $loop_1
-      (br_if $loop_1_end (i32.const 1))
+      (br_if $loop_1_end (i32.eqz (i32.const 1)))
       (br $loop_1_end)
       (br $loop_1)
       (br $loop_1)

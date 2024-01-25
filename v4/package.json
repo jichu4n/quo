@@ -5,7 +5,7 @@
   "main": "dist/quo0.js",
   "scripts": {
     "build": "make",
-    "watch": "chokidar --initial src -c \"make\"",
+    "watch": "chokidar --initial src/*.{ts,quo,wat} -c \"echo '---------------'; make; echo\"",
     "quo0": "make && node dist/quo0.js",
     "test": "make && jest"
   },

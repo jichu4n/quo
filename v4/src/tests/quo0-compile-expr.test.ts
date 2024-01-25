@@ -25,7 +25,7 @@ describe('quo0-compile-expr', () => {
   test('compileExpr1', async () => {
     await testCompileExpr([
       ['-(3)', '(i32.neg (i32.const 3))'],
-      ['!0', '(i32.xor (i32.const -1) (i32.const 0))'],
+      ['!0', '(i32.eqz (i32.const 0))'],
     ]);
   });
   test('compileExpr2', async () => {
@@ -75,7 +75,7 @@ describe('quo0-compile-expr', () => {
       ],
       [
         '!(1 == 2 && 3 >= 4)',
-        '(i32.xor (i32.const -1) (i32.and (i32.eq (i32.const 1) (i32.const 2)) (i32.ge_s (i32.const 3) (i32.const 4))))',
+        '(i32.eqz (i32.and (i32.eq (i32.const 1) (i32.const 2)) (i32.ge_s (i32.const 3) (i32.const 4))))',
       ],
     ]);
   });

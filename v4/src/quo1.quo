@@ -1,0 +1,119 @@
+// Memory allocation.
+//
+// We simply increment the memory offset by the size of the allocation, and
+// never free any allocated memory.
+let memoryOffset;
+fn alloc(size): Int {
+  let ptr;
+  ptr = memoryOffset;
+  memoryOffset = memoryOffset + size;
+  if (memoryOffset >= 15728640) { // 16MB
+    throw("Exceeded maximum memory");
+  }
+  return ptr;
+}
+
+// String functions.
+fn strlen(str): Int {
+  let len;
+  while (load8_u(str)) {
+    len = len + 1;
+    str = str + 1;
+  }
+  return len;
+}
+fn strcmp(str1, str2): Int {
+  let c1, c2;
+  while (1) {
+    c1 = load8_u(str1);
+    c2 = load8_u(str2);
+    if (c1 == 0 || c2 == 0 || c1 != c2) {
+      break;
+    }
+    str1 = str1 + 1;
+    str2 = str2 + 1;
+  }
+  return c1 - c2;
+}
+fn strlistFind(strlist, str): Int {
+  let index, c;
+  index = 0;
+  while (load8_u(strlist)) {
+    if (strcmp(str, strlist) == 0) {
+      return index;
+    }
+    strlist = strlist + strlen(strlist) + 1;
+  }
+  return -1;
+}
+fn strlistAppend(strlist, strlistSize, str) {
+  let p, len;
+  p = strlist;
+  while (load8_u(strlist)) {
+    p = p + strlen(strlist) + 1;
+  }
+  len = strlen(str);
+  if ((p - strlist) + len + 2 > strlistSize) {
+    throw("Exceeded maximum strlist size");
+  }
+  memcpy(p, str, len + 1);
+}
+fn strchr(str, c): Int {
+  let c2;
+  while (1) {
+    c2 = load8_u(str);
+    if (!c2) {
+      return 0;
+    }
+    if (c2 == c) {
+      return str;
+    }
+    str = str + 1;
+  }
+}
+fn strcat(str1, str1Size, str2) {
+  let len1, len2;
+  len1 = strlen(str1);
+  len2 = strlen(str2);
+  if (len1 + len2 + 1 > str1Size) {
+    throw("Exceeded maximum string size in strcat");
+  }
+  memcpy(str1 + len1, str2, len2 + 1);
+}
+fn strcpy(dest, destSize, src) {
+  let srcLen;
+  srcLen = strlen(src);
+  if (srcLen + 1 > destSize) {
+    throw("Exceeded maximum string size in strcpy");
+  }
+  memcpy(dest, src, srcLen + 1);
+}
+fn isspace(c): Int {
+  return c == 32 || c == 9 || c == 13 || c == 10;
+}
+fn isdigit(c): Int {
+  return c >= 48 && c <= 57;
+}
+fn isalpha(c): Int {
+  return c >= 65 && c <= 90 || c >= 97 && c <= 122;
+}
+fn isalnum(c): Int {
+  return isdigit(c) || isalpha(c);
+}
+fn isident(c): Int {
+  return isalnum(c) || c == 95; // _
+}
+fn itoa(num): String {
+  let str, p;
+  str = alloc(12);
+  p = str + 10;
+  while (1) {
+    store8(p, num % 10 + 48);
+    p = p - 1;
+    num = num / 10;
+    if (num == 0) {
+      break;
+    }
+  }
+  return p;
+}
