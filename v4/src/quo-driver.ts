@@ -2,8 +2,6 @@ import fs from 'fs-extra';
 import path from 'path';
 import wabt from 'wabt';
 
-const quo0 = 'quo0.wasm';
-
 function getWasmString(memory: WebAssembly.Memory, ptr: number) {
   const bytes = new Uint8Array(memory.buffer, ptr);
   const len = bytes.findIndex((byte) => byte === 0);
@@ -16,8 +14,10 @@ function setWasmString(memory: WebAssembly.Memory, ptr: number, str: string) {
 
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
-async function setupWasmModule() {
-  const wasmFile = await fs.readFile(path.join(__dirname, '..', 'dist', quo0));
+async function setupWasmModule(stage: number) {
+  const wasmFile = await fs.readFile(
+    path.join(__dirname, '..', 'dist', `quo${stage}.wasm`)
+  );
   const wasmMemory = new WebAssembly.Memory({initial: 256});
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
@@ -49,8 +49,11 @@ export interface Token {
   value?: number | string;
 }
 
-export async function tokenize(input: string): Promise<Array<Token>> {
-  const {wasmModule, wasmMemory} = await setupWasmModule();
+export async function tokenize(
+  stage: number,
+  input: string
+): Promise<Array<Token>> {
+  const {wasmModule, wasmMemory} = await setupWasmModule(stage);
   const init = wasmModule.instance.exports.init as CallableFunction;
   const nextToken = wasmModule.instance.exports.nextToken as CallableFunction;
 
@@ -76,10 +79,11 @@ export async function tokenize(input: string): Promise<Array<Token>> {
 }
 
 async function runCompileFn(
+  stage: number,
   compileFn: (exports: WebAssembly.Exports) => number,
   input: string
 ): Promise<string> {
-  const {wasmModule, wasmMemory} = await setupWasmModule();
+  const {wasmModule, wasmMemory} = await setupWasmModule(stage);
   const init = wasmModule.instance.exports.init as CallableFunction;
   setWasmString(wasmMemory, 0, input);
   try {
@@ -90,46 +94,67 @@ async function runCompileFn(
   }
 }
 
-export async function compileExpr(input: string): Promise<string> {
+export async function compileExpr(
+  stage: number,
+  input: string
+): Promise<string> {
   return await runCompileFn(
+    stage,
     ({compileExpr}) => (compileExpr as CallableFunction)(),
     input
   );
 }
 
-export async function compileStmt(input: string): Promise<string> {
+export async function compileStmt(
+  stage: number,
+  input: string
+): Promise<string> {
   return await runCompileFn(
+    stage,
     ({compileStmt}) => (compileStmt as CallableFunction)(0),
     input
   );
 }
 
-export async function compileBlock(input: string): Promise<string> {
+export async function compileBlock(
+  stage: number,
+  input: string
+): Promise<string> {
   return await runCompileFn(
+    stage,
     ({compileBlock}) => (compileBlock as CallableFunction)(0),
     input
   );
 }
 
-export async function compileFn(input: string): Promise<string> {
+export async function compileFn(stage: number, input: string): Promise<string> {
   return await runCompileFn(
+    stage,
     ({compileFn}) => (compileFn as CallableFunction)(),
     input
   );
 }
 
-export async function compileModule(input: string): Promise<string> {
+export async function compileModule(
+  stage: number,
+  input: string
+): Promise<string> {
   return await runCompileFn(
+    stage,
     ({compileModule}) => (compileModule as CallableFunction)(),
     input
   );
 }
 
-export async function compileQuoFile(inputFile: string) {
+export async function compileQuoFile(
+  stage: number,
+  inputFile: string,
+  outputFile?: string
+) {
   const input = await fs.readFile(inputFile, 'utf8');
-  const watOutput = await compileModule(input);
+  const watOutput = await compileModule(stage, input);
   const watOutputFile = path.format({
-    ...path.parse(inputFile),
+    ...path.parse(outputFile || inputFile),
     base: '',
     ext: '.wat',
   });
@@ -137,24 +162,32 @@ export async function compileQuoFile(inputFile: string) {
   const wasmModule = (await wabt()).parseWat(watOutputFile, watOutput, {
     exceptions: true,
   });
-  const wasmOutputFile = path.format({
-    ...path.parse(inputFile),
-    base: '',
-    ext: '.wasm',
-  });
+  const wasmOutputFile =
+    outputFile ||
+    path.format({
+      ...path.parse(inputFile),
+      base: '',
+      ext: '.wasm',
+    });
   await fs.writeFile(wasmOutputFile, wasmModule.toBinary({}).buffer);
   return {watOutputFile, wasmOutputFile};
 }
 
 if (require.main === module) {
   (async () => {
-    if (process.argv.length < 3) {
-      console.error('Usage: quo0 <input>');
+    if (process.argv.length < 4) {
+      console.error('Usage: quo-driver.js <stage> <input> [output]');
       process.exit(1);
     }
-    const inputFile = process.argv[2];
-    console.log(`Compiling ${inputFile}`);
-    const {watOutputFile, wasmOutputFile} = await compileQuoFile(inputFile);
+    const stage = parseInt(process.argv[2], 10);
+    const inputFile = process.argv[3];
+    const outputFile = process.argv[4];
+    console.log(`Compiling ${inputFile} with stage ${stage}`);
+    const {watOutputFile, wasmOutputFile} = await compileQuoFile(
+      stage,
+      inputFile,
+      outputFile
+    );
     console.log(`-> ${watOutputFile}`);
     console.log(`-> ${wasmOutputFile}`);
   })();

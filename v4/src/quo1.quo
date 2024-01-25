@@ -117,3 +117,9 @@ fn itoa(num): String {
   }
   return p;
 }
+
+fn compileModule(): String {
+  return "(module)";
+}
+fn init(input) {
+}
