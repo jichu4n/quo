@@ -21,8 +21,8 @@
     (throw $error (local.get $message))
     (i32.const 0))
   (func $and (param $left i32) (param $right i32) (result i32)
-    (i32.and (i32.eqz (i32.eqz (local.get $left))) (i32.eqz (i32.eqz (local.get $right)))))
+    (if (local.get $left) (then (return (local.get $right)))) (local.get $left))
   (func $or (param $left i32) (param $right i32) (result i32)
-    (i32.or (i32.eqz (i32.eqz (local.get $left))) (i32.eqz (i32.eqz (local.get $right)))))
+    (if (local.get $left) (then (return (local.get $left)))) (local.get $right))
 
   ;; END RUNTIME

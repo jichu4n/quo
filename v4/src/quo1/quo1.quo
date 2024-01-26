@@ -117,28 +117,18 @@ fn free(ptr) {
 //    08 i32 - next chunk address, 0 if last chunk
 //    12 data
 fn strNew(reserveLen): Int {
-  let str, newChunk, len;
+  let str;
   str = malloc(8);
-  len = (reserveLen + 3) / 4 * 4;
-  if (len < 32) {
-    len = 32;
-  }
-  newChunk = malloc(12 + len);
   store(str + 0, 0);
-  store(str + 4, newChunk);
-  store(newChunk + 0, len);
-  store(newChunk + 4, 0);
-  store(newChunk + 8, 0);
+  store(str + 4, strNewChunk(reserveLen, 0, 0, 0));
   return str;
 }
 fn strFromRaw(rawStr): Int {
-  let len, str, chunk;
+  let len, str;
   len = rawStrLen(rawStr);
-  str = strNew(len);
+  str = malloc(8);
   store(str + 0, len);
-  chunk = load(str + 4);
-  store(chunk + 4, len);
-  memcpy(chunk + 12, rawStr, len);
+  store(str + 4, strNewChunk(len, len, 0, rawStr));
   return str;
 }
 fn strDelete(str) {
@@ -152,38 +142,34 @@ fn strDelete(str) {
   free(str);
 }
 fn strFlatten(str) {
-  let len, chunk, chunkSize, chunkLen, newChunkSize, newChunk, nextChunk, nextNextChunk, nextChunkLen;
+  let len, headChunk, chunkLen, newHeadChunk, chunk, nextChunk, nextChunkLen;
   len = load(str + 0);
-  chunk = load(str + 4);
-  chunkLen = load(chunk + 4);
+  headChunk = load(str + 4);
+  chunkLen = load(headChunk + 4);
   if (len == chunkLen) {
     return;
   }
-  chunkSize = load(chunk + 0);
-  nextChunk = load(chunk + 8);
-  // If first chunk is not large enough to hold entire string, replace it with a
-  // new chunk that has sufficient size.
-  if (chunkSize < len) {
-    newChunkSize = (len + 3) / 4 * 4;
-    newChunk = malloc(12 + newChunkSize);
-    store(newChunk + 0, newChunkSize);
-    memcpy(newChunk + 12, chunk + 12, chunkLen);
-    free(chunk);
-    store(str + 4, newChunk);
-    chunkSize = newChunkSize;
-    chunk = newChunk;
+  chunk = load(headChunk + 8);
+  // If first headChunk is not large enough to hold entire string, replace it with a
+  // new headChunk that has sufficient size.
+  if (load(headChunk + 0) < len) {
+    newHeadChunk = strNewChunk(len, chunkLen, 0, headChunk + 12);
+    free(headChunk);
+    headChunk = newHeadChunk;
+    store(str + 4, headChunk);
+  } else if (chunk) {
+    store(headChunk + 8, 0);
   }
-  store(chunk + 4, len);
-  store(chunk + 8, 0);
-  while (nextChunk) {
-    nextChunkLen = load(nextChunk + 4);
-    nextNextChunk = load(nextChunk + 8);
+  store(headChunk + 4, len);
+  while (chunk) {
+    nextChunkLen = load(chunk + 4);
+    nextChunk = load(chunk + 8);
     if (nextChunkLen) {
-      memcpy(chunk + 12 + chunkLen, nextChunk + 12, nextChunkLen);
+      memcpy(headChunk + 12 + chunkLen, chunk + 12, nextChunkLen);
       chunkLen = chunkLen + nextChunkLen;
     }
-    free(nextChunk);
-    nextChunk = nextNextChunk;
+    free(chunk);
+    chunk = nextChunk;
   }
 }
 fn strToRaw(str): Int {
@@ -198,7 +184,7 @@ fn strToRaw(str): Int {
 }
 // Append str2 to str1 and delete str2.
 fn strMerge(str1, str2): Int {
-  let str1Len, str2Len, str1Chunk, str2Chunk, str1ChunkSize, str1ChunkLen, str2ChunkLen;
+  let str1Len, str2Len, str1TailChunk, str2HeadChunk, str1TailChunkSize, str1TailChunkLen, str2HeadChunkLen;
   str1Len = load(str1 + 0);
   str2Len = load(str2 + 0);
 
@@ -212,64 +198,59 @@ fn strMerge(str1, str2): Int {
   // Special case: if str1 is empty but str2 isn't, take ownership of str2's
   // chunks.
   if (str1Len == 0) {
-    str1Chunk = load(str1 + 4);
-    str2Chunk = load(str2 + 4);
-    free(str1Chunk);
-    store(str1 + 4, str2Chunk);
+    str1TailChunk = load(str1 + 4);
+    str2HeadChunk = load(str2 + 4);
+    free(str1TailChunk);
+    store(str1 + 4, str2HeadChunk);
     free(str2);
     return str1;
   }
 
-  str1Chunk = strTailChunk(str1);
-  str2Chunk = load(str2 + 4);
-  str1ChunkSize = load(str1Chunk + 0);
-  str1ChunkLen = load(str1Chunk + 4);
-  str2ChunkLen = load(str2Chunk + 4);
-  if (str1ChunkLen + str2ChunkLen <= str1ChunkSize) {
+  str1TailChunk = strGetTailChunk(str1);
+  str2HeadChunk = load(str2 + 4);
+  str1TailChunkSize = load(str1TailChunk + 0);
+  str1TailChunkLen = load(str1TailChunk + 4);
+  str2HeadChunkLen = load(str2HeadChunk + 4);
+  if (str1TailChunkLen + str2HeadChunkLen <= str1TailChunkSize) {
     // Merge str2's first chunk with str1's last chunk if possible.
-    store(str1Chunk + 4, str1ChunkLen + str2ChunkLen);
-    store(str1Chunk + 8, load(str2Chunk + 8));
-    memcpy(str1Chunk + 12 + str1ChunkLen, str2Chunk + 12, str2ChunkLen);
-    free(str2Chunk);
+    store(str1TailChunk + 4, str1TailChunkLen + str2HeadChunkLen);
+    store(str1TailChunk + 8, load(str2HeadChunk + 8));
+    memcpy(str1TailChunk + 12 + str1TailChunkLen, str2HeadChunk + 12, str2HeadChunkLen);
+    free(str2HeadChunk);
     free(str2);
   } else {
     // Else, add str2's first chunk after str1's last chunk.
-    store(str1Chunk + 8, str2Chunk);
+    store(str1TailChunk + 8, str2HeadChunk);
     free(str2);
   }
   return str1;
 }
 fn strAppendRaw(str1, str2): Int {
-  let str1Len, str2Len, chunk, chunkSize, chunkLen, newChunk, newChunkLen;
+  let str1Len, str2Len, str1TailChunk, str1TailChunkSize, str1TailChunkLen, newChunk;
   str2Len = rawStrLen(str2);
   if (str2Len == 0) {
     return str1;
   }
   str1Len = load(str1 + 0);
   store(str1 + 0, str1Len + str2Len);
-  chunk = strTailChunk(str1);
-  chunkSize = load(chunk + 0);
-  chunkLen = load(chunk + 4);
-  if (chunkLen + str2Len < chunkSize) {
-    // Merge str2 into last chunk.
-    store(chunk + 4, chunkLen + str2Len);
-    memcpy(chunk + 12 + chunkLen, str2, str2Len);
+  str1TailChunk = strGetTailChunk(str1);
+  str1TailChunkSize = load(str1TailChunk + 0);
+  str1TailChunkLen = load(str1TailChunk + 4);
+  if (str1TailChunkLen + str2Len < str1TailChunkSize) {
+    // Merge str2 into last str1TailChunk.
+    store(str1TailChunk + 4, str1TailChunkLen + str2Len);
+    memcpy(str1TailChunk + 12 + str1TailChunkLen, str2, str2Len);
   } else {
-    // Create new chunk.
-    newChunkLen = (str2Len + 3) / 4 * 4;
-    if (newChunkLen < 32) {
-      newChunkLen = 32;
-    }
-    newChunk = malloc(12 + newChunkLen);
-    store(newChunk + 0, newChunkLen);
-    store(newChunk + 4, str2Len);
-    store(newChunk + 8, 0);
-    memcpy(newChunk + 12, str2, str2Len);
-    store(chunk + 8, newChunk);
+    // Create new chunk from str2 and add it after str1TailChunk.
+    newChunk = strNewChunk(str2Len, str2Len, 0, str2);
+    store(str1TailChunk + 8, newChunk);
   }
   return str1;
 }
-fn strTailChunk(str): Int {
+fn strLen(str): Int {
+  return load(str + 0);
+}
+fn strGetTailChunk(str): Int {
   let chunk, nextChunk, chunkCount;
   chunk = load(str + 4);
   chunkCount = 1;
@@ -286,7 +267,32 @@ fn strTailChunk(str): Int {
     chunk = nextChunk;
   }
 }
-
+fn strNewChunk(minSize, len, next, src): Int {
+  let newChunk, newChunkSize;
+  newChunkSize = (minSize + 3) / 4 * 4;
+  if (newChunkSize < 32) {
+    newChunkSize = 32;
+  }
+  newChunk = malloc(12 + newChunkSize);
+  store(newChunk + 0, newChunkSize);
+  store(newChunk + 4, len);
+  store(newChunk + 8, next);
+  if (src) {
+    memcpy(newChunk + 12, src, len);
+  }
+  return newChunk;
+}
+// Compare str against raw string.
+fn strCmpRaw(str1, str2): Int {
+  strFlatten(str1);
+  return memcmp2(load(str1 + 4) + 12, strLen(str1), str2, rawStrLen(str2));
+}
+// Compare str against str.
+fn strCmp(str1, str2): Int {
+  strFlatten(str1);
+  strFlatten(str2);
+  return memcmp2(load(str1 + 4) + 12, strLen(str1), load(str2 + 4) + 12, strLen(str2));
+}
 
 // Raw (i.e., C-style, null terminated) strings.
 fn rawStrLen(str): Int {
@@ -310,6 +316,30 @@ fn itoa(n, str): Int {
     }
   }
   return p;
+}
+fn memcmp(p1, p2, size): Int {
+  let offset, v1, v2;
+  if (p1 == p2 || size == 0) {
+    return 0;
+  }
+  offset = 0;
+  while (offset < size) {
+    v1 = load8_u(p1 + offset);
+    v2 = load8_u(p2 + offset);
+    if (v1 != v2) {
+      return v1 - v2;
+    }
+    offset = offset + 1;
+  }
+  return 0;
+}
+fn memcmp2(p1, p1Size, p2, p2Size): Int {
+  if (p1Size < p2Size) {
+    return memcmp(p1, p2, p1Size) || -1;
+  } else if (p1Size > p2Size) {
+    return memcmp(p1, p2, p2Size) || 1;
+  }
+  return memcmp(p1, p2, p1Size);
 }
 
 // Entry point.

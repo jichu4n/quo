@@ -1,4 +1,4 @@
-import {setupWasmModule, wrapWebAssemblyFn, setWasmString} from '../quo-driver';
+import {setWasmString, setupWasmModule, wrapWebAssemblyFn} from '../quo-driver';
 import {getChunks} from './memory.test';
 
 const stages = ['1a'];
@@ -105,6 +105,14 @@ for (const stage of stages) {
       wasmMemory,
       wasmModule.instance.exports.strAppendRaw as CallableFunction
     );
+    const strCmpRaw = wrapWebAssemblyFn(
+      wasmMemory,
+      wasmModule.instance.exports.strCmpRaw as CallableFunction
+    );
+    const strCmp = wrapWebAssemblyFn(
+      wasmMemory,
+      wasmModule.instance.exports.strCmp as CallableFunction
+    );
 
     memoryInit(memoryStart, memoryEnd);
     return {
@@ -115,6 +123,8 @@ for (const stage of stages) {
       strToRaw,
       strMerge,
       strAppendRaw,
+      strCmp,
+      strCmpRaw,
       wasmMemory,
     };
   };
@@ -226,6 +236,35 @@ for (const stage of stages) {
         strMerge(str6, str7);
         expect(getStr(wasmMemory, str6).chunks.length).toBeLessThanOrEqual(8);
       }
+    });
+    test('compare strings', async function () {
+      const {strNew, strAppendRaw, strFromRaw, strCmp, strCmpRaw, wasmMemory} =
+        await setup();
+      // Basic strings.
+      setWasmString(wasmMemory, 4096, 'foo');
+      const str1 = strFromRaw(4096);
+      const str2 = strFromRaw(4096);
+      expect(strCmp(str1, str1)).toStrictEqual(0);
+      expect(strCmpRaw(str1, 4096)).toStrictEqual(0);
+      expect(strCmp(str1, str2)).toStrictEqual(0);
+
+      setWasmString(wasmMemory, 4096, 'foobar');
+      const str3 = strFromRaw(4096);
+      expect(strCmp(str1, str3)).toBeLessThan(0);
+      expect(strCmp(str3, str1)).toBeGreaterThan(0);
+
+      const str4 = strFromRaw(4096 + 3); // "bar"
+      expect(strCmp(str1, str4)).toBeGreaterThan(0);
+      expect(strCmp(str4, str1)).toBeLessThan(0);
+
+      // Empty strings.
+      expect(strCmp(strNew(0), strNew(0))).toStrictEqual(0);
+
+      // 1 chunk vs 2 chunks.
+      setWasmString(wasmMemory, 4096 + 10, 'foobar' + 'a'.repeat(100));
+      strAppendRaw(str3, 4096 + 10 + 6);
+      expect(getStr(wasmMemory, str3).chunks.length).toStrictEqual(2); // 'foobar' + 'a'.repeat(100)
+      expect(strCmp(str3, strFromRaw(4096 + 10))).toStrictEqual(0);
     });
   });
 }
