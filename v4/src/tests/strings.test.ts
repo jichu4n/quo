@@ -4,7 +4,7 @@ import {getChunks} from './memory.test';
 const stages = ['1a'];
 
 const memoryStart = 32;
-const memoryEnd = 1024;
+const memoryEnd = 2048;
 const strChunkHeaderSize = 12;
 
 interface RawStrHeader {
@@ -170,11 +170,13 @@ for (const stage of stages) {
       const str1 = strFromRaw(4096);
       setWasmString(wasmMemory, 4096 + 10, 'bar');
       const str2 = strFromRaw(4096 + 10);
+      // Empty + non-empty
       strMerge(str0, str1);
       expect(getStr(wasmMemory, str0)).toStrictEqual({
         len: 3,
         chunks: [{size: 32, len: 3, data: 'foo'}],
       });
+      // Non-empty + non-empty, but enough space in first string
       strMerge(str0, str2);
       expect(getStr(wasmMemory, str0)).toStrictEqual({
         len: 6,
@@ -184,11 +186,13 @@ for (const stage of stages) {
 
       const str3 = strNew(0);
       const str4 = strNew(0);
+      // Empty + empty
       strMerge(str3, str4);
       expect(getStr(wasmMemory, str3)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
+      // Non-empty + empty
       strMerge(str0, str3);
       expect(getStr(wasmMemory, str0)).toStrictEqual({
         len: 6,
@@ -196,6 +200,7 @@ for (const stage of stages) {
       });
       expectUsedChunks(wasmMemory, 2);
 
+      // Non-empty + large non-empt
       setWasmString(wasmMemory, 4096 + 20, 'a'.repeat(100));
       const str5 = strFromRaw(4096 + 20);
       expectUsedChunks(wasmMemory, 4);
@@ -213,6 +218,14 @@ for (const stage of stages) {
         chunks: [{size: 108, len: 106, data: 'foobar' + 'a'.repeat(100)}],
       });
       expectUsedChunks(wasmMemory, 2);
+
+      // Lots of non-empty. Should never exceed 8 chunks.
+      const str6 = strFromRaw(4096);
+      for (let i = 0; i < 150; ++i) {
+        const str7 = strFromRaw(4096);
+        strMerge(str6, str7);
+        expect(getStr(wasmMemory, str6).chunks.length).toBeLessThanOrEqual(8);
+      }
     });
   });
 }

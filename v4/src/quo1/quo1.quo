@@ -270,12 +270,18 @@ fn strAppendRaw(str1, str2): Int {
   return str1;
 }
 fn strTailChunk(str): Int {
-  let chunk, nextChunk;
+  let chunk, nextChunk, chunkCount;
   chunk = load(str + 4);
+  chunkCount = 1;
   while (1) {
     nextChunk = load(chunk + 8);
     if (!nextChunk) {
       return chunk;
+    }
+    chunkCount = chunkCount + 1;
+    if (chunkCount >= 8) {
+      strFlatten(str);
+      return load(str + 4);
     }
     chunk = nextChunk;
   }
