@@ -7,7 +7,7 @@ const memoryEnd = 1024;
 const memorySize = memoryEnd - memoryStart;
 const headerSize = 16;
 
-interface Chunk {
+export interface Chunk {
   address: number;
   size: number;
   next: number;
@@ -25,7 +25,7 @@ function toChunk(buffer: Buffer, address: number): Chunk {
   };
 }
 
-function getChunks(memory: WebAssembly.Memory): Array<Chunk> {
+export function getChunks(memory: WebAssembly.Memory): Array<Chunk> {
   const buffer = Buffer.from(memory.buffer);
   const head = toChunk(buffer, memoryStart);
   const chunks = [head];
