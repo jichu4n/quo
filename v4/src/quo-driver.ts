@@ -13,7 +13,10 @@ export function setWasmString(
   ptr: number,
   str: string
 ) {
-  new TextEncoder().encodeInto(str, new Uint8Array(memory.buffer, ptr));
+  const buffer = new Uint8Array(memory.buffer, ptr);
+  const len = new TextEncoder().encodeInto(str, buffer).written;
+  buffer[ptr + len] = 0;
+  return len + 1;
 }
 
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
@@ -37,6 +40,19 @@ export async function setupWasmModule(stage: string) {
     },
   });
   return {wasmModule, wasmMemory};
+}
+
+export async function getWatRuntimeString(stage: string) {
+  const watFilePath = path.join(
+    __dirname,
+    '..',
+    'dist',
+    `quo${stage}-runtime.wat`
+  );
+  if (!(await fs.exists(watFilePath))) {
+    return '';
+  }
+  return await fs.readFile(watFilePath, 'utf8');
 }
 
 export class WebAssemblyError extends Error {
@@ -106,8 +122,10 @@ async function runCompileFn(
   input: string
 ): Promise<string> {
   const {wasmModule, wasmMemory} = await setupWasmModule(stage);
+  const watRuntimeString = await getWatRuntimeString(stage);
   const init = wasmModule.instance.exports.init as CallableFunction;
-  setWasmString(wasmMemory, 0, input);
+  const len = setWasmString(wasmMemory, 0, input);
+  setWasmString(wasmMemory, len, watRuntimeString);
   try {
     init(0);
     return getWasmString(wasmMemory, compileFn(wasmModule.instance.exports));

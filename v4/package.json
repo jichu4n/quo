@@ -5,7 +5,7 @@
   "main": "dist/quo-driver.js",
   "scripts": {
     "build": "make",
-    "watch": "chokidar --initial 'src/*.{ts,quo,wat}' -c 'echo '---------------'; make; echo'",
+    "watch": "chokidar --initial 'src/**/*.{ts,quo,wat}' -i 'src/tests/**/*' -c 'echo '---------------'; make; echo'",
     "quo0": "make && node dist/quo0.js",
     "test": "make && jest"
   },

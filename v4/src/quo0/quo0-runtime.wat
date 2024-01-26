@@ -1,0 +1,28 @@
+  ;; BEGIN RUNTIME
+  (import "env" "memory" (memory 256))
+  (import "env" "tag" (tag $error (param i32)))
+  (import "debug" "puts" (func $puts (param i32) (result i32)))
+  (import "debug" "putn" (func $putn (param i32) (result i32)))
+
+  (func $load8_u (param $addr i32) (result i32)
+    (i32.load8_u (local.get $addr)))
+  (func $store8 (param $addr i32) (param $value i32) (result i32)
+    (i32.store8 (local.get $addr) (local.get $value))
+    (i32.const 0))
+  (func $load (param $addr i32) (result i32)
+    (i32.load (local.get $addr)))
+  (func $store (param $addr i32) (param $value i32) (result i32)
+    (i32.store (local.get $addr) (local.get $value))
+    (i32.const 0))
+  (func $memcpy (param $dest i32) (param $src i32) (param $len i32) (result i32)
+    (memory.copy (local.get $dest) (local.get $src) (local.get $len))
+    (local.get $dest))
+  (func $throw (param $message i32) (result i32)
+    (throw $error (local.get $message))
+    (i32.const 0))
+  (func $and (param $left i32) (param $right i32) (result i32)
+    (i32.and (i32.eqz (i32.eqz (local.get $left))) (i32.eqz (i32.eqz (local.get $right)))))
+  (func $or (param $left i32) (param $right i32) (result i32)
+    (i32.or (i32.eqz (i32.eqz (local.get $left))) (i32.eqz (i32.eqz (local.get $right)))))
+
+  ;; END RUNTIME

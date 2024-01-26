@@ -6,21 +6,22 @@ all: quo1
 .PHONY: quo1
 quo1: dist/quo1b.wasm
 
-dist/quo1b.wasm: dist/quo1a.wasm src/quo1.quo
+dist/quo1b.wasm: dist/quo1a.wasm src/quo1/*
 	@echo "> Building stage 1b compiler using stage 1a compiler"
-	node dist/quo-driver.js 1a src/quo1.quo dist/quo1b.wasm
+	node dist/quo-driver.js 1a src/quo1/quo1.quo dist/quo1b.wasm
 
-dist/quo1a.wasm: quo0 src/quo1.quo
+dist/quo1a.wasm: quo0 src/quo1/*
 	@echo "> Building stage 1a compiler using stage 0 compiler"
-	node dist/quo-driver.js 0 src/quo1.quo dist/quo1a.wasm
+	node dist/quo-driver.js 0 src/quo1/quo1.quo dist/quo1a.wasm
 
 .PHONY: quo0
 quo0: dist/quo0.wasm dist/quo-driver.js
 
-dist/quo0.wasm: src/quo0.wat
+dist/quo0.wasm: src/quo0/*
 	@echo "> Building stage 0 compiler"
 	@mkdir -p dist
-	wat2wasm --enable-exceptions $< -o $@
+	wat2wasm --enable-exceptions src/quo0/quo0.wat -o $@
+	cp -a src/quo0/quo0-runtime.wat dist/
 
 dist/quo-driver.js: src/*.ts
 	tsc
