@@ -112,8 +112,8 @@ fn free(ptr) {
 //   04 i32 - first chunk address (always non-null)
 //
 //  Chunk header is 12 bytes:
-//    00 i32 - chunk length
-//    04 i32 - string length in chunk
+//    00 i32 - chunk size
+//    04 i32 - length of string in chunk
 //    08 i32 - next chunk address, 0 if last chunk
 //    12 data
 fn strNew(reserveLen): Int {
@@ -151,22 +151,49 @@ fn strDelete(str) {
   }
   free(str);
 }
+fn strFlatten(str) {
+  let len, chunk, chunkSize, chunkLen, newChunkSize, newChunk, nextChunk, nextNextChunk, nextChunkLen;
+  len = load(str + 0);
+  chunk = load(str + 4);
+  chunkLen = load(chunk + 4);
+  if (len == chunkLen) {
+    return;
+  }
+  chunkSize = load(chunk + 0);
+  nextChunk = load(chunk + 8);
+  // If first chunk is not large enough to hold entire string, replace it with a
+  // new chunk that has sufficient size.
+  if (chunkSize < len) {
+    newChunkSize = (len + 3) / 4 * 4;
+    newChunk = malloc(12 + newChunkSize);
+    store(newChunk + 0, newChunkSize);
+    memcpy(newChunk + 12, chunk + 12, chunkLen);
+    free(chunk);
+    store(str + 4, newChunk);
+    chunkSize = newChunkSize;
+    chunk = newChunk;
+  }
+  store(chunk + 4, len);
+  store(chunk + 8, 0);
+  while (nextChunk) {
+    nextChunkLen = load(nextChunk + 4);
+    nextNextChunk = load(nextChunk + 8);
+    if (nextChunkLen) {
+      memcpy(chunk + 12 + chunkLen, nextChunk + 12, nextChunkLen);
+      chunkLen = chunkLen + nextChunkLen;
+    }
+    free(nextChunk);
+    nextChunk = nextNextChunk;
+  }
+}
 fn strToRaw(str): Int {
-  let len, chunk, chunkLen, nextChunk, result, p;
+  let len, chunk, result;
+  strFlatten(str);
   len = load(str + 0);
   chunk = load(str + 4);
   result = malloc(len + 1);
-  p = result;
-  while (chunk) {
-    nextChunk = load(chunk + 8);
-    chunkLen = load(chunk + 4);
-    if (chunkLen) {
-      memcpy(p, chunk + 12, chunkLen);
-    }
-    p = p + chunkLen;
-    chunk = nextChunk;
-  }
-  store8(p, 0);
+  memcpy(result, chunk + 12, len);
+  store8(result + len, 0);
   return result;
 }
 // Append str2 to str1 and delete str2.

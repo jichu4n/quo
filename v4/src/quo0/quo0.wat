@@ -28,7 +28,7 @@
   (global $localVars (mut i32) (i32.const 0))
   (global $fns (mut i32) (i32.const 0))
   (func $addLocalVar (param $name i32)
-    (call $strlistAppend (global.get $localVars) (i32.const 8192) (local.get $name))
+    (call $strlistAppend (global.get $localVars) (i32.const 32768) (local.get $name))
   )
   (func $isLocalVar (param $name i32) (result i32)
     (i32.ge_s (call $strlistFind (global.get $localVars) (local.get $name)) (i32.const 0))
@@ -37,7 +37,7 @@
     (i32.store8 (global.get $localVars) (i32.const 0))
   )
   (func $addGlobalVar (param $name i32)
-    (call $strlistAppend (global.get $globalVars) (i32.const 8192) (local.get $name))
+    (call $strlistAppend (global.get $globalVars) (i32.const 32768) (local.get $name))
   )
   (func $isGlobalVar (param $name i32) (result i32)
     (i32.ge_s (call $strlistFind (global.get $globalVars) (local.get $name)) (i32.const 0))
@@ -693,6 +693,8 @@
     (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $namePtr))
     (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730884))
 
+    (call $clearLocalVars)
+
     (local.get $outputPtr)
   )
   (export "compileFn" (func $compileFn))
@@ -1228,8 +1230,8 @@
     (global.set $input (local.get $input))
     (global.set $inputPtr (local.get $input))
     ;; Set up symbol table state
-    (global.set $globalVars (call $alloc (i32.const 8192)))
-    (global.set $localVars (call $alloc (i32.const 8192)))
+    (global.set $globalVars (call $alloc (i32.const 32768)))
+    (global.set $localVars (call $alloc (i32.const 32768)))
     (global.set $fns (call $alloc (i32.const 8192)))
     ;; Set up string literal table state.
     (global.set $strings (call $alloc (i32.const 32768)))

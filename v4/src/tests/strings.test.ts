@@ -89,6 +89,10 @@ for (const stage of stages) {
       wasmMemory,
       wasmModule.instance.exports.strFromRaw as CallableFunction
     );
+    const strFlatten = wrapWebAssemblyFn(
+      wasmMemory,
+      wasmModule.instance.exports.strFlatten as CallableFunction
+    );
     const strToRaw = wrapWebAssemblyFn(
       wasmMemory,
       wasmModule.instance.exports.strToRaw as CallableFunction
@@ -107,6 +111,7 @@ for (const stage of stages) {
       strNew,
       strDelete,
       strFromRaw,
+      strFlatten,
       strToRaw,
       strMerge,
       strAppendRaw,
@@ -157,8 +162,9 @@ for (const stage of stages) {
       expectUsedChunks(wasmMemory, 0);
     });
     test('merge strings', async function () {
-      const {strNew, strFromRaw, strMerge, strDelete, wasmMemory} =
+      const {strNew, strFromRaw, strMerge, strDelete, strFlatten, wasmMemory} =
         await setup();
+
       const str0 = strNew(0);
       setWasmString(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
@@ -175,6 +181,7 @@ for (const stage of stages) {
         chunks: [{size: 32, len: 6, data: 'foobar'}],
       });
       expectUsedChunks(wasmMemory, 2);
+
       const str3 = strNew(0);
       const str4 = strNew(0);
       strMerge(str3, str4);
@@ -186,6 +193,24 @@ for (const stage of stages) {
       expect(getStr(wasmMemory, str0)).toStrictEqual({
         len: 6,
         chunks: [{size: 32, len: 6, data: 'foobar'}],
+      });
+      expectUsedChunks(wasmMemory, 2);
+
+      setWasmString(wasmMemory, 4096 + 20, 'a'.repeat(100));
+      const str5 = strFromRaw(4096 + 20);
+      expectUsedChunks(wasmMemory, 4);
+      strMerge(str0, str5);
+      expect(getStr(wasmMemory, str0)).toStrictEqual({
+        len: 106,
+        chunks: [
+          {size: 32, len: 6, data: 'foobar'},
+          {size: 100, len: 100, data: 'a'.repeat(100)},
+        ],
+      });
+      strFlatten(str0);
+      expect(getStr(wasmMemory, str0)).toStrictEqual({
+        len: 106,
+        chunks: [{size: 108, len: 106, data: 'foobar' + 'a'.repeat(100)}],
       });
       expectUsedChunks(wasmMemory, 2);
     });
