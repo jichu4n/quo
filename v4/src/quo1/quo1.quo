@@ -17,9 +17,11 @@
 // operators are 128 + the ASCII value of the first letter.
 let inputPtr;
 let keywords;
+let twoCharOperators;
 fn lexerInit(input) {
   inputPtr = input;
   keywords = dictNew(16);
+  // Keywords in the order of their values.
   dictSetRaw(keywords, "fn", 1, 0);
   dictSetRaw(keywords, "let", 1, 0);
   dictSetRaw(keywords, "if", 1, 0);
@@ -28,9 +30,16 @@ fn lexerInit(input) {
   dictSetRaw(keywords, "return", 1, 0);
   dictSetRaw(keywords, "break", 1, 0);
   dictSetRaw(keywords, "continue", 1, 0);
+  twoCharOperators = dictNew(16);
+  dictSetRaw(twoCharOperators, "==", 1, 0);
+  dictSetRaw(twoCharOperators, "!=", 1, 0);
+  dictSetRaw(twoCharOperators, "<=", 1, 0);
+  dictSetRaw(twoCharOperators, ">=", 1, 0);
+  dictSetRaw(twoCharOperators, "&&", 1, 0);
+  dictSetRaw(twoCharOperators, "||", 1, 0);
 }
 fn nextToken(value): Int {
-  let c;
+  let c, c2;
 
   strClear(value);
   skipWhitespaceAndComments();
@@ -45,7 +54,7 @@ fn nextToken(value): Int {
   if (isDigit(c)
     || (c == 45 && isDigit(peekNextChar()))) {  // -
     while (1) {
-      strAddChar(value, c);
+      strPush(value, c);
       c = nextChar();
       if (!isDigit(c)) {
         break;
@@ -64,7 +73,7 @@ fn nextToken(value): Int {
       if (c == 34) {  // "
         break;
       }
-      strAddChar(value, c);
+      strPush(value, c);
     }
     nextChar();
     return 2;
@@ -73,14 +82,24 @@ fn nextToken(value): Int {
   // Identifier or keyword.
   if (isIdent(c)) {
     while (isIdent(c)) {
-      putn(c);
-      strAddChar(value, c);
+      strPush(value, c);
       c = nextChar();
     }
     return 4 + dictFind(keywords, value);
   }
 
-  // TODO: identifier, keyword, operator
+  // Operators.
+  if (strchr("(){}[]<>=+-*/%!&|.,;:^", c)) {
+    strPush(value, c);
+    strPush(value, nextChar());
+    if (dictFind(twoCharOperators, value) >= 0) {
+      nextChar();
+      return c + 128;
+    } else {
+      strPop(value);
+      return c;
+    }
+  }
 
   throw("Unrecognized character");
 }
@@ -126,6 +145,19 @@ fn isAlpha(c): Int {
 }
 fn isIdent(c): Int {
   return isAlpha(c) || isDigit(c) || c == 95; // _
+}
+fn strchr(rawStr, c): Int {
+  let c2;
+  while (1) {
+    c2 = load8_u(rawStr);
+    if (c2 == 0) {
+      return 0;
+    }
+    if (c == c2) {
+      return rawStr;
+    }
+    rawStr = rawStr + 1;
+  }
 }
 
 

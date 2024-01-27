@@ -263,14 +263,29 @@ fn strAddRaw(str1, str2): Int {
   }
   return str1;
 }
-fn strAddChar(str1, c): Int {
-  let str2;
-  str2 = malloc(2);
-  store8(str2 + 0, c);
-  store8(str2 + 1, 0);
-  strAddRaw(str1, str2);
-  free(str2);
-  return str1;
+fn strFromChar(c): Int {
+  let str, chunk;
+  str = strNew(1);
+  chunk = strGetTailChunk(str);
+  store(str + 0, 1);
+  store(chunk + 4, 1);
+  store8(chunk + 12, c);
+  return str;
+}
+fn strPush(str1, c): Int {
+  return strMerge(str1, strFromChar(c));
+}
+fn strPop(str): Int {
+  let len, tailChunk, tailChunkLen;
+  len = strLen(str);
+  if (len < 1) {
+    return 0;
+  }
+  tailChunk = strGetTailChunk(str);
+  tailChunkLen = load(tailChunk + 4);
+  store(str + 0, len - 1);
+  store(tailChunk + 4, tailChunkLen - 1);
+  return load8_u(tailChunk + 12 + tailChunkLen - 1);
 }
 fn strLen(str): Int {
   return load(str + 0);
