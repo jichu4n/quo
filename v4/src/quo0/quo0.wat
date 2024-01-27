@@ -724,9 +724,9 @@
         ;; Let
         (if (i32.eq (local.get $token) (i32.const 5))
           (then
+            (call $expectToken (i32.const 5) (local.get $tokenValuePtr)) ;; let
             (block $let_loop_end
               (loop $let_loop
-                (call $expectToken (i32.const 5) (local.get $tokenValuePtr)) ;; let
                 (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
                 (call $addGlobalVar (local.get $tokenValuePtr))
                 (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15730948))

@@ -1,6 +1,6 @@
 import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
 
-const stages = ['0'];
+const stages = ['0', '1a'];
 
 export interface Token {
   type: number;
@@ -11,7 +11,7 @@ export async function tokenize(
   stage: string,
   input: string
 ): Promise<Array<Token>> {
-  const {wasmModule, wasmMemory, fns} = await loadQuoWasmModule(stage);
+  const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, nextToken} = fns;
 
   setWasmString(wasmMemory, 0, input);
