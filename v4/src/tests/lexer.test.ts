@@ -1,4 +1,5 @@
 import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
+import {getWasmStr} from './strings.test';
 
 const stages = ['0', '1a'];
 
@@ -12,19 +13,24 @@ export async function tokenize(
   input: string
 ): Promise<Array<Token>> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, nextToken} = fns;
+  const {init, nextToken, strNew} = fns;
 
   setWasmString(wasmMemory, 0, input);
-  const tokenValuePtr = 4096;
-  const tokens: Array<Token> = [];
   init(0, 15 * 1024 * 1024);
+  const valueAddress = stage === '0' ? 4096 : strNew(0);
+  const tokens: Array<Token> = [];
   do {
-    const tokenType = nextToken(tokenValuePtr);
+    const tokenType = nextToken(valueAddress);
     const token = {
       type: tokenType,
       ...(tokenType === 0
         ? {}
-        : {value: getWasmString(wasmMemory, tokenValuePtr)}),
+        : {
+            value:
+              stage === '0'
+                ? getWasmString(wasmMemory, valueAddress)
+                : getWasmStr(wasmMemory, valueAddress),
+          }),
     };
     tokens.push(token);
   } while (tokens[tokens.length - 1].type !== 0);
@@ -131,10 +137,12 @@ for (const stage of stages) {
       ]);
     });
 
-    test('token length too long', async () => {
-      await expect(
-        async () => await tokenize(stage, 'a'.repeat(256))
-      ).rejects.toThrow();
-    });
+    if (stage === '0') {
+      test('token length too long', async () => {
+        await expect(
+          async () => await tokenize(stage, 'a'.repeat(256))
+        ).rejects.toThrow();
+      });
+    }
   });
 }

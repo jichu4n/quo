@@ -66,6 +66,10 @@ function getStr(memory: WebAssembly.Memory, address: number): Str {
   };
 }
 
+export function getWasmStr(memory: WebAssembly.Memory, address: number) {
+  return getStr(memory, address).chunks.map(({data}) => data).join('');
+}
+
 for (const stage of stages) {
   const setup = async () => {
     const {wasmMemory, fns} = await loadQuoWasmModule(stage);

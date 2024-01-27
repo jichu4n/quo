@@ -16,8 +16,10 @@
 // Single letter operators and symbol are their ASCII value. Double letter
 // operators are 128 + the ASCII value of the first letter.
 let inputPtr;
-fn nextToken(tokenValuePtr): Int {
-  let c, p;
+fn nextToken(value): Int {
+  let c;
+
+  strClear(value);
   skipWhitespaceAndComments();
   c = curChar();
 
@@ -29,25 +31,18 @@ fn nextToken(tokenValuePtr): Int {
   // Number literal
   if (isDigit(c)
     || (c == 45 && isDigit(peekNextChar()))) {  // -
-    p = tokenValuePtr;
     while (1) {
-      if (p - tokenValuePtr >= 127) {
-        throw("Exceeded token length limit");
-      }
-      store(p, c);
-      p = p + 1;
+      strAppendChar(value, c);
       c = nextChar();
       if (!isDigit(c)) {
         break;
       }
     }
-    store8(p, 0);
     return 1;
   }
 
   // String literal
   if (c == 34) {  // "
-    p = tokenValuePtr;
     while (1) {
       c = nextChar();
       if (c == 0) {
@@ -56,13 +51,8 @@ fn nextToken(tokenValuePtr): Int {
       if (c == 34) {  // "
         break;
       }
-      if (p - tokenValuePtr >= 127) {
-        throw("Exceeded token length limit");
-      }
-      store8(p, c);
-      p = p + 1;
+      strAppendChar(value, c);
     }
-    store8(p, 0);
     nextChar();
     return 2;
   }

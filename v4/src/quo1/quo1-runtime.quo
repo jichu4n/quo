@@ -144,6 +144,19 @@ fn strDelete(str) {
   }
   free(str);
 }
+fn strClear(str) {
+  let headChunk, chunk, nextChunk;
+  headChunk = load(str + 4);
+  chunk = load(headChunk + 8);
+  while (chunk) {
+    nextChunk = load(chunk + 8);
+    free(chunk);
+    chunk = nextChunk;
+  }
+  store(str + 0, 0);
+  store(headChunk + 4, 0);
+  store(headChunk + 8, 0);
+}
 fn strFlatten(str) {
   let len, headChunk, chunkLen, newHeadChunk, chunk, nextChunk, nextChunkLen;
   len = load(str + 0);
@@ -248,6 +261,15 @@ fn strAppendRaw(str1, str2): Int {
     newChunk = strNewChunk(str2Len, str2Len, 0, str2);
     store(str1TailChunk + 8, newChunk);
   }
+  return str1;
+}
+fn strAppendChar(str1, c): Int {
+  let str2;
+  str2 = malloc(2);
+  store8(str2 + 0, c);
+  store8(str2 + 1, 0);
+  strAppendRaw(str1, str2);
+  free(str2);
   return str1;
 }
 fn strLen(str): Int {
