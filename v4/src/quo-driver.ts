@@ -1,6 +1,12 @@
 import fs from 'fs-extra';
 import path from 'path';
 import wabt from 'wabt';
+import {program} from 'commander';
+
+const defaultMemoryPages = 256; // 256 * 64KB = 16MB
+const defaultMemoryEnd = 15 * 1024 * 1024;
+// Size of all string literals per source file.
+const defaultDataSectionSize = 32 * 1024;
 
 export function getWasmString(memory: WebAssembly.Memory, ptr: number) {
   const bytes = new Uint8Array(memory.buffer, ptr);
@@ -21,11 +27,11 @@ export function setWasmString(
 
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
-export async function setupWasmModule(stage: string) {
+export async function loadQuoWasmModule(stage: string) {
   const wasmFile = await fs.readFile(
     path.join(__dirname, '..', 'dist', `quo${stage}.wasm`)
   );
-  const wasmMemory = new WebAssembly.Memory({initial: 256});
+  const wasmMemory = new WebAssembly.Memory({initial: defaultMemoryPages});
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
     debug: {
@@ -48,19 +54,6 @@ export async function setupWasmModule(stage: string) {
       ])
   );
   return {wasmModule, wasmMemory, fns};
-}
-
-export async function getWatRuntimeString(stage: string) {
-  const watFilePath = path.join(
-    __dirname,
-    '..',
-    'dist',
-    `quo${stage}-runtime.wat`
-  );
-  if (!(await fs.exists(watFilePath))) {
-    return '';
-  }
-  return await fs.readFile(watFilePath, 'utf8');
 }
 
 export class WebAssemblyError extends Error {
@@ -92,37 +85,66 @@ function wrapWebAssemblyFn(
 
 export async function compileModule(
   stage: string,
-  input: string
+  input: string,
+  {memoryEnd = defaultMemoryEnd}: {memoryEnd?: number} = {}
 ): Promise<string> {
-  const {wasmMemory, fns} = await setupWasmModule(stage);
-  const watRuntimeString = await getWatRuntimeString(stage);
+  const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, compileModule} = fns;
-  const len = setWasmString(wasmMemory, 0, input);
-  setWasmString(wasmMemory, len, watRuntimeString);
-  init(0);
+  setWasmString(wasmMemory, 0, input);
+  init(0, memoryEnd);
   return getWasmString(wasmMemory, compileModule());
 }
 
-export async function compileQuoFile(
+export async function compileFiles(
   stage: string,
-  inputFile: string,
-  outputFile?: string
+  inputFiles: Array<string>,
+  outputFile?: string,
+  {
+    dataSectionSize = defaultDataSectionSize,
+    memoryEnd = defaultMemoryEnd,
+  }: {dataSectionSize?: number; memoryEnd?: number} = {}
 ) {
-  const input = await fs.readFile(inputFile, 'utf8');
-  const watOutput = await compileModule(stage, input);
+  // Compile input files to WAT.
+  const watOutputs: Array<string> = [];
+  for (const inputFile of inputFiles) {
+    const inputFileExt = path.extname(inputFile).toLowerCase();
+    const input = await fs.readFile(inputFile, 'utf8');
+    let watOutput: string;
+    if (inputFileExt === '.wat') {
+      watOutput = input;
+    } else if (inputFileExt === '.quo') {
+      if (memoryEnd + dataSectionSize > defaultMemoryPages * 64 * 1024) {
+        throw new Error('Size of data sections exceeds memory size');
+      }
+      watOutput = (await compileModule(stage, input, {memoryEnd})).trimEnd();
+      memoryEnd += dataSectionSize;
+    } else {
+      throw new Error(`Unknown file extension in input file "${inputFile}"`);
+    }
+    watOutputs.push(`
+  ;; >>>> ${inputFile}
+${watOutput}
+  ;; <<<< ${inputFile}`);
+  }
+  const watModule = `
+;; Compiled by quo stage ${stage}
+(module
+${watOutputs.join('\n')}
+)
+`.trimStart();
   const watOutputFile = path.format({
-    ...path.parse(outputFile || inputFile),
+    ...path.parse(outputFile || inputFiles[0]),
     base: '',
     ext: '.wat',
   });
-  await fs.writeFile(watOutputFile, watOutput);
-  const wasmModule = (await wabt()).parseWat(watOutputFile, watOutput, {
+  await fs.writeFile(watOutputFile, watModule);
+  const wasmModule = (await wabt()).parseWat(watOutputFile, watModule, {
     exceptions: true,
   });
   const wasmOutputFile =
     outputFile ||
     path.format({
-      ...path.parse(inputFile),
+      ...path.parse(inputFiles[0]),
       base: '',
       ext: '.wasm',
     });
@@ -131,21 +153,23 @@ export async function compileQuoFile(
 }
 
 if (require.main === module) {
-  (async () => {
-    if (process.argv.length < 4) {
-      console.error('Usage: quo-driver.js <stage> <input> [output]');
-      process.exit(1);
-    }
-    const stage = process.argv[2];
-    const inputFile = process.argv[3];
-    const outputFile = process.argv[4];
-    console.log(`Compiling ${inputFile} with stage ${stage}`);
-    const {watOutputFile, wasmOutputFile} = await compileQuoFile(
-      stage,
-      inputFile,
-      outputFile
-    );
-    console.log(`-> ${watOutputFile}`);
-    console.log(`-> ${wasmOutputFile}`);
-  })();
+  program
+    .name('quo')
+    .description('Quo compiler')
+    .argument('<stage>', 'compiler stage, e.g. 0, 1a, 1b')
+    .argument('<input-files...>', 'Quo source files')
+    .option('-o, --output <output>', 'output WebAssembly (.wasm or .wat) file')
+    .action(async (stage, inputFiles) => {
+      const {output: outputFile} = program.opts();
+      const {watOutputFile, wasmOutputFile} = await compileFiles(
+        stage,
+        inputFiles,
+        outputFile
+      );
+      console.log(`-> ${watOutputFile}`);
+      if (wasmOutputFile) {
+        console.log(`-> ${wasmOutputFile}`);
+      }
+    });
+  program.parse(process.argv);
 }

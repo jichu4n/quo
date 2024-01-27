@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import {compileQuoFile} from '../quo-driver';
+import {compileFiles} from '../quo-driver';
 
 const stages = ['0', '1a'];
 
@@ -21,7 +21,7 @@ for (const stage of stages) {
           base: '',
           ext: `.stage${stage}.wasm`,
         });
-        await compileQuoFile(stage, inputFile, outputFile);
+        await compileFiles(stage, [inputFile], outputFile);
       });
     }
   });

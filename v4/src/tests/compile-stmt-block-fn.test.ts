@@ -1,4 +1,4 @@
-import {getWasmString, setWasmString, setupWasmModule} from '../quo-driver';
+import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
 
 const stages = ['0'];
 
@@ -8,11 +8,11 @@ async function compile(
   stage: string,
   input: string
 ): Promise<string> {
-  const {wasmMemory, fns} = await setupWasmModule(stage);
+  const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init} = fns;
   const fn = fns[fnName];
   setWasmString(wasmMemory, 0, input);
-  init(0);
+  init(0, 15 * 1024 * 1024);
   return getWasmString(wasmMemory, fn(...fnArgs));
 }
 

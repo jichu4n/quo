@@ -1,4 +1,3 @@
-  ;; BEGIN RUNTIME
   (import "env" "memory" (memory 256))
   (import "env" "tag" (tag $error (param i32)))
   (import "debug" "puts" (func $puts (param i32) (result i32)))
@@ -24,5 +23,3 @@
     (if (local.get $left) (then (return (local.get $right)))) (local.get $left))
   (func $or (param $left i32) (param $right i32) (result i32)
     (if (local.get $left) (then (return (local.get $left)))) (local.get $right))
-
-  ;; END RUNTIME

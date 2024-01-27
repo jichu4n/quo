@@ -1,4 +1,4 @@
-import {setWasmString, setupWasmModule} from '../quo-driver';
+import {setWasmString, loadQuoWasmModule} from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
 
 const stages = ['1a'];
@@ -26,7 +26,7 @@ function toArr(memory: WebAssembly.Memory, address: number): Arr {
 
 for (const stage of stages) {
   const setup = async () => {
-    const {wasmMemory, fns} = await setupWasmModule(stage);
+    const {wasmMemory, fns} = await loadQuoWasmModule(stage);
     const {
       memoryInit,
       strNew,

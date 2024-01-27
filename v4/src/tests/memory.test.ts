@@ -1,4 +1,4 @@
-import {setupWasmModule} from '../quo-driver';
+import {loadQuoWasmModule} from '../quo-driver';
 
 const stages = ['1a'];
 
@@ -41,10 +41,9 @@ export function expectUsedChunks(memory: WebAssembly.Memory, num: number) {
   expect(getChunks(memory).filter((chunk) => chunk.used)).toHaveLength(num);
 }
 
-
 for (const stage of stages) {
   const setup = async () => {
-    const {wasmMemory, fns} = await setupWasmModule(stage);
+    const {wasmMemory, fns} = await loadQuoWasmModule(stage);
     const {memoryInit, malloc, free} = fns;
 
     memoryInit(memoryStart, memoryEnd);
