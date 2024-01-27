@@ -76,11 +76,11 @@ for (const stage of stages) {
     test('identifiers and keywords', async () => {
       await testTokenize([
         [
-          'aAa _b_1 C$13 sif ifs fn let if else while return',
+          'aAa _b_1 C13 sif ifs fn let if else while return',
           [
             {type: 3, value: 'aAa'},
             {type: 3, value: '_b_1'},
-            {type: 3, value: 'C$13'},
+            {type: 3, value: 'C13'},
             {type: 3, value: 'sif'},
             {type: 3, value: 'ifs'},
             {type: 4, value: 'fn'},

@@ -241,7 +241,7 @@ fn strMerge(str1, str2): Int {
   }
   return str1;
 }
-fn strAppendRaw(str1, str2): Int {
+fn strAddRaw(str1, str2): Int {
   let str1Len, str2Len, str1TailChunk, str1TailChunkSize, str1TailChunkLen, newChunk;
   str2Len = rawStrLen(str2);
   if (str2Len == 0) {
@@ -263,12 +263,12 @@ fn strAppendRaw(str1, str2): Int {
   }
   return str1;
 }
-fn strAppendChar(str1, c): Int {
+fn strAddChar(str1, c): Int {
   let str2;
   str2 = malloc(2);
   store8(str2 + 0, c);
   store8(str2 + 1, 0);
-  strAppendRaw(str1, str2);
+  strAddRaw(str1, str2);
   free(str2);
   return str1;
 }
@@ -477,6 +477,12 @@ fn dictSet(dict, key, v, shouldFreeOldValue) {
     }
     arrSet(values, i, v);
   }
+}
+fn dictSetRaw(dict, rawKey, v, shouldFreeOldValue) {
+  let key;
+  key = strFromRaw(rawKey);
+  dictSet(dict, key, v, shouldFreeOldValue);
+  strDelete(key);
 }
 
 

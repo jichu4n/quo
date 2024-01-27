@@ -1053,10 +1053,7 @@
     (if
       (i32.or
         (call $isalnum (local.get $c))
-        (i32.or
-          (i32.eq (local.get $c) (i32.const 95)) ;; _
-          (i32.eq (local.get $c) (i32.const 36)) ;; $
-        )
+        (i32.eq (local.get $c) (i32.const 95)) ;; _
       )
       (then (return (i32.const 1)))
     )

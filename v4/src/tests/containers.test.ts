@@ -152,7 +152,7 @@ for (const stage of stages) {
       expect(dictFind(dict, str3)).toStrictEqual(-1);
       expect(dictGet(dict, str3)).toStrictEqual(0);
 
-      dictSet(dict, str1, 42);
+      dictSet(dict, str1, 42, 0);
       expect(dictFind(dict, str1)).toStrictEqual(0);
       expect(dictGet(dict, str1)).toStrictEqual(42);
       expect(dictFind(dict, str2)).toStrictEqual(0);
@@ -160,7 +160,7 @@ for (const stage of stages) {
       expect(dictFind(dict, str3)).toStrictEqual(-1);
       expect(dictGet(dict, str3)).toStrictEqual(0);
 
-      dictSet(dict, str3, 33);
+      dictSet(dict, str3, 33, 0);
       expect(dictFind(dict, str1)).toStrictEqual(0);
       expect(dictGet(dict, str1)).toStrictEqual(42);
       expect(dictFind(dict, str2)).toStrictEqual(0);

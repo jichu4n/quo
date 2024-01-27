@@ -67,7 +67,9 @@ function getStr(memory: WebAssembly.Memory, address: number): Str {
 }
 
 export function getWasmStr(memory: WebAssembly.Memory, address: number) {
-  return getStr(memory, address).chunks.map(({data}) => data).join('');
+  return getStr(memory, address)
+    .chunks.map(({data}) => data)
+    .join('');
 }
 
 for (const stage of stages) {
@@ -81,7 +83,7 @@ for (const stage of stages) {
       strFlatten,
       strToRaw,
       strMerge,
-      strAppendRaw,
+      strAddRaw,
       strCmpRaw,
       strCmp,
     } = fns;
@@ -94,7 +96,7 @@ for (const stage of stages) {
       strFlatten,
       strToRaw,
       strMerge,
-      strAppendRaw,
+      strAddRaw,
       strCmp,
       strCmpRaw,
       wasmMemory,
@@ -210,7 +212,7 @@ for (const stage of stages) {
       }
     });
     test('compare strings', async function () {
-      const {strNew, strAppendRaw, strFromRaw, strCmp, strCmpRaw, wasmMemory} =
+      const {strNew, strAddRaw, strFromRaw, strCmp, strCmpRaw, wasmMemory} =
         await setup();
       // Basic strings.
       setWasmString(wasmMemory, 4096, 'foo');
@@ -234,7 +236,7 @@ for (const stage of stages) {
 
       // 1 chunk vs 2 chunks.
       setWasmString(wasmMemory, 4096 + 10, 'foobar' + 'a'.repeat(100));
-      strAppendRaw(str3, 4096 + 10 + 6);
+      strAddRaw(str3, 4096 + 10 + 6);
       expect(getStr(wasmMemory, str3).chunks.length).toStrictEqual(2); // 'foobar' + 'a'.repeat(100)
       expect(strCmp(str3, strFromRaw(4096 + 10))).toStrictEqual(0);
     });
