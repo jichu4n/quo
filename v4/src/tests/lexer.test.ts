@@ -1,6 +1,35 @@
-import {Token, tokenize} from '../quo-driver';
+import {getWasmString, setWasmString, setupWasmModule} from '../quo-driver';
 
 const stages = ['0'];
+
+export interface Token {
+  type: number;
+  value?: number | string;
+}
+
+export async function tokenize(
+  stage: string,
+  input: string
+): Promise<Array<Token>> {
+  const {wasmModule, wasmMemory, fns} = await setupWasmModule(stage);
+  const {init, nextToken} = fns;
+
+  setWasmString(wasmMemory, 0, input);
+  const tokenValuePtr = 4096;
+  const tokens: Array<Token> = [];
+  init(0);
+  do {
+    const tokenType = nextToken(tokenValuePtr);
+    const token = {
+      type: tokenType,
+      ...(tokenType === 0
+        ? {}
+        : {value: getWasmString(wasmMemory, tokenValuePtr)}),
+    };
+    tokens.push(token);
+  } while (tokens[tokens.length - 1].type !== 0);
+  return tokens;
+}
 
 for (const stage of stages) {
   const testTokenize = async (testCases: Array<[string, Array<Token>]>) => {

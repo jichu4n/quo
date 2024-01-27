@@ -1,6 +1,20 @@
-import {compileStmt, compileBlock, compileFn} from '../quo-driver';
+import {getWasmString, setWasmString, setupWasmModule} from '../quo-driver';
 
 const stages = ['0'];
+
+async function compile(
+  fnName: string,
+  fnArgs: Array<unknown>,
+  stage: string,
+  input: string
+): Promise<string> {
+  const {wasmMemory, fns} = await setupWasmModule(stage);
+  const {init} = fns;
+  const fn = fns[fnName];
+  setWasmString(wasmMemory, 0, input);
+  init(0);
+  return getWasmString(wasmMemory, fn(...fnArgs));
+}
 
 type TestCase = [string, string | Array<string>];
 type TestCases = Array<TestCase>;
@@ -12,9 +26,13 @@ function expectedOutputToString(expectedOutput: string | Array<string>) {
 }
 
 for (const stage of stages) {
+  const compileStmt = compile.bind(null, 'compileStmt', [0], stage);
+  const compileBlock = compile.bind(null, 'compileBlock', [0], stage);
+  const compileFn = compile.bind(null, 'compileFn', [], stage);
+
   const testCompileStmt = async (testCases: TestCases) => {
     for (const [input, expectedOutput] of testCases) {
-      expect(await compileStmt(stage, input)).toStrictEqual(
+      expect(await compileStmt(input)).toStrictEqual(
         expectedOutputToString(expectedOutput)
       );
     }
@@ -22,7 +40,7 @@ for (const stage of stages) {
 
   const testCompileBlock = async (testCases: TestCases) => {
     for (const [input, expectedOutput] of testCases) {
-      expect(await compileBlock(stage, input)).toStrictEqual(
+      expect(await compileBlock(input)).toStrictEqual(
         expectedOutputToString(expectedOutput)
       );
     }
@@ -30,7 +48,7 @@ for (const stage of stages) {
 
   const testCompileFn = async (testCases: TestCases) => {
     for (const [input, expectedOutput] of testCases) {
-      expect(await compileFn(stage, input)).toStrictEqual(
+      expect(await compileFn(input)).toStrictEqual(
         expectedOutputToString(expectedOutput)
       );
     }

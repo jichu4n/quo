@@ -1,5 +1,5 @@
-import {setWasmString, setupWasmModule, wrapWebAssemblyFn} from '../quo-driver';
-import {getChunks} from './memory.test';
+import {setWasmString, setupWasmModule} from '../quo-driver';
+import {expectUsedChunks} from './memory.test';
 
 const stages = ['1a'];
 
@@ -66,53 +66,21 @@ function getStr(memory: WebAssembly.Memory, address: number): Str {
   };
 }
 
-function expectUsedChunks(memory: WebAssembly.Memory, num: number) {
-  expect(getChunks(memory).filter((chunk) => chunk.used)).toHaveLength(num);
-}
-
 for (const stage of stages) {
   const setup = async () => {
-    const {wasmModule, wasmMemory} = await setupWasmModule(stage);
-    const memoryInit = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.memoryInit as CallableFunction
-    );
-    const strNew = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strNew as CallableFunction
-    );
-    const strDelete = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strDelete as CallableFunction
-    );
-    const strFromRaw = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strFromRaw as CallableFunction
-    );
-    const strFlatten = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strFlatten as CallableFunction
-    );
-    const strToRaw = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strToRaw as CallableFunction
-    );
-    const strMerge = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strMerge as CallableFunction
-    );
-    const strAppendRaw = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strAppendRaw as CallableFunction
-    );
-    const strCmpRaw = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strCmpRaw as CallableFunction
-    );
-    const strCmp = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.strCmp as CallableFunction
-    );
+    const {wasmMemory, fns} = await setupWasmModule(stage);
+    const {
+      memoryInit,
+      strNew,
+      strDelete,
+      strFromRaw,
+      strFlatten,
+      strToRaw,
+      strMerge,
+      strAppendRaw,
+      strCmpRaw,
+      strCmp,
+    } = fns;
 
     memoryInit(memoryStart, memoryEnd);
     return {

@@ -72,6 +72,9 @@ fn free(ptr) {
     return;
   }
   chunk = ptr - 16;
+  if (load8_u(chunk + 12) == 0) {
+    throw("Double free");
+  }
   store8(chunk + 12, 0);
   size = load(chunk + 0);
   nextChunk = load(chunk + 4);
@@ -293,6 +296,167 @@ fn strCmp(str1, str2): Int {
   strFlatten(str2);
   return memcmp2(load(str1 + 4) + 12, strLen(str1), load(str2 + 4) + 12, strLen(str2));
 }
+fn strClone(str): Int {
+  let len, newStr, newChunk, chunk;
+  strFlatten(str);
+  len = strLen(str);
+  newStr = strNew(len);
+  store(newStr + 0, len);
+  chunk = load(str + 4);
+  newChunk = load(newStr + 4);
+  store(newChunk + 4, len);
+  memcpy(newChunk + 12, chunk + 12, len);
+  return newStr;
+}
+
+// Arrays - logically equivalent to Array<number>.
+//
+// Arrays are represented as a classic dynamic array, i.e. the equivalent of a
+// C++ vector. Each element is an i32.
+//
+// Array header is 12 bytes:
+//   00 i32 size - allocated ize in number of elements, so size in bytes is size * 4.
+//   04 i32 len - number of elements in use.
+//   08 i32 data - address of data
+// So address of element k is data + k * 4.
+fn arrNew(reserveLen): Int {
+  let arr, size, data;
+  if (reserveLen < 4) {
+    size = 4;
+  } else {
+    size = reserveLen;
+  }
+  arr = malloc(12);
+  store(arr + 0, size);
+  store(arr + 4, 0);
+  store(arr + 8, malloc(size * 4));
+  return arr;
+}
+fn arrDelete(arr, shouldFreeValues) {
+  let len, data, i;
+  if (shouldFreeValues) {
+    len = load(arr + 4);
+    data = load(arr + 8);
+    i = 0;
+    while (i < len) {
+      free(load(data + i * 4));
+      i = i + 1;
+    }
+  }
+  free(load(arr + 8));
+  free(arr);
+}
+fn arrPush(arr, elem) {
+  let size, len, data, newSize, newData;
+  size = load(arr + 0);
+  len = load(arr + 4);
+  data = load(arr + 8);
+  if (len > size) {
+    throw("Array len exceeds size");
+  }
+  if (len == size) {
+    newSize = size * 2;
+    newData = malloc(newSize * 4);
+    memcpy(newData, data, size * 4);
+    free(data);
+    store(arr + 0, newSize);
+    store(arr + 8, newData);
+    data = newData;
+  }
+  store(arr + 4, len + 1);
+  store(data + len * 4, elem);
+}
+fn arrLen(arr): Int {
+  return load(arr + 4);
+}
+fn arrGet(arr, i): Int {
+  if (i < 0 || i >= arrLen(arr)) {
+    throw("Array index out of bounds");
+  }
+  return load(load(arr + 8) + i * 4);
+}
+fn arrSet(arr, i, v) {
+  if (i < 0 || i >= arrLen(arr)) {
+    throw("Array index out of bounds");
+  }
+  store(load(arr + 8) + i * 4, v);
+}
+
+// Dict - logically equivalent to Map<string, number>.
+//
+// The implementation uses two arrays, one for keys and one for values. Lookup
+// is done by searching in the keys array and returning the value at the same
+// index. This is quite inefficient obviously, i.e. O(key count * key length),
+// but meh.
+//
+// Dict header is 8 bytes:
+//   00 i32 - address of keys array
+//   04 i32 - address of values array
+fn dictNew(reserveLen): Int {
+  let dict;
+  dict = malloc(8);
+  store(dict + 0, arrNew(reserveLen));
+  store(dict + 4, arrNew(reserveLen));
+  return dict;
+}
+fn dictDelete(dict, shouldFreeValues) {
+  let len, i, keys, values;
+  keys = load(dict + 0);
+  values = load(dict + 4);
+  len = arrLen(keys);
+  i = 0;
+  while (i < len) {
+    strDelete(arrGet(keys, i));
+    i = i + 1;
+  }
+  arrDelete(keys, 0);
+  arrDelete(values, shouldFreeValues);
+  free(dict);
+}
+fn dictFind(dict, str): Int {
+  let len, i, keys, values;
+  keys = load(dict + 0);
+  len = arrLen(keys);
+  i = 0;
+  while (i < len) {
+    if (strCmp(str, arrGet(keys, i)) == 0) {
+      return i;
+    }
+    i = i + 1;
+  }
+  return -1;
+}
+fn dictGet(dict, key): Int {
+  let i, values;
+  i = dictFind(dict, key);
+  if (i >= 0) {
+    values = load(dict + 4);
+    return arrGet(values, i);
+  }
+  // This is rather awkward - since dict is storing i32 values, there are
+  // no obvious ways to return an invalid value. But we'll mostly be using
+  // dict to store pointers, so 0 i.e. null is the most reasonable result.
+  return 0;
+}
+fn dictSet(dict, key, v, shouldFreeOldValue) {
+  let len, i, keys, values, newKey;
+  keys = load(dict + 0);
+  values = load(dict + 4);
+  len = arrLen(keys);
+  i = dictFind(dict, key);
+  if (i < 0) {
+    i = len;
+    newKey = strClone(key);
+    arrPush(keys, newKey);
+    arrPush(values, v);
+  } else {
+    if (shouldFreeOldValue) {
+      free(arrGet(values, i));
+    }
+    arrSet(values, i, v);
+  }
+}
+
 
 // Raw (i.e., C-style, null terminated) strings.
 fn rawStrLen(str): Int {

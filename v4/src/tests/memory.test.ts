@@ -1,4 +1,4 @@
-import {setupWasmModule, wrapWebAssemblyFn} from '../quo-driver';
+import {setupWasmModule} from '../quo-driver';
 
 const stages = ['1a'];
 
@@ -37,19 +37,15 @@ export function getChunks(memory: WebAssembly.Memory): Array<Chunk> {
   return chunks;
 }
 
+export function expectUsedChunks(memory: WebAssembly.Memory, num: number) {
+  expect(getChunks(memory).filter((chunk) => chunk.used)).toHaveLength(num);
+}
+
+
 for (const stage of stages) {
   const setup = async () => {
-    const {wasmModule, wasmMemory} = await setupWasmModule(stage);
-    const memoryInit = wasmModule.instance.exports
-      .memoryInit as CallableFunction;
-    const malloc = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.malloc as CallableFunction
-    );
-    const free = wrapWebAssemblyFn(
-      wasmMemory,
-      wasmModule.instance.exports.free as CallableFunction
-    );
+    const {wasmMemory, fns} = await setupWasmModule(stage);
+    const {memoryInit, malloc, free} = fns;
 
     memoryInit(memoryStart, memoryEnd);
     return {malloc, free, wasmMemory};

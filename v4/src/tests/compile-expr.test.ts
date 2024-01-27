@@ -1,6 +1,14 @@
-import {compileExpr} from '../quo-driver';
+import {setupWasmModule, setWasmString, getWasmString} from '../quo-driver';
 
 const stages = ['0'];
+
+async function compileExpr(stage: string, input: string): Promise<string> {
+  const {wasmMemory, fns} = await setupWasmModule(stage);
+  const {init, compileExpr} = fns;
+  setWasmString(wasmMemory, 0, input);
+  init(0);
+  return getWasmString(wasmMemory, compileExpr());
+}
 
 for (const stage of stages) {
   const testCompileExpr = async (testCases: Array<[string, string]>) => {

@@ -39,7 +39,15 @@ export async function setupWasmModule(stage: string) {
       },
     },
   });
-  return {wasmModule, wasmMemory};
+  const fns = Object.fromEntries(
+    Object.entries(wasmModule.instance.exports)
+      .filter(([name, value]) => typeof value === 'function')
+      .map(([name, value]) => [
+        name,
+        wrapWebAssemblyFn(wasmMemory, value as Function),
+      ])
+  );
+  return {wasmModule, wasmMemory, fns};
 }
 
 export async function getWatRuntimeString(stage: string) {
@@ -69,7 +77,7 @@ export class WebAssemblyError extends Error {
   }
 }
 
-export function wrapWebAssemblyFn(
+function wrapWebAssemblyFn(
   wasmMemory: WebAssembly.Memory,
   fn: CallableFunction
 ): CallableFunction {
@@ -82,108 +90,17 @@ export function wrapWebAssemblyFn(
   };
 }
 
-export interface Token {
-  type: number;
-  value?: number | string;
-}
-
-export async function tokenize(
-  stage: string,
-  input: string
-): Promise<Array<Token>> {
-  const {wasmModule, wasmMemory} = await setupWasmModule(stage);
-  const init = wasmModule.instance.exports.init as CallableFunction;
-  const nextToken = wasmModule.instance.exports.nextToken as CallableFunction;
-
-  setWasmString(wasmMemory, 0, input);
-  const tokenValuePtr = 4096;
-  const tokens: Array<Token> = [];
-  try {
-    init(0);
-    do {
-      const tokenType = nextToken(tokenValuePtr);
-      const token = {
-        type: tokenType,
-        ...(tokenType === 0
-          ? {}
-          : {value: getWasmString(wasmMemory, tokenValuePtr)}),
-      };
-      tokens.push(token);
-    } while (tokens[tokens.length - 1].type !== 0);
-  } catch (e) {
-    throw new WebAssemblyError(wasmMemory, e);
-  }
-  return tokens;
-}
-
-async function runCompileFn(
-  stage: string,
-  compileFn: (exports: WebAssembly.Exports) => number,
-  input: string
-): Promise<string> {
-  const {wasmModule, wasmMemory} = await setupWasmModule(stage);
-  const watRuntimeString = await getWatRuntimeString(stage);
-  const init = wasmModule.instance.exports.init as CallableFunction;
-  const len = setWasmString(wasmMemory, 0, input);
-  setWasmString(wasmMemory, len, watRuntimeString);
-  try {
-    init(0);
-    return getWasmString(wasmMemory, compileFn(wasmModule.instance.exports));
-  } catch (e) {
-    throw new WebAssemblyError(wasmMemory, e);
-  }
-}
-
-export async function compileExpr(
-  stage: string,
-  input: string
-): Promise<string> {
-  return await runCompileFn(
-    stage,
-    ({compileExpr}) => (compileExpr as CallableFunction)(),
-    input
-  );
-}
-
-export async function compileStmt(
-  stage: string,
-  input: string
-): Promise<string> {
-  return await runCompileFn(
-    stage,
-    ({compileStmt}) => (compileStmt as CallableFunction)(0),
-    input
-  );
-}
-
-export async function compileBlock(
-  stage: string,
-  input: string
-): Promise<string> {
-  return await runCompileFn(
-    stage,
-    ({compileBlock}) => (compileBlock as CallableFunction)(0),
-    input
-  );
-}
-
-export async function compileFn(stage: string, input: string): Promise<string> {
-  return await runCompileFn(
-    stage,
-    ({compileFn}) => (compileFn as CallableFunction)(),
-    input
-  );
-}
-
 export async function compileModule(
   stage: string,
   input: string
 ): Promise<string> {
-  return await runCompileFn(
-    stage,
-    ({compileModule}) => (compileModule as CallableFunction)(),
-    input
-  );
+  const {wasmMemory, fns} = await setupWasmModule(stage);
+  const watRuntimeString = await getWatRuntimeString(stage);
+  const {init, compileModule} = fns;
+  const len = setWasmString(wasmMemory, 0, input);
+  setWasmString(wasmMemory, len, watRuntimeString);
+  init(0);
+  return getWasmString(wasmMemory, compileModule());
 }
 
 export async function compileQuoFile(
