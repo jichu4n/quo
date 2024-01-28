@@ -63,31 +63,28 @@ fn compileExpr0(): Int {
     return output;
   }
 
-  throw(
-    strToRaw(
-      strMerge(
-        strPushRaw(
-          strPushInt(strFromRaw("Expected expression, got token type "), token),
-          " with value: "),
-        tokenValue)));
+  output = strFromRaw("Expected expression, got token type ");
+  strPushInt(output, token);
+  strPushRaw(output, " with value '");
+  strMerge(output, tokenValue);
+  strPushRaw(output, "'");
+  throw(strToRaw(output));
 }
 fn compileExpr(): Int {
   return compileExpr0();
 }
 fn expectToken(expectedToken, tokenValue) {
-  let actualToken;
+  let actualToken, output;
   actualToken = nextToken(tokenValue);
   if (actualToken != expectedToken) {
-    throw(strToRaw(
-      strMerge(
-        strPushRaw(
-          strPushInt(
-            strPushRaw(
-              strPushInt(strFromRaw("Expected token type "), expectedToken),
-              ", but received token "),
-            actualToken),
-          " with value "),
-        tokenValue)));
+    output = strFromRaw("Expected token ");
+    strPushInt(output, expectedToken);
+    strPushRaw(output, ", but received token ");
+    strPushInt(output, actualToken);
+    strPushRaw(output, " with value '");
+    strMerge(output, tokenValue);
+    strPushRaw(output, "'");
+    throw(strToRaw(output));
   }
 }
 

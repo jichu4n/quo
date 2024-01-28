@@ -43,6 +43,9 @@ for (const stage of stages) {
             ] as const)
           : []),
       ]);
+
+      await expect(compileExpr(stage, ';')).rejects.toThrow();
+      await expect(compileExpr(stage, '(3')).rejects.toThrow();
     });
     if (stage !== '0') {
       return;
