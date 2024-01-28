@@ -4,7 +4,7 @@ import wabt from 'wabt';
 import {program} from 'commander';
 
 const defaultMemoryPages = 256; // 256 * 64KB = 16MB
-const defaultHeapEnd = 15 * 1024 * 1024;
+export const defaultHeapEnd = 15 * 1024 * 1024;
 // Size of all string literals per source file.
 const defaultStringConstantsSize = 32 * 1024;
 

@@ -38,9 +38,12 @@ fn getOrAddStringConstantOffset(str) {
   return offset;
 }
 
+// Pointer to next char in input string.
+let inputPtr;
+
 // Single pass parser + code generator.
 fn compileExpr0() {
-  let token, tokenValue, output, origInputPtr;
+  let token, tokenValue, token2, tokenValue2, output, origInputPtr, outputPrefix;
 
   tokenValue = strNew(0);
   token = nextToken(tokenValue);
@@ -70,6 +73,54 @@ fn compileExpr0() {
     return output;
   }
 
+  // Identifier or function call
+  if (token == 3) {
+    origInputPtr = inputPtr;
+    tokenValue2 = strNew(0);
+    token2 = nextToken(tokenValue2);
+    if (token2 == 40) {  // (
+      // Function call
+      output = strFromRaw("(call $");
+      strMerge(output, tokenValue);
+      origInputPtr = inputPtr;
+      token2 = nextToken(tokenValue2);
+      if (token2 != 41)  {  // )
+        inputPtr = origInputPtr;
+        while (1) {
+          strPushRaw(output, " ");
+          strMerge(output, compileExpr());
+          token2 = nextToken(tokenValue2);
+          if (token2 == 41) {  // close parenthesis
+            break;
+          } else if (token2 == 44) { // ,
+            // Do nothing
+          } else {
+            throw("Expected ',' or ')' after function call argument");
+          }
+        }
+      }
+      strPushRaw(output, ")");
+      strDelete(tokenValue2);
+    } else {
+      // Identifier
+      inputPtr = origInputPtr;
+      if (isLocalVar(tokenValue)) {
+        outputPrefix = "(local.get $";
+      } else if (isGlobalVar(tokenValue)) {
+        outputPrefix = "(global.get $";
+      } else {
+        output = strFromRaw("Undeclared variable '");
+        strMerge(output, tokenValue);
+        strPushRaw(output, "'");
+        throw(strToRaw(output));
+      }
+      output = strFromRaw(outputPrefix);
+      strMerge(output, tokenValue);
+      strPushRaw(output, ")");
+    }
+    return output;
+  }
+
   output = strFromRaw("Expected expression, got token type ");
   strPushInt(output, token);
   strPushRaw(output, " with value '");
@@ -77,8 +128,27 @@ fn compileExpr0() {
   strPushRaw(output, "'");
   throw(strToRaw(output));
 }
+fn compileExpr1() {
+  let token, tokenValue, output, rightOutput, origInputPtr, outputPrefix;
+  origInputPtr = inputPtr;
+  tokenValue = strNew(0);
+  token = nextToken(tokenValue);
+  strDelete(tokenValue);
+  if (token == 45) {  // -
+    outputPrefix = "(i32.neg ";
+  } else if (token == 33) {  // !
+    outputPrefix = "(i32.eqz ";
+  } else {
+    inputPtr = origInputPtr;
+    return compileExpr0();
+  }
+  output = strFromRaw(outputPrefix);
+  strMerge(output, compileExpr0());
+  strPushRaw(output, ")");
+  return output;
+}
 fn compileExpr() {
-  return compileExpr0();
+  return compileExpr1();
 }
 fn expectToken(expectedToken, tokenValue) {
   let actualToken, output;
@@ -113,7 +183,6 @@ fn expectToken(expectedToken, tokenValue) {
 //   11 - continue
 // Single letter operators and symbol are their ASCII value. Double letter
 // operators are 128 + the ASCII value of the first letter.
-let inputPtr;
 let keywords;
 let twoCharOperators;
 fn lexerInit(input) {

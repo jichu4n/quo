@@ -1,4 +1,10 @@
-import {loadQuoWasmModule, setWasmString, getWasmString} from '../quo-driver';
+import {
+  defaultHeapEnd,
+  getWasmString,
+  loadQuoWasmModule,
+  setWasmString,
+} from '../quo-driver';
+import {expectUsedChunks} from './memory.test';
 import {getWasmStr} from './strings.test';
 
 const stages = ['0', '1a'];
@@ -8,60 +14,65 @@ const heapEnd = 15 * 1024 * 1024;
 
 async function compileExpr(stage: string, input: string): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, compileExpr} = fns;
+  const {init, compileExpr, cleanUp, strFlatten} = fns;
   setWasmString(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
   const resultAddress = compileExpr();
-  return stage === '0'
-    ? getWasmString(wasmMemory, resultAddress)
-    : getWasmStr(wasmMemory, resultAddress);
+  let result: string;
+  if (stage === '0') {
+    result = getWasmString(wasmMemory, resultAddress);
+  } else {
+    strFlatten(resultAddress);
+    result = getWasmStr(wasmMemory, resultAddress);
+    cleanUp();
+    expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
+  }
+  return result;
 }
 
 for (const stage of stages) {
-  const testCompileExpr = async (
-    testCases: Array<readonly [string, string]>
-  ) => {
+  const testCompileExpr = (testCases: Array<readonly [string, string]>) => {
     for (const [input, expectedOutput] of testCases) {
-      expect(await compileExpr(stage, input)).toStrictEqual(expectedOutput);
+      test(`compile '${input}'`, async () => {
+        expect(await compileExpr(stage, input)).toStrictEqual(expectedOutput);
+      });
     }
   };
 
   describe(`stage ${stage} compile expr`, () => {
-    test('compileExpr0', async () => {
-      await testCompileExpr([
+    describe('compileExpr0', () => {
+      testCompileExpr([
         ['-100', '(i32.const -100)'],
         ['42', '(i32.const 42)'],
         ['(32)', '(i32.const 32)'],
-        ['"hello"', '(i32.const 15728640)'],
-        ...(stage === '0'
-          ? ([
-              ['hello()', '(call $hello)'],
-              ['hello(1)', '(call $hello (i32.const 1))'],
-              ['hello(1, 2)', '(call $hello (i32.const 1) (i32.const 2))'],
-              [
-                'hello(1, 2, 3)',
-                '(call $hello (i32.const 1) (i32.const 2) (i32.const 3))',
-              ],
-              ['(f(g()))', '(call $f (call $g))'],
-            ] as const)
-          : []),
+        ['"hello"', `(i32.const ${defaultHeapEnd})`],
+        ['hello()', '(call $hello)'],
+        ['hello(1)', '(call $hello (i32.const 1))'],
+        ['hello(1, 2)', '(call $hello (i32.const 1) (i32.const 2))'],
+        [
+          'hello(1, 2, 3)',
+          '(call $hello (i32.const 1) (i32.const 2) (i32.const 3))',
+        ],
+        ['(f(g()))', '(call $f (call $g))'],
       ]);
-
-      await expect(compileExpr(stage, ';')).rejects.toThrow();
-      await expect(compileExpr(stage, '(3')).rejects.toThrow();
+      test('invalid input', async () => {
+        await expect(compileExpr(stage, ';')).rejects.toThrow();
+        await expect(compileExpr(stage, '(3')).rejects.toThrow();
+      });
     });
-    if (stage !== '0') {
-      return;
-    }
 
-    test('compileExpr1', async () => {
-      await testCompileExpr([
+    describe('compileExpr1', () => {
+      testCompileExpr([
         ['-(3)', '(i32.neg (i32.const 3))'],
         ['!0', '(i32.eqz (i32.const 0))'],
       ]);
     });
-    test('compileExpr2', async () => {
-      await testCompileExpr([
+
+    if (stage !== '0') {
+      return;
+    }
+    describe('compileExpr2', () => {
+      testCompileExpr([
         ['1 * 2', '(i32.mul (i32.const 1) (i32.const 2))'],
         [
           '1 / 2 * 3 / 4',
@@ -73,8 +84,8 @@ for (const stage of stages) {
         ],
       ]);
     });
-    test('compileExpr3', async () => {
-      await testCompileExpr([
+    describe('compileExpr3', () => {
+      testCompileExpr([
         ['1 + 2', '(i32.add (i32.const 1) (i32.const 2))'],
         [
           '1 - 2 * 3 + 4',
@@ -86,8 +97,8 @@ for (const stage of stages) {
         ],
       ]);
     });
-    test('compileExpr4', async () => {
-      await testCompileExpr([
+    describe('compileExpr4', () => {
+      testCompileExpr([
         ['1 == 2', '(i32.eq (i32.const 1) (i32.const 2))'],
         [
           '1 + 2 != 2 * 2',
@@ -99,8 +110,8 @@ for (const stage of stages) {
         ],
       ]);
     });
-    test('compileExpr5 and compileExpr6', async () => {
-      await testCompileExpr([
+    describe('compileExpr5 and compileExpr6', () => {
+      testCompileExpr([
         [
           '1 == 2 || 3 == 4 && 5 == 6 || 7 == 8',
           '(call $or (call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8)))',
