@@ -1,8 +1,8 @@
 let g;
-fn getAnswer(): Int {
+fn getAnswer() {
   return 42;
 }
-fn getAnswerStr(): String {
+fn getAnswerStr() {
   let l;
   l = "42";
   "hello";

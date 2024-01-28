@@ -26,7 +26,7 @@ fn memoryInit(start, end) {
   store(chunk + 8, 0);
   store8(chunk + 12, 0);
 }
-fn malloc(size): Int {
+fn malloc(size) {
   let sizeWithHeader, chunk, chunkSize, nextChunk, newChunk;
   if (size <= 0) {
     return 0;
@@ -119,14 +119,14 @@ fn free(ptr) {
 //    04 i32 - length of string in chunk
 //    08 i32 - next chunk address, 0 if last chunk
 //    12 data
-fn strNew(reserveLen): Int {
+fn strNew(reserveLen) {
   let str;
   str = malloc(8);
   store(str + 0, 0);
   store(str + 4, strNewChunk(reserveLen, 0, 0, 0));
   return str;
 }
-fn strFromRaw(rawStr): Int {
+fn strFromRaw(rawStr) {
   let len, str;
   len = rawStrLen(rawStr);
   str = malloc(8);
@@ -188,7 +188,7 @@ fn strFlatten(str) {
     chunk = nextChunk;
   }
 }
-fn strToRaw(str): Int {
+fn strToRaw(str) {
   let len, chunk, result;
   strFlatten(str);
   len = load(str + 0);
@@ -199,7 +199,7 @@ fn strToRaw(str): Int {
   return result;
 }
 // Append str2 to str1 and delete str2.
-fn strMerge(str1, str2): Int {
+fn strMerge(str1, str2) {
   let str1Len, str2Len, str1TailChunk, str2HeadChunk, str1TailChunkSize, str1TailChunkLen, str2HeadChunkLen;
   str1Len = load(str1 + 0);
   str2Len = load(str2 + 0);
@@ -241,7 +241,7 @@ fn strMerge(str1, str2): Int {
   }
   return str1;
 }
-fn strPushRaw(str1, str2): Int {
+fn strPushRaw(str1, str2) {
   let str1Len, str2Len, str1TailChunk, str1TailChunkSize, str1TailChunkLen, newChunk;
   str2Len = rawStrLen(str2);
   if (str2Len == 0) {
@@ -263,7 +263,7 @@ fn strPushRaw(str1, str2): Int {
   }
   return str1;
 }
-fn strFromChar(c): Int {
+fn strFromChar(c) {
   let str, chunk;
   str = strNew(1);
   chunk = strGetTailChunk(str);
@@ -272,10 +272,10 @@ fn strFromChar(c): Int {
   store8(chunk + 12, c);
   return str;
 }
-fn strPush(str1, c): Int {
+fn strPush(str1, c) {
   return strMerge(str1, strFromChar(c));
 }
-fn strPop(str): Int {
+fn strPop(str) {
   let len, tailChunk, tailChunkLen;
   len = strLen(str);
   if (len < 1) {
@@ -287,10 +287,10 @@ fn strPop(str): Int {
   store(tailChunk + 4, tailChunkLen - 1);
   return load8_u(tailChunk + 12 + tailChunkLen - 1);
 }
-fn strLen(str): Int {
+fn strLen(str) {
   return load(str + 0);
 }
-fn strGetTailChunk(str): Int {
+fn strGetTailChunk(str) {
   let chunk, nextChunk, chunkCount;
   chunk = load(str + 4);
   chunkCount = 1;
@@ -307,7 +307,7 @@ fn strGetTailChunk(str): Int {
     chunk = nextChunk;
   }
 }
-fn strNewChunk(minSize, len, next, src): Int {
+fn strNewChunk(minSize, len, next, src) {
   let newChunk, newChunkSize;
   newChunkSize = (minSize + 3) / 4 * 4;
   if (newChunkSize < 32) {
@@ -323,17 +323,17 @@ fn strNewChunk(minSize, len, next, src): Int {
   return newChunk;
 }
 // Compare str against raw string.
-fn strCmpRaw(str1, str2): Int {
+fn strCmpRaw(str1, str2) {
   strFlatten(str1);
   return memcmp2(load(str1 + 4) + 12, strLen(str1), str2, rawStrLen(str2));
 }
 // Compare str against str.
-fn strCmp(str1, str2): Int {
+fn strCmp(str1, str2) {
   strFlatten(str1);
   strFlatten(str2);
   return memcmp2(load(str1 + 4) + 12, strLen(str1), load(str2 + 4) + 12, strLen(str2));
 }
-fn strClone(str): Int {
+fn strClone(str) {
   let len, newStr, newChunk, chunk;
   strFlatten(str);
   len = strLen(str);
@@ -345,14 +345,14 @@ fn strClone(str): Int {
   memcpy(newChunk + 12, chunk + 12, len);
   return newStr;
 }
-fn strFromInt(n): Int {
+fn strFromInt(n) {
   let rawStr, str;
   rawStr = malloc(16);
   str = strFromRaw(itoa(n, rawStr));
   free(rawStr);
   return str;
 }
-fn strPushInt(str1, n): String {
+fn strPushInt(str1, n) {
   return strMerge(str1, strFromInt(n));
 }
 
@@ -366,7 +366,7 @@ fn strPushInt(str1, n): String {
 //   04 i32 len - number of elements in use.
 //   08 i32 data - address of data
 // So address of element k is data + k * 4.
-fn arrNew(reserveLen): Int {
+fn arrNew(reserveLen) {
   let arr, size, data;
   if (reserveLen < 4) {
     size = 4;
@@ -413,13 +413,13 @@ fn arrPush(arr, elem) {
   store(arr + 4, len + 1);
   store(data + len * 4, elem);
 }
-fn arrLen(arr): Int {
+fn arrLen(arr) {
   return load(arr + 4);
 }
 fn arrClear(arr) {
   store(arr + 4, 0);
 }
-fn arrGet(arr, i): Int {
+fn arrGet(arr, i) {
   if (i < 0 || i >= arrLen(arr)) {
     throw("Array index out of bounds");
   }
@@ -442,7 +442,7 @@ fn arrSet(arr, i, v) {
 // Dict header is 8 bytes:
 //   00 i32 - address of keys array
 //   04 i32 - address of values array
-fn dictNew(reserveLen): Int {
+fn dictNew(reserveLen) {
   let dict;
   dict = malloc(8);
   store(dict + 0, arrNew(reserveLen));
@@ -470,7 +470,7 @@ fn dictClear(dict) {
   arrClear(keys);
   arrClear(values);
 }
-fn dictFind(dict, str): Int {
+fn dictFind(dict, str) {
   let len, i, keys, values;
   keys = load(dict + 0);
   len = arrLen(keys);
@@ -483,7 +483,7 @@ fn dictFind(dict, str): Int {
   }
   return -1;
 }
-fn dictGet(dict, key): Int {
+fn dictGet(dict, key) {
   let i, values;
   i = dictFind(dict, key);
   if (i >= 0) {
@@ -522,7 +522,7 @@ fn dictSetRaw(dict, rawKey, v, shouldFreeOldValue) {
 
 
 // Raw (i.e., C-style, null terminated) strings.
-fn rawStrLen(str): Int {
+fn rawStrLen(str) {
   let len;
   while (load8_u(str)) {
     len = len + 1;
@@ -530,7 +530,7 @@ fn rawStrLen(str): Int {
   }
   return len;
 }
-fn itoa(n, rawStr): Int {
+fn itoa(n, rawStr) {
   let p;
   p = rawStr + 11;
   store8(p, 0);
@@ -544,7 +544,7 @@ fn itoa(n, rawStr): Int {
   }
   return p;
 }
-fn memcmp(p1, p2, size): Int {
+fn memcmp(p1, p2, size) {
   let offset, v1, v2;
   if (p1 == p2 || size == 0) {
     return 0;
@@ -560,7 +560,7 @@ fn memcmp(p1, p2, size): Int {
   }
   return 0;
 }
-fn memcmp2(p1, p1Size, p2, p2Size): Int {
+fn memcmp2(p1, p1Size, p2, p2Size) {
   if (p1Size < p2Size) {
     return memcmp(p1, p2, p1Size) || -1;
   } else if (p1Size > p2Size) {

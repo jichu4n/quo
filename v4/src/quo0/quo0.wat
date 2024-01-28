@@ -672,15 +672,6 @@
       )
     )
 
-    ;; Return type -- currently a no-op, compiled function always returns i32
-    (local.set $origInputPtr (global.get $inputPtr))
-    (local.set $token (call $nextToken (local.get $tokenValuePtr)))
-    (if (i32.eq (local.get $token) (i32.const 58)) ;; :
-      (then
-        (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
-      )
-      (else (global.set $inputPtr (local.get $origInputPtr)))
-    )
     (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730756))
     (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
 

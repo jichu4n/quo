@@ -19,7 +19,7 @@ fn addLocalVar(name) {
 fn isLocalVar(name) {
   return dictFind(localVars, name) >= 0;
 }
-fn getOrAddStringConstantOffset(str): Int {
+fn getOrAddStringConstantOffset(str) {
   let offset;
   offset = dictGet(stringConstantOffsets, str);
   if (offset) {
@@ -32,7 +32,7 @@ fn getOrAddStringConstantOffset(str): Int {
 }
 
 // Single pass parser + code generator.
-fn compileExpr0(): Int {
+fn compileExpr0() {
   let token, tokenValue, output, origInputPtr;
 
   tokenValue = strNew(0);
@@ -70,7 +70,7 @@ fn compileExpr0(): Int {
   strPushRaw(output, "'");
   throw(strToRaw(output));
 }
-fn compileExpr(): Int {
+fn compileExpr() {
   return compileExpr0();
 }
 fn expectToken(expectedToken, tokenValue) {
@@ -129,7 +129,7 @@ fn lexerInit(input) {
   dictSetRaw(twoCharOperators, "&&", 1, 0);
   dictSetRaw(twoCharOperators, "||", 1, 0);
 }
-fn nextToken(tokenValue): Int {
+fn nextToken(tokenValue) {
   let c, c2;
 
   strClear(tokenValue);
@@ -194,7 +194,7 @@ fn nextToken(tokenValue): Int {
 
   throw("Unrecognized character");
 }
-fn peekNextToken(tokenValue): Int {
+fn peekNextToken(tokenValue) {
   let origInputPtr, token;
   origInputPtr = inputPtr;
   token = nextToken(tokenValue);
@@ -218,33 +218,33 @@ fn skipWhitespaceAndComments() {
     }
   }
 }
-fn nextChar(): Int {
+fn nextChar() {
   inputPtr = inputPtr + 1;
   return load8_u(inputPtr);
 }
-fn peekNextChar(): Int {
+fn peekNextChar() {
   return load8_u(inputPtr + 1);
 }
-fn curChar(): Int {
+fn curChar() {
   return load8_u(inputPtr);
 }
-fn isSpace(c): Int {
+fn isSpace(c) {
   return c == 32  // space
     || c == 9     // tab
     || c == 13    // CR
     || c == 10;   // LF
 }
-fn isDigit(c): Int {
+fn isDigit(c) {
   return c >= 48  // 0
     && c <= 57;   // 9
 }
-fn isAlpha(c): Int {
+fn isAlpha(c) {
   return (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
 }
-fn isIdent(c): Int {
+fn isIdent(c) {
   return isAlpha(c) || isDigit(c) || c == 95; // _
 }
-fn strchr(rawStr, c): Int {
+fn strchr(rawStr, c) {
   let c2;
   while (1) {
     c2 = load8_u(rawStr);
@@ -260,10 +260,10 @@ fn strchr(rawStr, c): Int {
 
 
 // Entry point.
-fn compileModule(): String {
+fn compileModule() {
   return "  ;; placeholder";
 }
-fn indent(indentLevel): String {
+fn indent(indentLevel) {
   let str, i;
   str = strNew(indentLevel * 2);
   i = 0;

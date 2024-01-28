@@ -206,7 +206,7 @@ for (const stage of stages) {
 `.slice(1),
         ],
         [
-          'fn foo(): Int { return 42; }',
+          'fn foo() { return 42; }',
           `
   (func $foo (result i32)
     (return (i32.const 42))
@@ -216,7 +216,7 @@ for (const stage of stages) {
 `.slice(1),
         ],
         [
-          'fn foo(x): Int { return x; }',
+          'fn foo(x) { return x; }',
           `
   (func $foo (param $x i32) (result i32)
     (return (local.get $x))
