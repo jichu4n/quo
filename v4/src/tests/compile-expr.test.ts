@@ -3,11 +3,14 @@ import {getWasmStr} from './strings.test';
 
 const stages = ['0', '1a'];
 
+const heapStart = 4096;
+const heapEnd = 15 * 1024 * 1024;
+
 async function compileExpr(stage: string, input: string): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, compileExpr} = fns;
   setWasmString(wasmMemory, 0, input);
-  init(0, 15 * 1024 * 1024);
+  init(0, heapStart, heapEnd);
   const resultAddress = compileExpr();
   return stage === '0'
     ? getWasmString(wasmMemory, resultAddress)

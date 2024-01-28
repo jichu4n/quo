@@ -7,8 +7,8 @@
 //   12 byte - used = 1, free = 0
 //   16 chunk data
 // Minimum chunk data size is 16 bytes (so total 32 bytes with header).
-let memoryStart;
-let memoryEnd;
+let heapStart;
+let heapEnd;
 fn memoryInit(start, end) {
   let size, chunk;
   if (start <= 0) {
@@ -18,10 +18,10 @@ fn memoryInit(start, end) {
   if (size < 16) {
     throw("Memory must be greater than 16 bytes");
   }
-  memoryStart = start;
-  memoryEnd = end;
+  heapStart = start;
+  heapEnd = end;
   chunk = start;
-  store(chunk, memoryEnd - memoryStart - 16);
+  store(chunk, heapEnd - heapStart - 16);
   store(chunk + 4, 0);
   store(chunk + 8, 0);
   store8(chunk + 12, 0);
@@ -33,7 +33,7 @@ fn malloc(size) {
   }
   size = (size + 15) / 16 * 16;
   sizeWithHeader = size + 16;
-  chunk = memoryStart;
+  chunk = heapStart;
   while (chunk != 0) {
     chunkSize = load(chunk);
     nextChunk = load(chunk + 4);
@@ -68,7 +68,7 @@ fn malloc(size) {
 }
 fn free(ptr) {
   let chunk, size, prevChunk, nextChunk, nextNextChunk;
-  if (ptr == 0 || ptr < memoryStart + 16 ||  ptr > memoryEnd - 16) {
+  if (ptr == 0 || ptr < heapStart + 16 ||  ptr > heapEnd - 16) {
     return;
   }
   chunk = ptr - 16;

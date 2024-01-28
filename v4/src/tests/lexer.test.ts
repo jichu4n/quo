@@ -1,7 +1,11 @@
-import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
+import {getWasmString, loadQuoWasmModule, setWasmString} from '../quo-driver';
+import {expectUsedChunks} from './memory.test';
 import {getWasmStr} from './strings.test';
 
 const stages = ['0', '1a'];
+
+const heapStart = 4096;
+const heapEnd = 15 * 1024 * 1024;
 
 export interface Token {
   type: number;
@@ -13,11 +17,16 @@ export async function tokenize(
   input: string
 ): Promise<Array<Token>> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, nextToken, strNew} = fns;
+  const {init, nextToken, strNew, cleanUp} = fns;
 
   setWasmString(wasmMemory, 0, input);
-  init(0, 15 * 1024 * 1024);
-  const tokenValueAddress = stage === '0' ? 4096 : strNew(0);
+  init(0, heapStart, heapEnd);
+  let tokenValueAddress;
+  if (stage === '0') {
+    tokenValueAddress = 4096;
+  } else {
+    tokenValueAddress = strNew(128);
+  }
   const tokens: Array<Token> = [];
   do {
     const tokenType = nextToken(tokenValueAddress);
@@ -34,19 +43,25 @@ export async function tokenize(
     };
     tokens.push(token);
   } while (tokens[tokens.length - 1].type !== 0);
+  if (stage !== '0') {
+    cleanUp();
+    expectUsedChunks(wasmMemory, heapStart, 2); // token value's header + data chunk
+  }
   return tokens;
 }
 
 for (const stage of stages) {
-  const testTokenize = async (testCases: Array<[string, Array<Token>]>) => {
+  const testTokenize = (testCases: Array<[string, Array<Token>]>) => {
     for (const [input, expectedTokens] of testCases) {
-      expect(await tokenize(stage, input)).toStrictEqual(expectedTokens);
+      test(`tokenize '${input}'`, async () => {
+        expect(await tokenize(stage, input)).toStrictEqual(expectedTokens);
+      });
     }
   };
 
   describe(`stage ${stage} lexer`, () => {
-    test('whitespace', async () => {
-      await testTokenize([
+    describe('whitespace', () => {
+      testTokenize([
         ['\t  \n', [{type: 0}]],
         [
           '  2\r\n  // This is a comment\r\n  3\r\n',
@@ -55,8 +70,8 @@ for (const stage of stages) {
       ]);
     });
 
-    test('literals', async () => {
-      await testTokenize([
+    describe('literals', () => {
+      testTokenize([
         [
           '"hello" 1234 "" -2',
           [
@@ -68,13 +83,15 @@ for (const stage of stages) {
           ],
         ],
       ]);
-      await expect(
-        async () => await tokenize(stage, '"hello')
-      ).rejects.toThrow();
+      test('unterminated string', async () => {
+        await expect(
+          async () => await tokenize(stage, '"hello')
+        ).rejects.toThrow();
+      });
     });
 
-    test('identifiers and keywords', async () => {
-      await testTokenize([
+    describe('identifiers and keywords', () => {
+      testTokenize([
         [
           'aAa _b_1 C13 sif ifs fn let if else while return',
           [
@@ -95,8 +112,8 @@ for (const stage of stages) {
       ]);
     });
 
-    test('operators', async () => {
-      await testTokenize([
+    describe('operators', () => {
+      testTokenize([
         [
           '{ a = (a + b) * c - d / e; a == b && c != d || e >= f && g < h }',
           [

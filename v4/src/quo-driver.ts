@@ -4,9 +4,9 @@ import wabt from 'wabt';
 import {program} from 'commander';
 
 const defaultMemoryPages = 256; // 256 * 64KB = 16MB
-const defaultMemoryEnd = 15 * 1024 * 1024;
+const defaultHeapEnd = 15 * 1024 * 1024;
 // Size of all string literals per source file.
-const defaultDataSectionSize = 32 * 1024;
+const defaultStringConstantsSize = 32 * 1024;
 
 export function getWasmString(memory: WebAssembly.Memory, ptr: number) {
   const bytes = new Uint8Array(memory.buffer, ptr);
@@ -86,12 +86,13 @@ function wrapWebAssemblyFn(
 export async function compileModule(
   stage: string,
   input: string,
-  {memoryEnd = defaultMemoryEnd}: {memoryEnd?: number} = {}
+  {heapEnd = defaultHeapEnd}: {heapEnd?: number} = {}
 ): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, compileModule} = fns;
-  setWasmString(wasmMemory, 0, input);
-  init(0, memoryEnd);
+  const len = setWasmString(wasmMemory, 0, input);
+  const heapStart = ((len + 3) >> 2) << 2;
+  init(0, heapStart, heapEnd);
   return getWasmString(wasmMemory, compileModule());
 }
 
@@ -100,9 +101,9 @@ export async function compileFiles(
   inputFiles: Array<string>,
   outputFile?: string,
   {
-    dataSectionSize = defaultDataSectionSize,
-    memoryEnd = defaultMemoryEnd,
-  }: {dataSectionSize?: number; memoryEnd?: number} = {}
+    stringConstantsSize = defaultStringConstantsSize,
+    heapEnd = defaultHeapEnd,
+  }: {stringConstantsSize?: number; heapEnd?: number} = {}
 ) {
   // Compile input files to WAT.
   const watOutputs: Array<string> = [];
@@ -113,11 +114,11 @@ export async function compileFiles(
     if (inputFileExt === '.wat') {
       watOutput = input;
     } else if (inputFileExt === '.quo') {
-      if (memoryEnd + dataSectionSize > defaultMemoryPages * 64 * 1024) {
-        throw new Error('Size of data sections exceeds memory size');
+      if (heapEnd + stringConstantsSize > defaultMemoryPages * 64 * 1024) {
+        throw new Error('Size of string constants exceeds memory size');
       }
-      watOutput = (await compileModule(stage, input, {memoryEnd})).trimEnd();
-      memoryEnd += dataSectionSize;
+      watOutput = (await compileModule(stage, input, {heapEnd})).trimEnd();
+      heapEnd += stringConstantsSize;
     } else {
       throw new Error(`Unknown file extension in input file "${inputFile}"`);
     }

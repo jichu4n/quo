@@ -1185,11 +1185,11 @@
   )
 
   ;; Initialize global state.
-  (func $init (param $input i32) (param $stringConstantOffset i32)
+  (func $init (param $input i32) (param $heapStart i32) (param $heapEnd i32)
     ;; Set initial memory offset to after input string.
     (global.set
         $memoryOffset
-        (i32.add (call $strlen (local.get $input)) (i32.const 1)))
+        (local.get $heapStart))
     ;; Set up tokenizer state
     (global.set $input (local.get $input))
     (global.set $inputPtr (local.get $input))
@@ -1201,7 +1201,7 @@
     (global.set $strings (call $alloc (i32.const 32768)))
     (global.set $stringConstantOffsets (call $alloc (i32.const 32768)))
     (global.set $stringCount (i32.const 0))
-    (global.set $stringConstantOffset (local.get $stringConstantOffset))
+    (global.set $stringConstantOffset (local.get $heapEnd))
     ;; Loop counter.
     (global.set $loopId (i32.const 1))
   )

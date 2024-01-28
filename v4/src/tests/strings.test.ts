@@ -3,8 +3,8 @@ import {expectUsedChunks} from './memory.test';
 
 const stages = ['1a'];
 
-const memoryStart = 32;
-const memoryEnd = 2048;
+const heapStart = 32;
+const heapEnd = 2048;
 const strChunkHeaderSize = 12;
 
 interface RawStrHeader {
@@ -88,7 +88,7 @@ for (const stage of stages) {
       strCmp,
     } = fns;
 
-    memoryInit(memoryStart, memoryEnd);
+    memoryInit(heapStart, heapEnd);
     return {
       strNew,
       strDelete,
@@ -106,44 +106,44 @@ for (const stage of stages) {
   describe(`stage ${stage} strings`, () => {
     test('create and free empty string', async function () {
       const {strNew, strDelete, wasmMemory} = await setup();
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       const str1 = strNew(0);
       expect(getStr(wasmMemory, str1)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
       strDelete(str1);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       const str2 = strNew(0);
       expect(getStr(wasmMemory, str2)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
       expect(str1).toStrictEqual(str2);
     });
     test('create and free string from raw string', async function () {
       const {strFromRaw, strDelete, wasmMemory} = await setup();
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       setWasmString(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
       expect(getStr(wasmMemory, str1)).toStrictEqual({
         len: 3,
         chunks: [{size: 32, len: 3, data: 'foo'}],
       });
       strDelete(str1);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
 
       const str2 = strFromRaw(4096 + 10); // nothing there
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
       expect(getStr(wasmMemory, str2)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
       strDelete(str2);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
     });
     test('merge strings', async function () {
       const {strNew, strFromRaw, strMerge, strDelete, strFlatten, wasmMemory} =
@@ -166,7 +166,7 @@ for (const stage of stages) {
         len: 6,
         chunks: [{size: 32, len: 6, data: 'foobar'}],
       });
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
 
       const str3 = strNew(0);
       const str4 = strNew(0);
@@ -182,12 +182,12 @@ for (const stage of stages) {
         len: 6,
         chunks: [{size: 32, len: 6, data: 'foobar'}],
       });
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
 
       // Non-empty + large non-empt
       setWasmString(wasmMemory, 4096 + 20, 'a'.repeat(100));
       const str5 = strFromRaw(4096 + 20);
-      expectUsedChunks(wasmMemory, 4);
+      expectUsedChunks(wasmMemory, heapStart, 4);
       strMerge(str0, str5);
       expect(getStr(wasmMemory, str0)).toStrictEqual({
         len: 106,
@@ -201,7 +201,7 @@ for (const stage of stages) {
         len: 106,
         chunks: [{size: 108, len: 106, data: 'foobar' + 'a'.repeat(100)}],
       });
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
 
       // Lots of non-empty. Should never exceed 8 chunks.
       const str6 = strFromRaw(4096);

@@ -2,6 +2,9 @@ import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
 
 const stages = ['0'];
 
+const heapStart = 4096;
+const heapEnd = 15 * 1024 * 1024;
+
 async function compile(
   fnName: string,
   fnArgs: Array<unknown>,
@@ -12,7 +15,7 @@ async function compile(
   const {init} = fns;
   const fn = fns[fnName];
   setWasmString(wasmMemory, 0, input);
-  init(0, 15 * 1024 * 1024);
+  init(0, heapStart, heapEnd);
   return getWasmString(wasmMemory, fn(...fnArgs));
 }
 

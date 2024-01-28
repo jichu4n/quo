@@ -7,6 +7,13 @@ fn symbolsInit(stringConstantOffset) {
   stringConstantOffsets = dictNew(0);
   nextStringConstantOffset = stringConstantOffset;
 }
+fn symbolsCleanUp() {
+  dictDelete(globalVars, 0);
+  dictDelete(localVars, 0);
+  dictDelete(fns, 0);
+  dictDelete(stringConstantOffsets, 0);
+  nextStringConstantOffset = 0;
+}
 fn addGlobalVar(name) {
   dictSet(globalVars, name, 1, 0);
 }
@@ -128,6 +135,10 @@ fn lexerInit(input) {
   dictSetRaw(twoCharOperators, ">=", 1, 0);
   dictSetRaw(twoCharOperators, "&&", 1, 0);
   dictSetRaw(twoCharOperators, "||", 1, 0);
+}
+fn lexerCleanUp() {
+  dictDelete(keywords, 0);
+  dictDelete(twoCharOperators, 0);
 }
 fn nextToken(tokenValue) {
   let c, c2;
@@ -273,9 +284,12 @@ fn indent(indentLevel) {
   }
   return str;
 }
-fn init(input, stringConstantOffset) {
-  // Usable memory is between end of input and 15MB where we'll place string literals.
-  memoryInit((input + rawStrLen(input) + 1 + 3) / 4 * 4, stringConstantOffset);
+fn init(input, heapStart, heapEnd) {
+  memoryInit(heapStart, heapEnd);
   lexerInit(input);
-  symbolsInit(stringConstantOffset);
+  symbolsInit(heapEnd);
+}
+fn cleanUp() {
+  lexerCleanUp();
+  symbolsCleanUp();
 }

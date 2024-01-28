@@ -3,8 +3,8 @@ import {expectUsedChunks} from './memory.test';
 
 const stages = ['1a'];
 
-const memoryStart = 32;
-const memoryEnd = 2048;
+const heapStart = 32;
+const heapEnd = 2048;
 
 interface Arr {
   size: number;
@@ -45,7 +45,7 @@ for (const stage of stages) {
       malloc,
     } = fns;
 
-    memoryInit(memoryStart, memoryEnd);
+    memoryInit(heapStart, heapEnd);
     return {
       strNew,
       strDelete,
@@ -68,9 +68,9 @@ for (const stage of stages) {
   describe(`stage ${stage} strings`, () => {
     test('array push', async function () {
       const {arrNew, arrDelete, arrPush, wasmMemory} = await setup();
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       const arr = arrNew(0);
-      expectUsedChunks(wasmMemory, 2); // header + data
+      expectUsedChunks(wasmMemory, heapStart, 2); // header + data
       expect(toArr(wasmMemory, arr)).toStrictEqual({
         size: 4,
         len: 0,
@@ -86,14 +86,14 @@ for (const stage of stages) {
             .map((_, j) => j),
         });
       }
-      expectUsedChunks(wasmMemory, 2);
+      expectUsedChunks(wasmMemory, heapStart, 2);
       arrDelete(arr, 0);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
     });
     test('array get and set', async function () {
       const {arrNew, arrDelete, arrGet, arrSet, arrPush, wasmMemory} =
         await setup();
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       const arr = arrNew(0);
       for (let i = 0; i < 100; i++) {
         arrPush(arr, i);
@@ -113,18 +113,18 @@ for (const stage of stages) {
       }
 
       arrDelete(arr, 0);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
     });
     test('array free values', async function () {
       const {arrNew, arrDelete, arrPush, malloc, wasmMemory} = await setup();
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       const arr = arrNew(0);
       for (let i = 0; i < 10; i++) {
         arrPush(arr, malloc(1));
       }
-      expectUsedChunks(wasmMemory, 2 + 10);
+      expectUsedChunks(wasmMemory, heapStart, 2 + 10);
       arrDelete(arr, 1);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
     });
     test('dict set and get', async function () {
       const {
@@ -137,9 +137,9 @@ for (const stage of stages) {
         dictSet,
         wasmMemory,
       } = await setup();
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
       const dict = dictNew(0);
-      expectUsedChunks(wasmMemory, 5); // dict header, 2x array headers, 2x array data
+      expectUsedChunks(wasmMemory, heapStart, 5); // dict header, 2x array headers, 2x array data
 
       setWasmString(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
@@ -172,7 +172,7 @@ for (const stage of stages) {
       strDelete(str2);
       strDelete(str3);
       dictDelete(dict, 0);
-      expectUsedChunks(wasmMemory, 0);
+      expectUsedChunks(wasmMemory, heapStart, 0);
     });
   });
 }
