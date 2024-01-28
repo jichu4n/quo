@@ -1,17 +1,23 @@
 import {loadQuoWasmModule, setWasmString, getWasmString} from '../quo-driver';
+import {getWasmStr} from './strings.test';
 
-const stages = ['0'];
+const stages = ['0', '1a'];
 
 async function compileExpr(stage: string, input: string): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, compileExpr} = fns;
   setWasmString(wasmMemory, 0, input);
   init(0, 15 * 1024 * 1024);
-  return getWasmString(wasmMemory, compileExpr());
+  const resultAddress = compileExpr();
+  return stage === '0'
+    ? getWasmString(wasmMemory, resultAddress)
+    : getWasmStr(wasmMemory, resultAddress);
 }
 
 for (const stage of stages) {
-  const testCompileExpr = async (testCases: Array<[string, string]>) => {
+  const testCompileExpr = async (
+    testCases: Array<readonly [string, string]>
+  ) => {
     for (const [input, expectedOutput] of testCases) {
       expect(await compileExpr(stage, input)).toStrictEqual(expectedOutput);
     }
@@ -23,16 +29,25 @@ for (const stage of stages) {
         ['-100', '(i32.const -100)'],
         ['42', '(i32.const 42)'],
         ['(32)', '(i32.const 32)'],
-        ['hello()', '(call $hello)'],
-        ['hello(1)', '(call $hello (i32.const 1))'],
-        ['hello(1, 2)', '(call $hello (i32.const 1) (i32.const 2))'],
-        [
-          'hello(1, 2, 3)',
-          '(call $hello (i32.const 1) (i32.const 2) (i32.const 3))',
-        ],
-        ['(f(g()))', '(call $f (call $g))'],
+        ['"hello"', '(i32.const 15728640)'],
+        ...(stage === '0'
+          ? ([
+              ['hello()', '(call $hello)'],
+              ['hello(1)', '(call $hello (i32.const 1))'],
+              ['hello(1, 2)', '(call $hello (i32.const 1) (i32.const 2))'],
+              [
+                'hello(1, 2, 3)',
+                '(call $hello (i32.const 1) (i32.const 2) (i32.const 3))',
+              ],
+              ['(f(g()))', '(call $f (call $g))'],
+            ] as const)
+          : []),
       ]);
     });
+    if (stage !== '0') {
+      return;
+    }
+
     test('compileExpr1', async () => {
       await testCompileExpr([
         ['-(3)', '(i32.neg (i32.const 3))'],

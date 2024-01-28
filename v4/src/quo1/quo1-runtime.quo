@@ -241,7 +241,7 @@ fn strMerge(str1, str2): Int {
   }
   return str1;
 }
-fn strAddRaw(str1, str2): Int {
+fn strPushRaw(str1, str2): Int {
   let str1Len, str2Len, str1TailChunk, str1TailChunkSize, str1TailChunkLen, newChunk;
   str2Len = rawStrLen(str2);
   if (str2Len == 0) {
@@ -345,6 +345,16 @@ fn strClone(str): Int {
   memcpy(newChunk + 12, chunk + 12, len);
   return newStr;
 }
+fn strFromInt(n): Int {
+  let rawStr, str;
+  rawStr = malloc(16);
+  str = strFromRaw(itoa(n, rawStr));
+  free(rawStr);
+  return str;
+}
+fn strPushInt(str1, n): String {
+  return strMerge(str1, strFromInt(n));
+}
 
 // Arrays - logically equivalent to Array<number>.
 //
@@ -406,6 +416,9 @@ fn arrPush(arr, elem) {
 fn arrLen(arr): Int {
   return load(arr + 4);
 }
+fn arrClear(arr) {
+  store(arr + 4, 0);
+}
 fn arrGet(arr, i): Int {
   if (i < 0 || i >= arrLen(arr)) {
     throw("Array index out of bounds");
@@ -449,6 +462,13 @@ fn dictDelete(dict, shouldFreeValues) {
   arrDelete(keys, 0);
   arrDelete(values, shouldFreeValues);
   free(dict);
+}
+fn dictClear(dict) {
+  let keys, values;
+  keys = load(dict + 0);
+  values = load(dict + 4);
+  arrClear(keys);
+  arrClear(values);
 }
 fn dictFind(dict, str): Int {
   let len, i, keys, values;
@@ -510,9 +530,9 @@ fn rawStrLen(str): Int {
   }
   return len;
 }
-fn itoa(n, str): Int {
+fn itoa(n, rawStr): Int {
   let p;
-  p = str + 11;
+  p = rawStr + 11;
   store8(p, 0);
   while (1) {
     p = p - 1;

@@ -83,7 +83,7 @@ for (const stage of stages) {
       strFlatten,
       strToRaw,
       strMerge,
-      strAddRaw,
+      strPushRaw,
       strCmpRaw,
       strCmp,
     } = fns;
@@ -96,7 +96,7 @@ for (const stage of stages) {
       strFlatten,
       strToRaw,
       strMerge,
-      strAddRaw,
+      strPushRaw,
       strCmp,
       strCmpRaw,
       wasmMemory,
@@ -212,7 +212,7 @@ for (const stage of stages) {
       }
     });
     test('compare strings', async function () {
-      const {strNew, strAddRaw, strFromRaw, strCmp, strCmpRaw, wasmMemory} =
+      const {strNew, strPushRaw, strFromRaw, strCmp, strCmpRaw, wasmMemory} =
         await setup();
       // Basic strings.
       setWasmString(wasmMemory, 4096, 'foo');
@@ -236,7 +236,7 @@ for (const stage of stages) {
 
       // 1 chunk vs 2 chunks.
       setWasmString(wasmMemory, 4096 + 10, 'foobar' + 'a'.repeat(100));
-      strAddRaw(str3, 4096 + 10 + 6);
+      strPushRaw(str3, 4096 + 10 + 6);
       expect(getStr(wasmMemory, str3).chunks.length).toStrictEqual(2); // 'foobar' + 'a'.repeat(100)
       expect(strCmp(str3, strFromRaw(4096 + 10))).toStrictEqual(0);
     });

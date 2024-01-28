@@ -17,10 +17,10 @@ export async function tokenize(
 
   setWasmString(wasmMemory, 0, input);
   init(0, 15 * 1024 * 1024);
-  const valueAddress = stage === '0' ? 4096 : strNew(0);
+  const tokenValueAddress = stage === '0' ? 4096 : strNew(0);
   const tokens: Array<Token> = [];
   do {
-    const tokenType = nextToken(valueAddress);
+    const tokenType = nextToken(tokenValueAddress);
     const token = {
       type: tokenType,
       ...(tokenType === 0
@@ -28,8 +28,8 @@ export async function tokenize(
         : {
             value:
               stage === '0'
-                ? getWasmString(wasmMemory, valueAddress)
-                : getWasmStr(wasmMemory, valueAddress),
+                ? getWasmString(wasmMemory, tokenValueAddress)
+                : getWasmStr(wasmMemory, tokenValueAddress),
           }),
     };
     tokens.push(token);

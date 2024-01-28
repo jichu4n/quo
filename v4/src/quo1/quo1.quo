@@ -1,3 +1,97 @@
+// Symbol tables.
+let globalVars, localVars, fns, stringConstantOffsets, nextStringConstantOffset;
+fn symbolsInit(stringConstantOffset) {
+  globalVars = dictNew(0);
+  localVars = dictNew(0);
+  fns = dictNew(0);
+  stringConstantOffsets = dictNew(0);
+  nextStringConstantOffset = stringConstantOffset;
+}
+fn addGlobalVar(name) {
+  dictSet(globalVars, name, 1, 0);
+}
+fn isGlobalVar(name) {
+  return dictFind(globalVars, name) >= 0;
+}
+fn addLocalVar(name) {
+  dictSet(localVars, name, 1, 0);
+}
+fn isLocalVar(name) {
+  return dictFind(localVars, name) >= 0;
+}
+fn getOrAddStringConstantOffset(str): Int {
+  let offset;
+  offset = dictGet(stringConstantOffsets, str);
+  if (offset) {
+    return offset;
+  }
+  offset = nextStringConstantOffset;
+  dictSet(stringConstantOffsets, str, offset, 0);
+  nextStringConstantOffset = nextStringConstantOffset + strLen(str) + 1;
+  return offset;
+}
+
+// Single pass parser + code generator.
+fn compileExpr0(): Int {
+  let token, tokenValue, output, origInputPtr;
+
+  tokenValue = strNew(0);
+  token = nextToken(tokenValue);
+
+  // Number literal
+  if (token == 1) {
+    output = strFromRaw("(i32.const ");
+    strMerge(output, tokenValue);
+    strPushRaw(output, ")");
+    return output;
+  }
+
+  // String literal
+  if (token == 2) {
+    output = strFromRaw("(i32.const ");
+    strPushInt(output, getOrAddStringConstantOffset(tokenValue));
+    strDelete(tokenValue);
+    strPushRaw(output, ")");
+    return output;
+  }
+
+  // Parenthesis
+  if (token == 40) {
+    output = compileExpr();
+    expectToken(41, tokenValue);
+    strDelete(tokenValue);
+    return output;
+  }
+
+  throw(
+    strToRaw(
+      strMerge(
+        strPushRaw(
+          strPushInt(strFromRaw("Expected expression, got token type "), token),
+          " with value: "),
+        tokenValue)));
+}
+fn compileExpr(): Int {
+  return compileExpr0();
+}
+fn expectToken(expectedToken, tokenValue) {
+  let actualToken;
+  actualToken = nextToken(tokenValue);
+  if (actualToken != expectedToken) {
+    throw(strToRaw(
+      strMerge(
+        strPushRaw(
+          strPushInt(
+            strPushRaw(
+              strPushInt(strFromRaw("Expected token type "), expectedToken),
+              ", but received token "),
+            actualToken),
+          " with value "),
+        tokenValue)));
+  }
+}
+
+
 // Lexer.
 //
 // Token types:
@@ -38,10 +132,10 @@ fn lexerInit(input) {
   dictSetRaw(twoCharOperators, "&&", 1, 0);
   dictSetRaw(twoCharOperators, "||", 1, 0);
 }
-fn nextToken(value): Int {
+fn nextToken(tokenValue): Int {
   let c, c2;
 
-  strClear(value);
+  strClear(tokenValue);
   skipWhitespaceAndComments();
   c = curChar();
 
@@ -54,7 +148,7 @@ fn nextToken(value): Int {
   if (isDigit(c)
     || (c == 45 && isDigit(peekNextChar()))) {  // -
     while (1) {
-      strPush(value, c);
+      strPush(tokenValue, c);
       c = nextChar();
       if (!isDigit(c)) {
         break;
@@ -73,7 +167,7 @@ fn nextToken(value): Int {
       if (c == 34) {  // "
         break;
       }
-      strPush(value, c);
+      strPush(tokenValue, c);
     }
     nextChar();
     return 2;
@@ -82,26 +176,33 @@ fn nextToken(value): Int {
   // Identifier or keyword.
   if (isIdent(c)) {
     while (isIdent(c)) {
-      strPush(value, c);
+      strPush(tokenValue, c);
       c = nextChar();
     }
-    return 4 + dictFind(keywords, value);
+    return 4 + dictFind(keywords, tokenValue);
   }
 
   // Operators.
   if (strchr("(){}[]<>=+-*/%!&|.,;:^", c)) {
-    strPush(value, c);
-    strPush(value, nextChar());
-    if (dictFind(twoCharOperators, value) >= 0) {
+    strPush(tokenValue, c);
+    strPush(tokenValue, nextChar());
+    if (dictFind(twoCharOperators, tokenValue) >= 0) {
       nextChar();
       return c + 128;
     } else {
-      strPop(value);
+      strPop(tokenValue);
       return c;
     }
   }
 
   throw("Unrecognized character");
+}
+fn peekNextToken(tokenValue): Int {
+  let origInputPtr, token;
+  origInputPtr = inputPtr;
+  token = nextToken(tokenValue);
+  inputPtr = origInputPtr;
+  return token;
 }
 fn skipWhitespaceAndComments() {
   let c;
@@ -170,13 +271,14 @@ fn indent(indentLevel): String {
   str = strNew(indentLevel * 2);
   i = 0;
   while (i < indentLevel) {
-    strAddRaw(str, "  ");
+    strPushRaw(str, "  ");
     i = i + 1;
   }
   return str;
 }
-fn init(input, memoryEnd) {
+fn init(input, stringConstantOffset) {
   // Usable memory is between end of input and 15MB where we'll place string literals.
-  memoryInit((input + rawStrLen(input) + 1 + 3) / 4 * 4, memoryEnd);
+  memoryInit((input + rawStrLen(input) + 1 + 3) / 4 * 4, stringConstantOffset);
   lexerInit(input);
+  symbolsInit(stringConstantOffset);
 }

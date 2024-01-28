@@ -45,21 +45,21 @@
   ;; String literal table.
   (global $strings (mut i32) (i32.const 0))
   (global $stringCount (mut i32) (i32.const 0))
-  (global $stringOffsets (mut i32) (i32.const 0))
-  (global $stringOffset (mut i32) (i32.const 0))
+  (global $stringConstantOffsets (mut i32) (i32.const 0))
+  (global $stringConstantOffset (mut i32) (i32.const 0))
   (func $findOrAddString (param $str i32) (result i32)
     (local $index i32)
-    (local $prevStringOffset i32)
+    (local $prevStringConstantOffset i32)
     (local.set $index (call $strlistFind (global.get $strings) (local.get $str)))
     (if (i32.ge_s (local.get $index) (i32.const 0))
-      (then (return (i32.load (i32.add (global.get $stringOffsets) (i32.mul (local.get $index) (i32.const 4))))))
+      (then (return (i32.load (i32.add (global.get $stringConstantOffsets) (i32.mul (local.get $index) (i32.const 4))))))
     )
     (call $strlistAppend (global.get $strings) (i32.const 32768) (local.get $str))
-    (i32.store (i32.add (global.get $stringOffsets) (i32.mul (global.get $stringCount) (i32.const 4))) (global.get $stringOffset))
+    (i32.store (i32.add (global.get $stringConstantOffsets) (i32.mul (global.get $stringCount) (i32.const 4))) (global.get $stringConstantOffset))
     (global.set $stringCount (i32.add (global.get $stringCount) (i32.const 1)))
-    (local.set $prevStringOffset (global.get $stringOffset))
-    (global.set $stringOffset (i32.add (global.get $stringOffset) (i32.add (call $strlen (local.get $str)) (i32.const 1))))
-    (local.get $prevStringOffset)
+    (local.set $prevStringConstantOffset (global.get $stringConstantOffset))
+    (global.set $stringConstantOffset (i32.add (global.get $stringConstantOffset) (i32.add (call $strlen (local.get $str)) (i32.const 1))))
+    (local.get $prevStringConstantOffset)
   )
 
   ;; Single pass parser / code generator.
@@ -703,7 +703,7 @@
     (local $token i32)
     (local $tokenValuePtr i32)
     (local $stringPtr i32)
-    (local $stringOffsetPtr i32)
+    (local $stringConstantOffsetPtr i32)
 
     (local.set $outputPtr (call $alloc (i32.const 131072)))
 
@@ -755,19 +755,19 @@
 
     ;; String literals.
     (local.set $stringPtr (global.get $strings))
-    (local.set $stringOffsetPtr (global.get $stringOffsets))
+    (local.set $stringConstantOffsetPtr (global.get $stringConstantOffsets))
     (block $loop_end
       (loop $loop
         (br_if $loop_end (i32.eqz (i32.load8_u (local.get $stringPtr))))
         (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15731012))
         (call $strcat (local.get $outputPtr) (i32.const 131072)
-          (call $itoa (i32.load (local.get $stringOffsetPtr))))
+          (call $itoa (i32.load (local.get $stringConstantOffsetPtr))))
         (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15731044))
         (call $strcat (local.get $outputPtr) (i32.const 131072) (local.get $stringPtr))
         (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15731076))
         (local.set $stringPtr
           (i32.add (i32.add (local.get $stringPtr) (call $strlen (local.get $stringPtr))) (i32.const 1)))
-        (local.set $stringOffsetPtr (i32.add (local.get $stringOffsetPtr) (i32.const 4)))
+        (local.set $stringConstantOffsetPtr (i32.add (local.get $stringConstantOffsetPtr) (i32.const 4)))
         (br $loop)
       )
     )
@@ -1194,7 +1194,7 @@
   )
 
   ;; Initialize global state.
-  (func $init (param $input i32) (param $stringOffset i32)
+  (func $init (param $input i32) (param $stringConstantOffset i32)
     ;; Set initial memory offset to after input string.
     (global.set
         $memoryOffset
@@ -1208,9 +1208,9 @@
     (global.set $fns (call $alloc (i32.const 8192)))
     ;; Set up string literal table state.
     (global.set $strings (call $alloc (i32.const 32768)))
-    (global.set $stringOffsets (call $alloc (i32.const 32768)))
+    (global.set $stringConstantOffsets (call $alloc (i32.const 32768)))
     (global.set $stringCount (i32.const 0))
-    (global.set $stringOffset (local.get $stringOffset))
+    (global.set $stringConstantOffset (local.get $stringConstantOffset))
     ;; Loop counter.
     (global.set $loopId (i32.const 1))
   )
