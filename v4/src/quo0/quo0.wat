@@ -608,7 +608,7 @@
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $token (call $nextToken (local.get $tokenValuePtr)))
 
-    (local.set $outputPtr (call $alloc (i32.const 8192)))
+    (local.set $outputPtr (call $alloc (i32.const 32768)))
     (if (i32.eq (local.get $token) (i32.const 123)) ;; {
       (then
         (block $loop_end
@@ -617,18 +617,18 @@
             (local.set $token (call $nextToken (local.get $tokenValuePtr)))
             (br_if $loop_end (i32.eq (local.get $token) (i32.const 125))) ;; }
             (global.set $inputPtr (local.get $origInputPtr))
-            (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
-            (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileStmt (local.get $indentLevel)))
-            (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
+            (call $strcat (local.get $outputPtr) (i32.const 32768) (call $indent (local.get $indentLevel)))
+            (call $strcat (local.get $outputPtr) (i32.const 32768) (call $compileStmt (local.get $indentLevel)))
+            (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730532))
             (br $loop)
           )
         )
       )
       (else
         (global.set $inputPtr (local.get $origInputPtr))
-        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $indent (local.get $indentLevel)))
-        (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileStmt (local.get $indentLevel)))
-        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
+        (call $strcat (local.get $outputPtr) (i32.const 32768) (call $indent (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 32768) (call $compileStmt (local.get $indentLevel)))
+        (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730532))
       )
     )
     (local.get $outputPtr)
@@ -645,11 +645,11 @@
     (local.set $tokenValuePtr (call $alloc (i32.const 128)))
     (local.set $namePtr (call $alloc (i32.const 128)))
 
-    (local.set $outputPtr (call $alloc (i32.const 8192)))
+    (local.set $outputPtr (call $alloc (i32.const 32768)))
     (call $expectToken (i32.const 4) (local.get $tokenValuePtr)) ;; fn
-    (call $strcpy (local.get $outputPtr) (i32.const 8192) (i32.const 15730692))
+    (call $strcpy (local.get $outputPtr) (i32.const 32768) (i32.const 15730692))
     (call $expectToken (i32.const 3) (local.get $namePtr)) ;; identifier
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $namePtr))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (local.get $namePtr))
 
     ;; Args
     (call $clearLocalVars)
@@ -662,9 +662,9 @@
       (loop $loop
         (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
         (call $addLocalVar (local.get $tokenValuePtr))
-        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730724))
-        (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $tokenValuePtr))
-        (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730500))
+        (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730724))
+        (call $strcat (local.get $outputPtr) (i32.const 32768) (local.get $tokenValuePtr))
+        (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730500))
         (local.set $token (call $nextToken (local.get $tokenValuePtr)))
         (br_if $loop_end (i32.eq (local.get $token) (i32.const 41))) ;; )
         (br_if $loop (i32.eq (local.get $token) (i32.const 44))) ;; ,
@@ -672,17 +672,17 @@
       )
     )
 
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730756))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730532))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730756))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730532))
 
     ;; Body
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (call $compileBlock (i32.const 2)))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15731620))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730820))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $namePtr))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730852))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (local.get $namePtr))
-    (call $strcat (local.get $outputPtr) (i32.const 8192) (i32.const 15730884))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (call $compileBlock (i32.const 2)))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15731620))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730820))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (local.get $namePtr))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730852))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (local.get $namePtr))
+    (call $strcat (local.get $outputPtr) (i32.const 32768) (i32.const 15730884))
 
     (call $clearLocalVars)
 

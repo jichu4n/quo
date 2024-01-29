@@ -1,6 +1,8 @@
 import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
+import {expectUsedChunks} from './memory.test';
+import {getWasmStr} from './strings.test';
 
-const stages = ['0'];
+const stages = ['0', '1a'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -12,11 +14,21 @@ async function compile(
   input: string
 ): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init} = fns;
+  const {init, strFlatten, cleanUp} = fns;
   const fn = fns[fnName];
   setWasmString(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
-  return getWasmString(wasmMemory, fn(...fnArgs));
+  const resultAddress = fn(...fnArgs);
+  let result: string;
+  if (stage === '0') {
+    result = getWasmString(wasmMemory, resultAddress);
+  } else {
+    strFlatten(resultAddress);
+    result = getWasmStr(wasmMemory, resultAddress);
+    cleanUp();
+    expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
+  }
+  return result;
 }
 
 type TestCase = [string, string | Array<string>];
@@ -32,44 +44,35 @@ for (const stage of stages) {
   const compileStmt = compile.bind(null, 'compileStmt', [0], stage);
   const compileBlock = compile.bind(null, 'compileBlock', [0], stage);
   const compileFn = compile.bind(null, 'compileFn', [], stage);
-
-  const testCompileStmt = async (testCases: TestCases) => {
+  const testCompile = (
+    compile: (input: string) => Promise<string>,
+    testCases: TestCases
+  ) => {
     for (const [input, expectedOutput] of testCases) {
-      expect(await compileStmt(input)).toStrictEqual(
-        expectedOutputToString(expectedOutput)
-      );
+      test(`compile '${input}'`, async () => {
+        expect(await compile(input)).toStrictEqual(
+          expectedOutputToString(expectedOutput)
+        );
+      });
     }
   };
-
-  const testCompileBlock = async (testCases: TestCases) => {
-    for (const [input, expectedOutput] of testCases) {
-      expect(await compileBlock(input)).toStrictEqual(
-        expectedOutputToString(expectedOutput)
-      );
-    }
-  };
-
-  const testCompileFn = async (testCases: TestCases) => {
-    for (const [input, expectedOutput] of testCases) {
-      expect(await compileFn(input)).toStrictEqual(
-        expectedOutputToString(expectedOutput)
-      );
-    }
-  };
+  const testCompileStmt = testCompile.bind(null, compileStmt);
+  const testCompileBlock = testCompile.bind(null, compileBlock);
+  const testCompileFn = testCompile.bind(null, compileFn);
 
   describe(`stage ${stage} compile stmt, block, & fn`, () => {
-    test('expr', async () => {
-      await testCompileStmt([['42;', '(drop (i32.const 42))']]);
+    describe('expr', () => {
+      testCompileStmt([['42;', '(drop (i32.const 42))']]);
     });
-    test('let', async () => {
-      await testCompileStmt([
+    describe('let', () => {
+      testCompileStmt([
         ['let x;', '(local $x i32)'],
         ['let x, y;', '(local $x i32) (local $y i32)'],
         ['let x, y, z;', '(local $x i32) (local $y i32) (local $z i32)'],
       ]);
     });
-    test('if', async () => {
-      await testCompileStmt([
+    describe('if', () => {
+      testCompileStmt([
         [
           'if (1) {}',
           `
@@ -79,11 +82,19 @@ for (const stage of stages) {
 )`.trim(),
         ],
         [
-          'if (1 > 0) { foo(); }',
+          'if (1 > 0) {}',
           `
 (if (i32.gt_s (i32.const 1) (i32.const 0))
   (then
-    (drop (call $foo))
+  )
+)`.trim(),
+        ],
+        [
+          'if (1 > 0) { 3; }',
+          `
+(if (i32.gt_s (i32.const 1) (i32.const 0))
+  (then
+    (drop (i32.const 3))
   )
 )`.trim(),
         ],
@@ -112,8 +123,8 @@ for (const stage of stages) {
         ],
       ]);
     });
-    test('while', async () => {
-      await testCompileStmt([
+    describe('while', () => {
+      testCompileStmt([
         [
           'while (1) {}',
           `
@@ -162,25 +173,33 @@ for (const stage of stages) {
         ],
       ]);
     });
-    test('return', async () => {
-      await testCompileStmt([
+    describe('return', () => {
+      testCompileStmt([
         ['return;', '(return (i32.const 0))'],
         ['return 0;', '(return (i32.const 0))'],
         ['return 10 * 5;', '(return (i32.mul (i32.const 10) (i32.const 5)))'],
       ]);
     });
-    test('block', async () => {
-      await testCompileBlock([
+    describe('block', () => {
+      testCompileBlock([
         ['{ }', ''],
         ['{ f(); }', '(drop (call $f))\n'],
         [
-          '{ let x; x = x + 1; }',
-          '(local $x i32)\n(local.set $x (i32.add (local.get $x) (i32.const 1)))\n',
+          '{ let x; x = x + 1; f(x); }',
+          `
+(local $x i32)
+(local.set $x (i32.add (local.get $x) (i32.const 1)))
+(drop (call $f (local.get $x)))
+`.trimStart(),
         ],
       ]);
     });
-    test('fn', async () => {
-      await testCompileFn([
+
+    if (stage !== '0') {
+      return;
+    }
+    describe('fn', () => {
+      testCompileFn([
         [
           'fn foo() {}',
           `

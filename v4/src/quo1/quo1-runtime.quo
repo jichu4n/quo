@@ -242,6 +242,9 @@ fn strMerge(str1, str2) {
   store(str1 + 0, str1Len + str2Len);
   return str1;
 }
+fn strPush(str1, str2) {
+  return strMerge(str1, strClone(str2));
+}
 fn strPushRaw(str1, str2) {
   let str1Len, str2Len, str1TailChunk, str1TailChunkSize, str1TailChunkLen, newChunk;
   str2Len = rawStrLen(str2);
@@ -273,7 +276,7 @@ fn strFromChar(c) {
   store8(chunk + 12, c);
   return str;
 }
-fn strPush(str1, c) {
+fn strPushChar(str1, c) {
   return strMerge(str1, strFromChar(c));
 }
 fn strPop(str) {
