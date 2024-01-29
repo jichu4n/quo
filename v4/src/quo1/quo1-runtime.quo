@@ -210,13 +210,13 @@ fn strMerge(str1, str2) {
     return str1;
   }
 
-  store(str1 + 0, str1Len + str2Len);
   // Special case: if str1 is empty but str2 isn't, take ownership of str2's
   // chunks.
   if (str1Len == 0) {
     str1TailChunk = load(str1 + 4);
     str2HeadChunk = load(str2 + 4);
     free(str1TailChunk);
+    store(str1 + 0, str1Len + str2Len);
     store(str1 + 4, str2HeadChunk);
     free(str2);
     return str1;
@@ -239,6 +239,7 @@ fn strMerge(str1, str2) {
     store(str1TailChunk + 8, str2HeadChunk);
     free(str2);
   }
+  store(str1 + 0, str1Len + str2Len);
   return str1;
 }
 fn strPushRaw(str1, str2) {
@@ -248,11 +249,11 @@ fn strPushRaw(str1, str2) {
     return str1;
   }
   str1Len = load(str1 + 0);
-  store(str1 + 0, str1Len + str2Len);
   str1TailChunk = strGetTailChunk(str1);
   str1TailChunkSize = load(str1TailChunk + 0);
   str1TailChunkLen = load(str1TailChunk + 4);
-  if (str1TailChunkLen + str2Len < str1TailChunkSize) {
+  store(str1 + 0, str1Len + str2Len);
+  if (str1TailChunkLen + str2Len <= str1TailChunkSize) {
     // Merge str2 into last str1TailChunk.
     store(str1TailChunk + 4, str1TailChunkLen + str2Len);
     memcpy(str1TailChunk + 12 + str1TailChunkLen, str2, str2Len);

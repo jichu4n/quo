@@ -41,12 +41,19 @@ function toRawStrChunk(buffer: Buffer, address: number): RawStrChunk {
   const chunkLen = buffer.readUInt32LE(address + 4);
   const dataStart = address + strChunkHeaderSize;
   const dataEnd = dataStart + chunkLen;
+  const data = buffer.toString('utf8', dataStart, dataEnd);
+  if (data.length !== chunkLen) {
+    throw new Error(
+      `String chunk length mismatch at address ${address}: ` +
+        `expected ${chunkLen}, actual length ${data.length}`
+    );
+  }
   return {
     address,
     size: buffer.readUInt32LE(address + 0),
     len: chunkLen,
     next: buffer.readUInt32LE(address + 8),
-    data: buffer.toString('utf8', dataStart, dataEnd),
+    data,
   };
 }
 
@@ -55,21 +62,37 @@ function getStr(memory: WebAssembly.Memory, address: number): Str {
   const header = toRawStrHeader(buffer, address);
   const chunks = [];
   let chunkAddress = header.next;
+  let chunkLenSum = 0;
   do {
     const chunk = toRawStrChunk(buffer, chunkAddress);
     chunks.push(chunk);
     chunkAddress = chunk.next;
+    chunkLenSum += chunk.len;
   } while (chunkAddress);
-  return {
+  const str = {
     len: header.len,
     chunks: chunks.map(({size, len, data}) => ({size, len, data})),
   };
+  if (str.len !== chunkLenSum) {
+    throw new Error(
+      `String length mismatch: header length ${str.len}, ` +
+        `sum of chunk lengths ${chunkLenSum}\n` +
+        `Chunks: ${JSON.stringify(str.chunks)}`
+    );
+  }
+  return str;
 }
 
 export function getWasmStr(memory: WebAssembly.Memory, address: number) {
-  return getStr(memory, address)
-    .chunks.map(({data}) => data)
-    .join('');
+  const str = getStr(memory, address);
+  const result = str.chunks.map(({data}) => data).join('');
+  if (result.length !== str.len) {
+    throw new Error(
+      `String length mismatch at address ${address}: ` +
+        `expected ${str.len}, actual length is ${result.length}`
+    );
+  }
+  return result;
 }
 
 for (const stage of stages) {
@@ -84,6 +107,7 @@ for (const stage of stages) {
       strToRaw,
       strMerge,
       strPushRaw,
+      strPushChar,
       strCmpRaw,
       strCmp,
     } = fns;
@@ -97,6 +121,7 @@ for (const stage of stages) {
       strToRaw,
       strMerge,
       strPushRaw,
+      strPushChar,
       strCmp,
       strCmpRaw,
       wasmMemory,
@@ -209,6 +234,18 @@ for (const stage of stages) {
         const str7 = strFromRaw(4096);
         strMerge(str6, str7);
         expect(getStr(wasmMemory, str6).chunks.length).toBeLessThanOrEqual(8);
+      }
+    });
+    test('push strings', async function () {
+      const {strNew, strPushRaw, wasmMemory} = await setup();
+      setWasmString(wasmMemory, 4096, 'A');
+      const str1 = strNew(0);
+      for (let i = 1; i <= 500; ++i) {
+        strPushRaw(str1, 4096);
+        expect(getStr(wasmMemory, str1)).toMatchObject({
+          len: i,
+        });
+        expect(getWasmStr(wasmMemory, str1)).toStrictEqual('A'.repeat(i));
       }
     });
     test('compare strings', async function () {

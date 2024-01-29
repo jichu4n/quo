@@ -67,10 +67,6 @@ for (const stage of stages) {
         ['!0', '(i32.eqz (i32.const 0))'],
       ]);
     });
-
-    if (stage !== '0') {
-      return;
-    }
     describe('compileExpr2', () => {
       testCompileExpr([
         ['1 * 2', '(i32.mul (i32.const 1) (i32.const 2))'],
@@ -79,8 +75,8 @@ for (const stage of stages) {
           '(i32.div_s (i32.mul (i32.div_s (i32.const 1) (i32.const 2)) (i32.const 3)) (i32.const 4))',
         ],
         [
-          '1 / (2 * (3 / 4))',
-          '(i32.div_s (i32.const 1) (i32.mul (i32.const 2) (i32.div_s (i32.const 3) (i32.const 4))))',
+          '1 / (2 * (3 % 4))',
+          '(i32.div_s (i32.const 1) (i32.mul (i32.const 2) (i32.rem_s (i32.const 3) (i32.const 4))))',
         ],
       ]);
     });
@@ -105,16 +101,32 @@ for (const stage of stages) {
           '(i32.ne (i32.add (i32.const 1) (i32.const 2)) (i32.mul (i32.const 2) (i32.const 2)))',
         ],
         [
-          '(1 == 2) > (0 <= 1)',
-          '(i32.gt_s (i32.eq (i32.const 1) (i32.const 2)) (i32.le_s (i32.const 0) (i32.const 1)))',
+          '(1 >= 2) > (0 <= 1)',
+          '(i32.gt_s (i32.ge_s (i32.const 1) (i32.const 2)) (i32.le_s (i32.const 0) (i32.const 1)))',
         ],
       ]);
     });
     describe('compileExpr5 and compileExpr6', () => {
       testCompileExpr([
         [
+          '1 == 2 || 3 == 4',
+          '(call $or (i32.eq (i32.const 1) (i32.const 2)) (i32.eq (i32.const 3) (i32.const 4)))',
+        ],
+        [
+          '1 == 2 || 3 == 4 && 5 == 6',
+          '(call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6))))',
+        ],
+        [
+          '1 || 3 == 4 && 5 == 6 || 7',
+          '(call $or (call $or (i32.const 1) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.const 7))',
+        ],
+        [
           '1 == 2 || 3 == 4 && 5 == 6 || 7 == 8',
           '(call $or (call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8)))',
+        ],
+        [
+          '1 == 2 || 3 == 4 && 5 == 6 || 7 == 8 || 9 == 10',
+          '(call $or (call $or (call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8))) (i32.eq (i32.const 9) (i32.const 10)))',
         ],
         [
           '!(1 == 2 && 3 >= 4)',
@@ -123,13 +135,15 @@ for (const stage of stages) {
       ]);
     });
 
-    test('expression too long', async () => {
-      expect(
-        (await compileExpr(stage, '1 + '.repeat(10) + '1')).length
-      ).toBeGreaterThan(0);
-      await expect(
-        compileExpr(stage, '1 + '.repeat(100) + '1')
-      ).rejects.toThrow();
-    });
+    if (stage === '0') {
+      test('expression too long', async () => {
+        expect(
+          (await compileExpr(stage, '1 + '.repeat(10) + '1')).length
+        ).toBeGreaterThan(0);
+        await expect(
+          compileExpr(stage, '1 + '.repeat(100) + '1')
+        ).rejects.toThrow();
+      });
+    }
   });
 }

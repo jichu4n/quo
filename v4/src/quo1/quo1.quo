@@ -147,8 +147,151 @@ fn compileExpr1() {
   strPushRaw(output, ")");
   return output;
 }
+fn compileExpr2() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr1();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 42) {  // *
+      outputPrefix = "(i32.mul ";
+    } else if (token == 47) {  // /
+      outputPrefix = "(i32.div_s ";
+    } else if (token == 37) {  // %
+      outputPrefix = "(i32.rem_s ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr1();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr3() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr2();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 43) {  // +
+      outputPrefix = "(i32.add ";
+    } else if (token == 45) {  // -
+      outputPrefix = "(i32.sub ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr2();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr4() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr3();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 189) {  // ==
+      outputPrefix = "(i32.eq ";
+    } else if (token == 161) {  // !=
+      outputPrefix = "(i32.ne ";
+    } else if (token == 62) {  // >
+      outputPrefix = "(i32.gt_s ";
+    } else if (token == 60) {  // <
+      outputPrefix = "(i32.lt_s ";
+    } else if (token == 190) {  // >=
+      outputPrefix = "(i32.ge_s ";
+    } else if (token == 188) {  // <=
+      outputPrefix = "(i32.le_s ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr3();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr5() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  let len1, len2, len3;
+  leftOutput = compileExpr4();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 166) {  // &&
+      outputPrefix = "(call $and ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr4();
+    output = strFromRaw(outputPrefix);
+    len1 = strLen(output);
+    len2 = strLen(leftOutput);
+    len3 = strLen(rightOutput);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    if (len1 + len2 + len3 + 2 != strLen(output)) {
+      throw("EEEEEEEEEEEEEEK");
+    }
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr6() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr5();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 252) {  // ||
+      outputPrefix = "(call $or ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr5();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
 fn compileExpr() {
-  return compileExpr1();
+  return compileExpr6();
 }
 fn expectToken(expectedToken, tokenValue) {
   let actualToken, output;
