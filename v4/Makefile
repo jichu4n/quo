@@ -4,18 +4,30 @@ export PATH := $(PATH):$(shell pwd)/node_modules/.bin
 all: quo1
 
 .PHONY: quo1
-quo1: dist/quo1b.wasm
+quo1: quo1c
+
+.PHONY: quo1c
+quo1c: dist/quo1c.wasm dist/quo1-runtime.quo
+
+dist/quo1c.wasm: quo1b
+	@echo "> Building stage 1c compiler using stage 1b compiler"
+	node dist/quo-driver.js 1b dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o dist/quo1c.wasm
+	diff <(sed '1d' dist/quo1b.wat) <(sed '1d' dist/quo1c.wat)
+
+.PHONY: quo1b
+quo1b: dist/quo1b.wasm dist/quo1-runtime.quo
 
 dist/quo1b.wasm: quo1a
 	@echo "> Building stage 1b compiler using stage 1a compiler"
 	node dist/quo-driver.js 1a dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o dist/quo1b.wasm
+	diff <(sed '1d' dist/quo1a.wat) <(sed '1d' dist/quo1b.wat)
 
 .PHONY: quo1a
 quo1a: dist/quo1a.wasm dist/quo1-runtime.quo
 
-dist/quo1a.wasm: quo0 src/quo1/quo1-runtime.quo src/quo1/quo1.quo
+dist/quo1a.wasm: quo0 dist/quo1-runtime.quo src/quo1/quo1.quo
 	@echo "> Building stage 1a compiler using stage 0 compiler"
-	node dist/quo-driver.js 0 dist/quo0-runtime.wat src/quo1/quo1-runtime.quo src/quo1/quo1.quo -o $@
+	node dist/quo-driver.js 0 dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o $@
 
 dist/quo1-runtime.quo: src/quo1/quo1-runtime.quo
 	cp -a $< $@

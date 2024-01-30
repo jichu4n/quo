@@ -8,8 +8,9 @@
   - Only data type is i32
   - No memory management
 - **Stage 1 ([quo1.quo](./src/quo1.quo)):** Written in Quo0 and compiles Quo0. It is effectively a translation of the stage 0 compiler into Quo0, with no additional language features added.
-  - `quo1a.wasm` is the result of compiling stage 1 compiler using stage 0 compiler
-  - `quo1b.wasm` is the result of compiling stage 1 compiler using itself
+  - `quo1a.wasm`: stage 1 compiler compiled by stage 0 compiler
+  - `quo1b.wasm`: stage 1 compiler compiled by `quo1a.wasm`
+  - `quo1c.wasm`: stage 1 compiler compiled by `quo1b.wasm`, i.e. fully self-hosted
   - Quality-of-life improvements in the compiler implementation:
     - Simple memory management malloc / free
     - Basic data structures like dynamic strings, arrays and maps

@@ -158,8 +158,8 @@ if (require.main === module) {
     .name('quo')
     .description('Quo compiler')
     .argument('<stage>', 'compiler stage, e.g. 0, 1a, 1b')
-    .argument('<input-files...>', 'Quo source files')
-    .option('-o, --output <output>', 'output WebAssembly (.wasm or .wat) file')
+    .argument('<input-files...>', 'Quo and WAT source files')
+    .option('-o, --output <output>', 'output WebAssembly (.wasm) file')
     .action(async (stage, inputFiles) => {
       const {output: outputFile} = program.opts();
       const {watOutputFile, wasmOutputFile} = await compileFiles(

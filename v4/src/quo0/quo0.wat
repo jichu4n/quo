@@ -716,6 +716,7 @@
         (if (i32.eq (local.get $token) (i32.const 5))
           (then
             (call $expectToken (i32.const 5) (local.get $tokenValuePtr)) ;; let
+            (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15729794))
             (block $let_loop_end
               (loop $let_loop
                 (call $expectToken (i32.const 3) (local.get $tokenValuePtr)) ;; identifier
@@ -725,12 +726,7 @@
                 (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15730980))
                 (local.set $token (call $nextToken (local.get $tokenValuePtr)))
                 (br_if $let_loop_end (i32.eq (local.get $token) (i32.const 59))) ;; ;
-                (if (i32.eq (local.get $token) (i32.const 44)) ;; ,
-                  (then
-                    (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15729794))
-                    (br $let_loop)
-                  )
-                )
+                (br_if $let_loop (i32.eq (local.get $token) (i32.const 44))) ;; ,
                 (throw $error (i32.const 15730436))
               )
             )
@@ -1378,7 +1374,7 @@
     "Expected fn or let\00"
   )
   (data (i32.const 15730948)
-    "  (global $\00"
+    " (global $\00"
   )
   (data (i32.const 15730980)
     " (mut i32) (i32.const 0))\00"
