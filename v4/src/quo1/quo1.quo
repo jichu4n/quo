@@ -477,9 +477,6 @@ fn compileStmt(indentLevel) {
     }
   }
 
-
-  // TODO: other statements.
-
   // Expression
   output = strFromRaw("(drop ");
   inputPtr = origInputPtr;
@@ -516,6 +513,64 @@ fn compileBlock(indentLevel) {
     strPushRaw(output, "\n");
   }
 
+  strDelete(tokenValue);
+  return output;
+}
+fn compileFn() {
+  let token, tokenValue, name, output, origInputPtr;
+
+  tokenValue = strNew(0);
+  expectToken(4, tokenValue);  // fn
+
+  output = strFromRaw("  (func $");
+  expectToken(3, tokenValue);
+  name = strClone(tokenValue);
+  strPush(output, name);
+
+  // Parameters
+  expectToken(40, tokenValue);  // (
+  dictClear(localVars, 0);
+  origInputPtr = inputPtr;
+  token = nextToken(tokenValue);
+  if (token != 41) {  // )
+    inputPtr = origInputPtr;
+    while (1) {
+      expectToken(3, tokenValue);  // identifier
+      addLocalVar(tokenValue);
+      strPushRaw(output, " (param $");
+      strPush(output, tokenValue);
+      strPushRaw(output, " i32)");
+      token = nextToken(tokenValue);
+      if (token == 41) {  // )
+        break;
+      } else if ( token == 44) {  // ,
+        // continue;
+      } else {
+        strClear(output);
+        strPushRaw(output, "Expected ',' or ')' after function parameter, got ");
+        strPushInt(output, token);
+        strPushRaw(output, " with value '");
+        strMerge(output, tokenValue);
+        strPushRaw(output, "'");
+        throw(strToRaw(output));
+      }
+    }
+  }
+
+  strPushRaw(output, " (result i32)\n");
+
+  // Body
+  strMerge(output, compileBlock(2));
+  strPushRaw(output, "    (i32.const 0)\n  )\n  (export ");
+  strPushChar(output, 34);  // "
+  strPush(output, name);
+  strPushChar(output, 34);  // "
+  strPushRaw(output, " (func $");
+  strPush(output, name);
+  strPushRaw(output, "))\n");
+  
+  dictClear(localVars, 0);
+  strDelete(name);
   strDelete(tokenValue);
   return output;
 }

@@ -384,16 +384,7 @@ fn arrNew(reserveLen) {
   return arr;
 }
 fn arrDelete(arr, shouldFreeValues) {
-  let len, data, i;
-  if (shouldFreeValues) {
-    len = load(arr + 4);
-    data = load(arr + 8);
-    i = 0;
-    while (i < len) {
-      free(load(data + i * 4));
-      i = i + 1;
-    }
-  }
+  arrClear(arr, shouldFreeValues);
   free(load(arr + 8));
   free(arr);
 }
@@ -420,7 +411,17 @@ fn arrPush(arr, elem) {
 fn arrLen(arr) {
   return load(arr + 4);
 }
-fn arrClear(arr) {
+fn arrClear(arr, shouldFreeValues) {
+  let len, data, i;
+  if (shouldFreeValues) {
+    len = load(arr + 4);
+    data = load(arr + 8);
+    i = 0;
+    while (i < len) {
+      free(load(data + i * 4));
+      i = i + 1;
+    }
+  }
   store(arr + 4, 0);
 }
 fn arrGet(arr, i) {
@@ -453,7 +454,7 @@ fn dictNew(reserveLen) {
   store(dict + 4, arrNew(reserveLen));
   return dict;
 }
-fn dictDelete(dict, shouldFreeValues) {
+fn dictClear(dict, shouldFreeValues) {
   let len, i, keys, values;
   keys = load(dict + 0);
   values = load(dict + 4);
@@ -463,16 +464,17 @@ fn dictDelete(dict, shouldFreeValues) {
     strDelete(arrGet(keys, i));
     i = i + 1;
   }
-  arrDelete(keys, 0);
-  arrDelete(values, shouldFreeValues);
-  free(dict);
+  arrClear(keys, 0);
+  arrClear(values, shouldFreeValues);
 }
-fn dictClear(dict) {
+fn dictDelete(dict, shouldFreeValues) {
   let keys, values;
   keys = load(dict + 0);
   values = load(dict + 4);
-  arrClear(keys);
-  arrClear(values);
+  dictClear(dict, shouldFreeValues);
+  arrDelete(keys, 0);
+  arrDelete(values, 0);
+  free(dict);
 }
 fn dictFind(dict, str) {
   let len, i, keys, values;

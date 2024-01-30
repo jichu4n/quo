@@ -194,10 +194,6 @@ for (const stage of stages) {
         ],
       ]);
     });
-
-    if (stage !== '0') {
-      return;
-    }
     describe('fn', () => {
       testCompileFn([
         [
