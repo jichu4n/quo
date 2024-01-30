@@ -2,7 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import {compileFiles} from '../quo-driver';
 
-const stages = ['0', '1a'];
+const stages = ['0', '1a', '1b', '1c'];
 
 function getTestInputFiles() {
   const testDir = path.join(__dirname, '..', '..', 'src', 'tests', 'testdata');

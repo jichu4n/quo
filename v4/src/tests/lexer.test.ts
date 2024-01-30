@@ -1,8 +1,8 @@
-import {getWasmString, loadQuoWasmModule, setWasmString} from '../quo-driver';
+import {getRawStr, loadQuoWasmModule, setRawStr} from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
-import {getWasmStr} from './strings.test';
+import {getStr} from './strings.test';
 
-const stages = ['0', '1a'];
+const stages = ['0', '1a', '1b', '1c'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -19,7 +19,7 @@ export async function tokenize(
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, nextToken, strNew, cleanUp} = fns;
 
-  setWasmString(wasmMemory, 0, input);
+  setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
   let tokenValueAddress;
   if (stage === '0') {
@@ -37,8 +37,8 @@ export async function tokenize(
         : {
             value:
               stage === '0'
-                ? getWasmString(wasmMemory, tokenValueAddress)
-                : getWasmStr(wasmMemory, tokenValueAddress),
+                ? getRawStr(wasmMemory, tokenValueAddress)
+                : getStr(wasmMemory, tokenValueAddress),
           }),
     };
     tokens.push(token);

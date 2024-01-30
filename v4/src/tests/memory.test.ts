@@ -1,6 +1,6 @@
 import {loadQuoWasmModule} from '../quo-driver';
 
-const stages = ['1a'];
+const stages = ['1a', '1b', '1c'];
 
 const heapStart = 32;
 const heapEnd = 1024;

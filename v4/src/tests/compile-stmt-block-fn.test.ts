@@ -1,8 +1,8 @@
-import {getWasmString, setWasmString, loadQuoWasmModule} from '../quo-driver';
+import {getRawStr, setRawStr, loadQuoWasmModule} from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
-import {getWasmStr} from './strings.test';
+import {getStr} from './strings.test';
 
-const stages = ['0', '1a'];
+const stages = ['0', '1a', '1b', '1c'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -16,15 +16,15 @@ async function compile(
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, strFlatten, cleanUp} = fns;
   const fn = fns[fnName];
-  setWasmString(wasmMemory, 0, input);
+  setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
   const resultAddress = fn(...fnArgs);
   let result: string;
   if (stage === '0') {
-    result = getWasmString(wasmMemory, resultAddress);
+    result = getRawStr(wasmMemory, resultAddress);
   } else {
     strFlatten(resultAddress);
-    result = getWasmStr(wasmMemory, resultAddress);
+    result = getStr(wasmMemory, resultAddress);
     cleanUp();
     expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
   }

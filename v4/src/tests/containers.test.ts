@@ -1,7 +1,7 @@
-import {setWasmString, loadQuoWasmModule} from '../quo-driver';
+import {setRawStr, loadQuoWasmModule} from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
 
-const stages = ['1a'];
+const stages = ['1a', '1b', '1c'];
 
 const heapStart = 32;
 const heapEnd = 2048;
@@ -141,10 +141,10 @@ for (const stage of stages) {
       const dict = dictNew(0);
       expectUsedChunks(wasmMemory, heapStart, 5); // dict header, 2x array headers, 2x array data
 
-      setWasmString(wasmMemory, 4096, 'foo');
+      setRawStr(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
       const str2 = strFromRaw(4096);
-      setWasmString(wasmMemory, 4096 + 10, 'bar');
+      setRawStr(wasmMemory, 4096 + 10, 'bar');
       const str3 = strFromRaw(4096 + 10);
 
       expect(dictFind(dict, str1)).toStrictEqual(-1);

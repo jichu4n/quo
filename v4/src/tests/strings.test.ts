@@ -1,17 +1,11 @@
-import {setWasmString, loadQuoWasmModule} from '../quo-driver';
+import {setRawStr, loadQuoWasmModule} from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
 
-const stages = ['1a'];
+const stages = ['1a', '1b', '1c'];
 
 const heapStart = 32;
 const heapEnd = 2048;
 const strChunkHeaderSize = 12;
-
-interface RawStrHeader {
-  address: number;
-  len: number;
-  next: number;
-}
 
 interface StrChunk {
   size: number;
@@ -19,25 +13,12 @@ interface StrChunk {
   data: string;
 }
 
-interface RawStrChunk extends StrChunk {
-  address: number;
-  next: number;
-}
-
-interface Str {
+interface StrObject {
   len: number;
   chunks: Array<StrChunk>;
 }
 
-function toRawStrHeader(buffer: Buffer, address: number): RawStrHeader {
-  return {
-    address,
-    len: buffer.readUInt32LE(address + 0),
-    next: buffer.readUInt32LE(address + 4),
-  };
-}
-
-function toRawStrChunk(buffer: Buffer, address: number): RawStrChunk {
+function toRawStrChunk(buffer: Buffer, address: number): [StrChunk, number] {
   const chunkLen = buffer.readUInt32LE(address + 4);
   const dataStart = address + strChunkHeaderSize;
   const dataEnd = dataStart + chunkLen;
@@ -48,25 +29,29 @@ function toRawStrChunk(buffer: Buffer, address: number): RawStrChunk {
         `expected ${chunkLen}, actual length ${data.length}`
     );
   }
-  return {
-    address,
-    size: buffer.readUInt32LE(address + 0),
-    len: chunkLen,
-    next: buffer.readUInt32LE(address + 8),
-    data,
-  };
+  return [
+    {
+      size: buffer.readUInt32LE(address + 0),
+      len: chunkLen,
+      data,
+    },
+    buffer.readUInt32LE(address + 8),
+  ];
 }
 
-function getStr(memory: WebAssembly.Memory, address: number): Str {
+function getStrObject(memory: WebAssembly.Memory, address: number): StrObject {
   const buffer = Buffer.from(memory.buffer);
-  const header = toRawStrHeader(buffer, address);
+  const header = {
+    len: buffer.readUInt32LE(address + 0),
+    next: buffer.readUInt32LE(address + 4),
+  };
   const chunks = [];
   let chunkAddress = header.next;
   let chunkLenSum = 0;
   do {
-    const chunk = toRawStrChunk(buffer, chunkAddress);
+    const [chunk, next] = toRawStrChunk(buffer, chunkAddress);
     chunks.push(chunk);
-    chunkAddress = chunk.next;
+    chunkAddress = next;
     chunkLenSum += chunk.len;
   } while (chunkAddress);
   const str = {
@@ -83,8 +68,8 @@ function getStr(memory: WebAssembly.Memory, address: number): Str {
   return str;
 }
 
-export function getWasmStr(memory: WebAssembly.Memory, address: number) {
-  const str = getStr(memory, address);
+export function getStr(memory: WebAssembly.Memory, address: number) {
+  const str = getStrObject(memory, address);
   const result = str.chunks.map(({data}) => data).join('');
   if (result.length !== str.len) {
     throw new Error(
@@ -133,7 +118,7 @@ for (const stage of stages) {
       const {strNew, strDelete, wasmMemory} = await setup();
       expectUsedChunks(wasmMemory, heapStart, 0);
       const str1 = strNew(0);
-      expect(getStr(wasmMemory, str1)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str1)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
@@ -141,7 +126,7 @@ for (const stage of stages) {
       strDelete(str1);
       expectUsedChunks(wasmMemory, heapStart, 0);
       const str2 = strNew(0);
-      expect(getStr(wasmMemory, str2)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str2)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
@@ -151,10 +136,10 @@ for (const stage of stages) {
     test('create and free string from raw string', async function () {
       const {strFromRaw, strDelete, wasmMemory} = await setup();
       expectUsedChunks(wasmMemory, heapStart, 0);
-      setWasmString(wasmMemory, 4096, 'foo');
+      setRawStr(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
       expectUsedChunks(wasmMemory, heapStart, 2);
-      expect(getStr(wasmMemory, str1)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str1)).toStrictEqual({
         len: 3,
         chunks: [{size: 32, len: 3, data: 'foo'}],
       });
@@ -163,7 +148,7 @@ for (const stage of stages) {
 
       const str2 = strFromRaw(4096 + 10); // nothing there
       expectUsedChunks(wasmMemory, heapStart, 2);
-      expect(getStr(wasmMemory, str2)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str2)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
@@ -175,19 +160,19 @@ for (const stage of stages) {
         await setup();
 
       const str0 = strNew(0);
-      setWasmString(wasmMemory, 4096, 'foo');
+      setRawStr(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
-      setWasmString(wasmMemory, 4096 + 10, 'bar');
+      setRawStr(wasmMemory, 4096 + 10, 'bar');
       const str2 = strFromRaw(4096 + 10);
       // Empty + non-empty
       strMerge(str0, str1);
-      expect(getStr(wasmMemory, str0)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str0)).toStrictEqual({
         len: 3,
         chunks: [{size: 32, len: 3, data: 'foo'}],
       });
       // Non-empty + non-empty, but enough space in first string
       strMerge(str0, str2);
-      expect(getStr(wasmMemory, str0)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str0)).toStrictEqual({
         len: 6,
         chunks: [{size: 32, len: 6, data: 'foobar'}],
       });
@@ -197,24 +182,24 @@ for (const stage of stages) {
       const str4 = strNew(0);
       // Empty + empty
       strMerge(str3, str4);
-      expect(getStr(wasmMemory, str3)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str3)).toStrictEqual({
         len: 0,
         chunks: [{size: 32, len: 0, data: ''}],
       });
       // Non-empty + empty
       strMerge(str0, str3);
-      expect(getStr(wasmMemory, str0)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str0)).toStrictEqual({
         len: 6,
         chunks: [{size: 32, len: 6, data: 'foobar'}],
       });
       expectUsedChunks(wasmMemory, heapStart, 2);
 
       // Non-empty + large non-empt
-      setWasmString(wasmMemory, 4096 + 20, 'a'.repeat(100));
+      setRawStr(wasmMemory, 4096 + 20, 'a'.repeat(100));
       const str5 = strFromRaw(4096 + 20);
       expectUsedChunks(wasmMemory, heapStart, 4);
       strMerge(str0, str5);
-      expect(getStr(wasmMemory, str0)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str0)).toStrictEqual({
         len: 106,
         chunks: [
           {size: 32, len: 6, data: 'foobar'},
@@ -222,7 +207,7 @@ for (const stage of stages) {
         ],
       });
       strFlatten(str0);
-      expect(getStr(wasmMemory, str0)).toStrictEqual({
+      expect(getStrObject(wasmMemory, str0)).toStrictEqual({
         len: 106,
         chunks: [{size: 108, len: 106, data: 'foobar' + 'a'.repeat(100)}],
       });
@@ -233,33 +218,35 @@ for (const stage of stages) {
       for (let i = 0; i < 150; ++i) {
         const str7 = strFromRaw(4096);
         strMerge(str6, str7);
-        expect(getStr(wasmMemory, str6).chunks.length).toBeLessThanOrEqual(8);
+        expect(
+          getStrObject(wasmMemory, str6).chunks.length
+        ).toBeLessThanOrEqual(8);
       }
     });
     test('push strings', async function () {
       const {strNew, strPushRaw, wasmMemory} = await setup();
-      setWasmString(wasmMemory, 4096, 'A');
+      setRawStr(wasmMemory, 4096, 'A');
       const str1 = strNew(0);
       for (let i = 1; i <= 500; ++i) {
         strPushRaw(str1, 4096);
-        expect(getStr(wasmMemory, str1)).toMatchObject({
+        expect(getStrObject(wasmMemory, str1)).toMatchObject({
           len: i,
         });
-        expect(getWasmStr(wasmMemory, str1)).toStrictEqual('A'.repeat(i));
+        expect(getStr(wasmMemory, str1)).toStrictEqual('A'.repeat(i));
       }
     });
     test('compare strings', async function () {
       const {strNew, strPushRaw, strFromRaw, strCmp, strCmpRaw, wasmMemory} =
         await setup();
       // Basic strings.
-      setWasmString(wasmMemory, 4096, 'foo');
+      setRawStr(wasmMemory, 4096, 'foo');
       const str1 = strFromRaw(4096);
       const str2 = strFromRaw(4096);
       expect(strCmp(str1, str1)).toStrictEqual(0);
       expect(strCmpRaw(str1, 4096)).toStrictEqual(0);
       expect(strCmp(str1, str2)).toStrictEqual(0);
 
-      setWasmString(wasmMemory, 4096, 'foobar');
+      setRawStr(wasmMemory, 4096, 'foobar');
       const str3 = strFromRaw(4096);
       expect(strCmp(str1, str3)).toBeLessThan(0);
       expect(strCmp(str3, str1)).toBeGreaterThan(0);
@@ -272,9 +259,9 @@ for (const stage of stages) {
       expect(strCmp(strNew(0), strNew(0))).toStrictEqual(0);
 
       // 1 chunk vs 2 chunks.
-      setWasmString(wasmMemory, 4096 + 10, 'foobar' + 'a'.repeat(100));
+      setRawStr(wasmMemory, 4096 + 10, 'foobar' + 'a'.repeat(100));
       strPushRaw(str3, 4096 + 10 + 6);
-      expect(getStr(wasmMemory, str3).chunks.length).toStrictEqual(2); // 'foobar' + 'a'.repeat(100)
+      expect(getStrObject(wasmMemory, str3).chunks.length).toStrictEqual(2); // 'foobar' + 'a'.repeat(100)
       expect(strCmp(str3, strFromRaw(4096 + 10))).toStrictEqual(0);
     });
   });

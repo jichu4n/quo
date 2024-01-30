@@ -1,13 +1,13 @@
 import {
   defaultHeapEnd,
-  getWasmString,
+  getRawStr,
   loadQuoWasmModule,
-  setWasmString,
+  setRawStr,
 } from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
-import {getWasmStr} from './strings.test';
+import {getStr} from './strings.test';
 
-const stages = ['0', '1a'];
+const stages = ['0', '1a', '1b', '1c'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -15,15 +15,15 @@ const heapEnd = 15 * 1024 * 1024;
 async function compileExpr(stage: string, input: string): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, compileExpr, cleanUp, strFlatten} = fns;
-  setWasmString(wasmMemory, 0, input);
+  setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
   const resultAddress = compileExpr();
   let result: string;
   if (stage === '0') {
-    result = getWasmString(wasmMemory, resultAddress);
+    result = getRawStr(wasmMemory, resultAddress);
   } else {
     strFlatten(resultAddress);
-    result = getWasmStr(wasmMemory, resultAddress);
+    result = getStr(wasmMemory, resultAddress);
     cleanUp();
     expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
   }

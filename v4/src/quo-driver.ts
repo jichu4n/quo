@@ -8,13 +8,13 @@ export const defaultHeapEnd = 15 * 1024 * 1024;
 // Size of all string literals per source file.
 const defaultStringConstantsSize = 32 * 1024;
 
-export function getWasmString(memory: WebAssembly.Memory, ptr: number) {
+export function getRawStr(memory: WebAssembly.Memory, ptr: number) {
   const bytes = new Uint8Array(memory.buffer, ptr);
   const len = bytes.findIndex((byte) => byte === 0);
   return new TextDecoder().decode(new Uint8Array(memory.buffer, ptr, len));
 }
 
-export function setWasmString(
+export function setRawStr(
   memory: WebAssembly.Memory,
   ptr: number,
   str: string
@@ -36,7 +36,7 @@ export async function loadQuoWasmModule(stage: string) {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
     debug: {
       puts(ptr: number): number {
-        console.log(getWasmString(wasmMemory, ptr));
+        console.log(getRawStr(wasmMemory, ptr));
         return 0;
       },
       putn(n: number): number {
@@ -59,7 +59,7 @@ export async function loadQuoWasmModule(stage: string) {
 export class WebAssemblyError extends Error {
   constructor(wasmMemory: WebAssembly.Memory, e: unknown) {
     if (e instanceof WebAssembly.Exception && e.is(wasmExceptionTag)) {
-      super(getWasmString(wasmMemory, e.getArg(wasmExceptionTag, 0)));
+      super(getRawStr(wasmMemory, e.getArg(wasmExceptionTag, 0)));
     } else if (e instanceof Error) {
       super(e.message);
       this.stack = e.stack;
@@ -90,10 +90,10 @@ export async function compileModule(
 ): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
   const {init, compileModule} = fns;
-  const len = setWasmString(wasmMemory, 0, input);
+  const len = setRawStr(wasmMemory, 0, input);
   const heapStart = ((len + 3) >> 2) << 2;
   init(0, heapStart, heapEnd);
-  return getWasmString(wasmMemory, compileModule());
+  return getRawStr(wasmMemory, compileModule());
 }
 
 export async function compileFiles(
@@ -168,9 +168,7 @@ if (require.main === module) {
         outputFile
       );
       console.log(`-> ${watOutputFile}`);
-      if (wasmOutputFile) {
-        console.log(`-> ${wasmOutputFile}`);
-      }
+      console.log(`-> ${wasmOutputFile}`);
     });
   program.parse(process.argv);
 }
