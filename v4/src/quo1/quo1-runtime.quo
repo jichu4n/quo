@@ -525,6 +525,21 @@ fn dictSetRaw(dict, rawKey, v, shouldFreeOldValue) {
   dictSet(dict, key, v, shouldFreeOldValue);
   strDelete(key);
 }
+fn dictLen(dict) {
+  let keys;
+  keys = load(dict + 0);
+  return arrLen(keys);
+}
+fn dictGetKeyAt(dict, i) {
+  let keys;
+  keys = load(dict + 0);
+  return arrGet(keys, i);
+}
+fn dictGetValueAt(dict, i) {
+  let values;
+  values = load(dict + 4);
+  return arrGet(values, i);
+}
 
 
 // Raw (i.e., C-style, null terminated) strings.

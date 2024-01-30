@@ -574,7 +574,87 @@ fn compileFn() {
   strDelete(tokenValue);
   return output;
 }
+// Entry point.
+fn compileModule() {
+  let output, token, tokenValue, stringConstantsLen, i, rawOutput;
 
+  output = strNew(0);
+  tokenValue = strNew(0);
+  dictClear(globalVars, 0);
+
+  // Main body.
+  while (1) {
+    token = peekNextToken(tokenValue);
+
+    if (token == 0) {
+      break;
+    }
+
+    // Fn
+    if (token == 4) {
+      strMerge(output, compileFn());
+      continue;
+    }
+
+    // Let
+    if (token == 5) {
+      expectToken(5, tokenValue);  // identifier
+      strPushRaw(output, " ");
+      while (1) {
+        expectToken(3, tokenValue);  // identifier
+        addGlobalVar(tokenValue);
+        strPushRaw(output, " (global $");
+        strPush(output, tokenValue);
+        strPushRaw(output, " (mut i32) (i32.const 0))");
+        token = nextToken(tokenValue);
+        if (token == 59) {  // ;
+          break;
+        } else if (token == 44) {  // ,
+          // continue;
+        } else {
+          strClear(output);
+          strPushRaw(output, "Expected ',' or ';' in global let statement, got ");
+          strPushInt(output, token);
+          strPushRaw(output, " with value '");
+          strMerge(output, tokenValue);
+          strPushRaw(output, "'");
+          throw(strToRaw(output));
+        }
+      }
+      strPushRaw(output, "\n");
+      continue;
+    }
+
+    strClear(output);
+    strPushRaw(output, "Expected fn or let at module level, got ");
+    strPushInt(output, token);
+    strPushRaw(output, " with value '");
+    strMerge(output, tokenValue);
+    strPushRaw(output, "'");
+    throw(strToRaw(output));
+  }
+
+  // String constants
+  stringConstantsLen = dictLen(stringConstantOffsets);
+  i = 0;
+  while (i < stringConstantsLen) {
+    strPushRaw(output, "  (data (i32.const ");
+    strPushInt(output, dictGetValueAt(stringConstantOffsets, i));
+    strPushRaw(output, ") ");
+    strPushChar(output, 34);  // "
+    strPush(output, dictGetKeyAt(stringConstantOffsets, i));
+    strPushRaw(output, "\\00");
+    strPushChar(output, 34);  // "
+    strPushRaw(output, ")\n");
+    i = i + 1;
+  }
+
+  dictClear(globalVars, 0);
+  strDelete(tokenValue);
+  rawOutput = strToRaw(output);
+  free(output);
+  return rawOutput;
+}
 
 // Lexer.
 //
@@ -748,11 +828,6 @@ fn strchr(rawStr, c) {
   }
 }
 
-
-// Entry point.
-fn compileModule() {
-  return "  ;; placeholder";
-}
 fn indent(indentLevel) {
   let str, i;
   str = strNew(indentLevel * 2);
