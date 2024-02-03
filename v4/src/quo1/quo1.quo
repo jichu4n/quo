@@ -9,10 +9,10 @@ fn symbolsInit(stringConstantOffset) {
   loopId = 1;
 }
 fn symbolsCleanUp() {
-  dictDelete(globalVars, 0);
-  dictDelete(localVars, 0);
-  dictDelete(fns, 0);
-  dictDelete(stringConstantOffsets, 0);
+  dictDelete(globalVars);
+  dictDelete(localVars);
+  dictDelete(fns);
+  dictDelete(stringConstantOffsets);
   nextStringConstantOffset = 0;
   loopId = 0;
 }
@@ -529,7 +529,7 @@ fn compileFn() {
 
   // Parameters
   expectToken(40, tokenValue);  // (
-  dictClear(localVars, 0);
+  dictClear(localVars);
   origInputPtr = inputPtr;
   token = nextToken(tokenValue);
   if (token != 41) {  // )
@@ -569,7 +569,7 @@ fn compileFn() {
   strPush(output, name);
   strPushRaw(output, "))\n");
   
-  dictClear(localVars, 0);
+  dictClear(localVars);
   strDelete(name);
   strDelete(tokenValue);
   return output;
@@ -580,7 +580,7 @@ fn compileModule() {
 
   output = strNew(0);
   tokenValue = strNew(0);
-  dictClear(globalVars, 0);
+  dictClear(globalVars);
 
   // Main body.
   while (1) {
@@ -649,7 +649,7 @@ fn compileModule() {
     i = i + 1;
   }
 
-  dictClear(globalVars, 0);
+  dictClear(globalVars);
   strDelete(tokenValue);
   rawOutput = strToRaw(output);
   free(output);
@@ -696,8 +696,8 @@ fn lexerInit(input) {
   dictSetRaw(twoCharOperators, "||", 1, 0);
 }
 fn lexerCleanUp() {
-  dictDelete(keywords, 0);
-  dictDelete(twoCharOperators, 0);
+  dictDelete(keywords);
+  dictDelete(twoCharOperators);
 }
 fn nextToken(tokenValue) {
   let c, c2;

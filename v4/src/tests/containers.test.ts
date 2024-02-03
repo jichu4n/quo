@@ -87,7 +87,7 @@ for (const stage of stages) {
         });
       }
       expectUsedChunks(wasmMemory, heapStart, 2);
-      arrDelete(arr, 0);
+      arrDelete(arr);
       expectUsedChunks(wasmMemory, heapStart, 0);
     });
     test('array get and set', async function () {
@@ -112,7 +112,7 @@ for (const stage of stages) {
         expect(arrGet(arr, i)).toStrictEqual(i * 2);
       }
 
-      arrDelete(arr, 0);
+      arrDelete(arr);
       expectUsedChunks(wasmMemory, heapStart, 0);
     });
     test('array free values', async function () {
@@ -123,8 +123,8 @@ for (const stage of stages) {
         arrPush(arr, malloc(1));
       }
       expectUsedChunks(wasmMemory, heapStart, 2 + 10);
-      arrDelete(arr, 1);
-      expectUsedChunks(wasmMemory, heapStart, 0);
+      arrDelete(arr);
+      expectUsedChunks(wasmMemory, heapStart, 10);
     });
     test('dict set and get', async function () {
       const {

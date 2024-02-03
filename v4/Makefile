@@ -1,7 +1,17 @@
 export PATH := $(PATH):$(shell pwd)/node_modules/.bin
 
 .PHONY: all
-all: quo1
+all: quo2
+
+.PHONY: quo2
+quo2: quo2a
+
+.PHONY: quo2a
+quo2a: dist/quo2a.wasm
+
+dist/quo2a.wasm: quo1 src/quo2/quo2.quo
+	@echo "> Building stage 2a compiler using stage 1c compiler"
+	node dist/quo-driver.js 1c dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo2/quo2.quo -o $@
 
 .PHONY: quo1
 quo1: quo1c
@@ -11,14 +21,14 @@ quo1c: dist/quo1c.wasm dist/quo1-runtime.quo
 
 dist/quo1c.wasm: quo1b
 	@echo "> Building stage 1c compiler using stage 1b compiler"
-	node dist/quo-driver.js 1b dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o dist/quo1c.wasm
+	node dist/quo-driver.js 1b dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o $@
 
 .PHONY: quo1b
 quo1b: dist/quo1b.wasm dist/quo1-runtime.quo
 
 dist/quo1b.wasm: quo1a
 	@echo "> Building stage 1b compiler using stage 1a compiler"
-	node dist/quo-driver.js 1a dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o dist/quo1b.wasm
+	node dist/quo-driver.js 1a dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo1/quo1.quo -o $@
 
 .PHONY: quo1a
 quo1a: dist/quo1a.wasm dist/quo1-runtime.quo
