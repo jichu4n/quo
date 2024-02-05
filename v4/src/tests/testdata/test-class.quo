@@ -1,0 +1,8 @@
+class Point {
+  x;
+  y;
+}
+class Segment {
+  p1: Point;
+  p2: Point;
+}

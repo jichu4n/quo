@@ -8,7 +8,16 @@ import {
 } from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
 
-const stages = ['0', '1a', '1b', '1c'];
+interface TestInputFile {
+  name: string;
+  stages: Array<string>;
+}
+const testInputFiles: Array<TestInputFile> = [
+  {name: 'test1', stages: ['0', '1a', '1b', '1c']},
+  {name: 'test-class', stages: ['2a']},
+];
+
+const stages = ['0', '1a', '1b', '1c', '2a'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -26,12 +35,16 @@ async function compileModule(stage: string, input: string): Promise<string> {
   return result;
 }
 
-function getTestInputFiles() {
-  const testDir = path.join(__dirname, '..', '..', 'src', 'tests', 'testdata');
-  return fs
-    .readdirSync(testDir)
-    .filter((file) => file.endsWith('.quo'))
-    .map((file) => path.join(testDir, file));
+function getTestInputFilePath(name: string) {
+  return path.join(
+    __dirname,
+    '..',
+    '..',
+    'src',
+    'tests',
+    'testdata',
+    `${name}.quo`
+  );
 }
 
 for (const stage of stages) {
@@ -62,14 +75,18 @@ for (const stage of stages) {
       ]);
     });
 
-    for (const inputFile of getTestInputFiles()) {
+    for (const inputFile of testInputFiles) {
+      if (!inputFile.stages.includes(stage)) {
+        continue;
+      }
       test(`compile ${inputFile}`, async () => {
+        const inputFilePath = getTestInputFilePath(inputFile.name);
         const outputFile = path.format({
-          ...path.parse(inputFile),
+          ...path.parse(inputFilePath),
           base: '',
           ext: `.stage${stage}.wasm`,
         });
-        await compileFiles(stage, [inputFile], outputFile);
+        await compileFiles(stage, [inputFilePath], outputFile);
       });
     }
   });

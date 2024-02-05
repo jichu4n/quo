@@ -141,6 +141,9 @@ ${watOutputs.join('\n')}
   await fs.writeFile(watOutputFile, watModule);
   const wasmModule = (await wabt()).parseWat(watOutputFile, watModule, {
     exceptions: true,
+    gc: true,
+    reference_types: true,
+    function_references: true,
   });
   const wasmOutputFile =
     outputFile ||

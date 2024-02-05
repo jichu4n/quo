@@ -1,0 +1,898 @@
+// Symbol tables.
+let globalVars, localVars, fns, stringConstantOffsets, nextStringConstantOffset, loopId;
+fn symbolsInit(stringConstantOffset) {
+  globalVars = dictNew(0);
+  localVars = dictNew(0);
+  fns = dictNew(0);
+  stringConstantOffsets = dictNew(0);
+  nextStringConstantOffset = stringConstantOffset;
+  loopId = 1;
+}
+fn symbolsCleanUp() {
+  dictDelete(globalVars);
+  dictDelete(localVars);
+  dictDelete(fns);
+  dictDelete(stringConstantOffsets);
+  nextStringConstantOffset = 0;
+  loopId = 0;
+}
+fn addGlobalVar(name) {
+  dictSet(globalVars, name, 1, 0);
+}
+fn isGlobalVar(name) {
+  return dictFind(globalVars, name) >= 0;
+}
+fn addLocalVar(name) {
+  dictSet(localVars, name, 1, 0);
+}
+fn isLocalVar(name) {
+  return dictFind(localVars, name) >= 0;
+}
+fn getOrAddStringConstantOffset(str) {
+  let offset;
+  offset = dictGet(stringConstantOffsets, str);
+  if (offset) {
+    return offset;
+  }
+  offset = nextStringConstantOffset;
+  dictSet(stringConstantOffsets, str, offset, 0);
+  nextStringConstantOffset = nextStringConstantOffset + strLen(str) + 1;
+  return offset;
+}
+
+// Pointer to next char in input string.
+let inputPtr;
+
+
+// Compile expressions.
+fn compileExpr0() {
+  let token, tokenValue, token2, tokenValue2, output, origInputPtr, outputPrefix;
+
+  tokenValue = strNew(0);
+  token = nextToken(tokenValue);
+
+  // Number literal
+  if (token == 1) {
+    output = strFromRaw("(i32.const ");
+    strMerge(output, tokenValue);
+    strPushRaw(output, ")");
+    return output;
+  }
+
+  // String literal
+  if (token == 2) {
+    output = strFromRaw("(i32.const ");
+    strPushInt(output, getOrAddStringConstantOffset(tokenValue));
+    strDelete(tokenValue);
+    strPushRaw(output, ")");
+    return output;
+  }
+
+  // Parenthesis
+  if (token == 40) {
+    output = compileExpr();
+    expectToken(41, tokenValue);
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // Identifier or function call
+  if (token == 3) {
+    origInputPtr = inputPtr;
+    tokenValue2 = strNew(0);
+    token2 = nextToken(tokenValue2);
+    if (token2 == 40) {  // (
+      // Function call
+      output = strFromRaw("(call $");
+      strMerge(output, tokenValue);
+      origInputPtr = inputPtr;
+      token2 = nextToken(tokenValue2);
+      if (token2 != 41)  {  // )
+        inputPtr = origInputPtr;
+        while (1) {
+          strPushRaw(output, " ");
+          strMerge(output, compileExpr());
+          token2 = nextToken(tokenValue2);
+          if (token2 == 41) {  // close parenthesis
+            break;
+          } else if (token2 == 44) { // ,
+            // Do nothing
+          } else {
+            throw("Expected ',' or ')' after function call argument");
+          }
+        }
+      }
+      strPushRaw(output, ")");
+    } else {
+      // Identifier
+      inputPtr = origInputPtr;
+      if (isLocalVar(tokenValue)) {
+        outputPrefix = "(local.get $";
+      } else if (isGlobalVar(tokenValue)) {
+        outputPrefix = "(global.get $";
+      } else {
+        output = strFromRaw("Undeclared variable '");
+        strMerge(output, tokenValue);
+        strPushRaw(output, "' in expression");
+        throw(strToRaw(output));
+      }
+      output = strFromRaw(outputPrefix);
+      strMerge(output, tokenValue);
+      strPushRaw(output, ")");
+    }
+    strDelete(tokenValue2);
+    return output;
+  }
+
+  output = strFromRaw("Expected expression, got token type ");
+  strPushInt(output, token);
+  strPushRaw(output, " with value '");
+  strMerge(output, tokenValue);
+  strPushRaw(output, "'");
+  throw(strToRaw(output));
+}
+fn compileExpr1() {
+  let token, tokenValue, output, rightOutput, origInputPtr, outputPrefix;
+  origInputPtr = inputPtr;
+  tokenValue = strNew(0);
+  token = nextToken(tokenValue);
+  strDelete(tokenValue);
+  if (token == 45) {  // -
+    outputPrefix = "(i32.neg ";
+  } else if (token == 33) {  // !
+    outputPrefix = "(i32.eqz ";
+  } else {
+    inputPtr = origInputPtr;
+    return compileExpr0();
+  }
+  output = strFromRaw(outputPrefix);
+  strMerge(output, compileExpr0());
+  strPushRaw(output, ")");
+  return output;
+}
+fn compileExpr2() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr1();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 42) {  // *
+      outputPrefix = "(i32.mul ";
+    } else if (token == 47) {  // /
+      outputPrefix = "(i32.div_s ";
+    } else if (token == 37) {  // %
+      outputPrefix = "(i32.rem_s ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr1();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr3() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr2();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 43) {  // +
+      outputPrefix = "(i32.add ";
+    } else if (token == 45) {  // -
+      outputPrefix = "(i32.sub ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr2();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr4() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr3();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 189) {  // ==
+      outputPrefix = "(i32.eq ";
+    } else if (token == 161) {  // !=
+      outputPrefix = "(i32.ne ";
+    } else if (token == 62) {  // >
+      outputPrefix = "(i32.gt_s ";
+    } else if (token == 60) {  // <
+      outputPrefix = "(i32.lt_s ";
+    } else if (token == 190) {  // >=
+      outputPrefix = "(i32.ge_s ";
+    } else if (token == 188) {  // <=
+      outputPrefix = "(i32.le_s ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr3();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr5() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  let len1, len2, len3;
+  leftOutput = compileExpr4();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 166) {  // &&
+      outputPrefix = "(call $and ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr4();
+    output = strFromRaw(outputPrefix);
+    len1 = strLen(output);
+    len2 = strLen(leftOutput);
+    len3 = strLen(rightOutput);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    if (len1 + len2 + len3 + 2 != strLen(output)) {
+      throw("EEEEEEEEEEEEEEK");
+    }
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr6() {
+  let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
+  leftOutput = compileExpr5();
+  tokenValue = strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 252) {  // ||
+      outputPrefix = "(call $or ";
+    } else {
+      inputPtr = origInputPtr;
+      break;
+    }
+    rightOutput = compileExpr5();
+    output = strFromRaw(outputPrefix);
+    strMerge(output, leftOutput);
+    strPushRaw(output, " ");
+    strMerge(output, rightOutput);
+    strPushRaw(output, ")");
+    leftOutput = output;
+  }
+  strDelete(tokenValue);
+  return leftOutput;
+}
+fn compileExpr() {
+  return compileExpr6();
+}
+fn expectToken(expectedToken, tokenValue) {
+  let actualToken, output;
+  actualToken = nextToken(tokenValue);
+  if (actualToken != expectedToken) {
+    output = strFromRaw("Expected token ");
+    strPushInt(output, expectedToken);
+    strPushRaw(output, ", but received token ");
+    strPushInt(output, actualToken);
+    strPushRaw(output, " with value '");
+    strMerge(output, tokenValue);
+    strPushRaw(output, "'");
+    throw(strToRaw(output));
+  }
+}
+
+
+// Compile statements, blocks and functions.
+fn compileStmt(indentLevel) {
+  let token, tokenValue, token2, tokenValue2, output, outputPrefix, origInputPtr;
+  
+  origInputPtr = inputPtr;
+  tokenValue = strNew(0);
+  token = nextToken(tokenValue);
+
+  // Let
+  if (token == 5) {
+    output = strNew(0);
+    while (1) {
+      expectToken(3, tokenValue);  // identifier
+      addLocalVar(tokenValue);
+      strPushRaw(output, "(local $");
+      strPush(output, tokenValue);
+      strPushRaw(output, " i32)");
+      token = nextToken(tokenValue);
+      if (token == 59) {  // ;
+        break;
+      } else if (token == 44) {  // ,
+        strPushRaw(output, " ");
+      } else {
+        strPushRaw(output, "Expected ',' or ';' in let statement, got ");
+        strPushInt(output, token);
+        strPushRaw(output, " with value '");
+        strMerge(output, tokenValue);
+        strPushRaw(output, "'");
+        throw(strToRaw(output));
+      }
+    }
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // If
+  if (token == 6) {
+    output = strFromRaw("(if ");
+    expectToken(40, tokenValue);  // (
+    strMerge(output, compileExpr());
+    expectToken(41, tokenValue);  // )
+    strPushRaw(output, "\n");
+    // Then
+    strMerge(output, indent(indentLevel));
+    strPushRaw(output, "  (then\n");
+    strMerge(output, compileBlock(indentLevel + 2));
+    strMerge(output, indent(indentLevel));
+    strPushRaw(output, "  )\n");
+    // Else
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 7) {  // else
+      strMerge(output, indent(indentLevel));
+      strPushRaw(output, "  (else\n");
+      strMerge(output, compileBlock(indentLevel + 2));
+      strMerge(output, indent(indentLevel));
+      strPushRaw(output, "  )\n");
+    } else {
+      inputPtr = origInputPtr;
+    }
+    // Closing
+    strMerge(output, indent(indentLevel));
+    strPushRaw(output, ")");
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // While
+  if (token == 8) {
+    output = strFromRaw("(block $loop_");
+    strPushInt(output, loopId);
+    strPushRaw(output, "_end (loop $loop_");
+    strPushInt(output, loopId);
+    strPushRaw(output, "\n");
+    strMerge(output, indent(indentLevel));
+    strPushRaw(output, "  (br_if $loop_");
+    strPushInt(output, loopId);
+    strPushRaw(output, "_end (i32.eqz ");
+    expectToken(40, tokenValue);  // (
+    strMerge(output, compileExpr());
+    expectToken(41, tokenValue);  // )
+    strPushRaw(output, "))\n");
+    loopId = loopId + 1;
+    strMerge(output, compileBlock(indentLevel + 1));
+    loopId = loopId - 1;
+    strMerge(output, indent(indentLevel));
+    strPushRaw(output, "  (br $loop_");
+    strPushInt(output, loopId);
+    strPushRaw(output, ")\n");
+    strMerge(output, indent(indentLevel));
+    strPushRaw(output, "))");
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // Break
+  if (token == 10) {
+    if (loopId <= 1) {
+      throw("Found break statement outside of a loop block");
+    }
+    expectToken(59, tokenValue);  // ;
+    output = strFromRaw("(br $loop_");
+    strPushInt(output, loopId - 1);
+    strPushRaw(output, "_end)");
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // Continue
+  if (token == 11) {
+    if (loopId <= 1) {
+      throw("Found continue statement outside of a loop block");
+    }
+    expectToken(59, tokenValue);  // ;
+    output = strFromRaw("(br $loop_");
+    strPushInt(output, loopId - 1);
+    strPushRaw(output, ")");
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // Return
+  if (token == 9) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 59) {
+      output = strFromRaw("(return (i32.const 0))");
+    } else {
+      inputPtr = origInputPtr;
+      output = strFromRaw("(return ");
+      strMerge(output, compileExpr());
+      strPushRaw(output, ")");
+      expectToken(59, tokenValue);  // ;
+    }
+    strDelete(tokenValue);
+    return output;
+  }
+
+  // Assignment
+  if (token == 3) {  // identifier
+    tokenValue2 = strNew(0);
+    token2 = nextToken(tokenValue2);
+    strDelete(tokenValue2);
+    if (token2 == 61) {  // =
+      if (isLocalVar(tokenValue)) {
+        outputPrefix = "(local.set $";
+      } else if (isGlobalVar(tokenValue)) {
+        outputPrefix = "(global.set $";
+      } else {
+        output = strFromRaw("Undeclared variable '");
+        strPush(output, tokenValue);
+        strPushRaw(output, "' in assignment");
+        throw(strToRaw(output));
+      }
+      output = strFromRaw(outputPrefix);
+      strPush(output, tokenValue);
+      strPushRaw(output, " ");
+      strMerge(output, compileExpr());
+      strPushRaw(output, ")");
+      expectToken(59, tokenValue);  // ;
+      strDelete(tokenValue);
+      return output;
+    }
+  }
+
+  // Expression
+  output = strFromRaw("(drop ");
+  inputPtr = origInputPtr;
+  strMerge(output, compileExpr());
+  strPushRaw(output, ")");
+  expectToken(59, tokenValue);  // ;
+  strDelete(tokenValue);
+  return output;
+}
+fn compileBlock(indentLevel) {
+  let token, tokenValue, output, origInputPtr;
+
+  origInputPtr = inputPtr;
+  tokenValue = strNew(0);
+  token = nextToken(tokenValue);
+  output = strNew(0);
+
+  if (token == 123) {  // {
+    while (1) {
+      origInputPtr = inputPtr;
+      token = nextToken(tokenValue);
+      if (token == 125) {  // }
+        break;
+      }
+      inputPtr = origInputPtr;
+      strMerge(output, indent(indentLevel));
+      strMerge(output, compileStmt(indentLevel));
+      strPushRaw(output, "\n");
+    }
+  } else {
+    inputPtr = origInputPtr;
+    strMerge(output, indent(indentLevel));
+    strMerge(output, compileStmt(indentLevel));
+    strPushRaw(output, "\n");
+  }
+
+  strDelete(tokenValue);
+  return output;
+}
+fn compileFn() {
+  let token, tokenValue, name, output, origInputPtr;
+
+  tokenValue = strNew(0);
+  expectToken(4, tokenValue);  // fn
+
+  output = strFromRaw("  (func $");
+  expectToken(3, tokenValue);
+  name = strClone(tokenValue);
+  strPush(output, name);
+
+  // Parameters
+  expectToken(40, tokenValue);  // (
+  dictClear(localVars);
+  origInputPtr = inputPtr;
+  token = nextToken(tokenValue);
+  if (token != 41) {  // )
+    inputPtr = origInputPtr;
+    while (1) {
+      expectToken(3, tokenValue);  // identifier
+      addLocalVar(tokenValue);
+      strPushRaw(output, " (param $");
+      strPush(output, tokenValue);
+      strPushRaw(output, " i32)");
+      token = nextToken(tokenValue);
+      if (token == 41) {  // )
+        break;
+      } else if ( token == 44) {  // ,
+        // continue;
+      } else {
+        strClear(output);
+        strPushRaw(output, "Expected ',' or ')' after function parameter, got ");
+        strPushInt(output, token);
+        strPushRaw(output, " with value '");
+        strMerge(output, tokenValue);
+        strPushRaw(output, "'");
+        throw(strToRaw(output));
+      }
+    }
+  }
+
+  strPushRaw(output, " (result i32)\n");
+
+  // Body
+  strMerge(output, compileBlock(2));
+  strPushRaw(output, "    (i32.const 0)\n  )\n  (export ");
+  strPushChar(output, 34);  // "
+  strPush(output, name);
+  strPushChar(output, 34);  // "
+  strPushRaw(output, " (func $");
+  strPush(output, name);
+  strPushRaw(output, "))\n");
+  
+  dictClear(localVars);
+  strDelete(name);
+  strDelete(tokenValue);
+  return output;
+}
+fn compileClass() {
+  let token, tokenValue, output;
+
+  tokenValue = strNew(0);
+  expectToken(12, tokenValue);  // class
+
+  output = strFromRaw("  (type $");
+  expectToken(3, tokenValue);
+  strPush(output, tokenValue);
+  strPushRaw(output, " (struct");
+  expectToken(123, tokenValue); // {
+  
+  while (1) {
+    token = nextToken(tokenValue);
+    if (token == 125) {  // }
+      break;
+    } else if (token == 3) {
+      strPushRaw(output, " (field $");
+      strPush(output, tokenValue);
+      token = nextToken(tokenValue);
+      if (token == 58) {  // :
+        expectToken(3, tokenValue);
+        strPushRaw(output, " (mut (ref $");
+        strPush(output, tokenValue);
+        strPushRaw(output, "))");
+        expectToken(59, tokenValue);  // ;
+      } else if (token == 59) {  // ;
+        strPushRaw(output, " (mut i32)");
+      } else {
+        throw("Expected type or semicolon after class property");
+      }
+      strPushRaw(output, ")");
+    } else {
+      throw("Expected field declaration in class body");
+    }
+  }
+
+  strPushRaw(output, "))\n");
+  strDelete(tokenValue);
+  return output;
+}
+// Entry point.
+fn compileModule() {
+  let output, token, tokenValue, stringConstantsLen, i, rawOutput;
+
+  output = strNew(0);
+  tokenValue = strNew(0);
+  dictClear(globalVars);
+
+  // Main body.
+  while (1) {
+    token = peekNextToken(tokenValue);
+
+    if (token == 0) {
+      break;
+    }
+
+    // Fn
+    if (token == 4) {
+      strMerge(output, compileFn());
+      continue;
+    }
+
+    // Let
+    if (token == 5) {
+      expectToken(5, tokenValue);  // identifier
+      strPushRaw(output, " ");
+      while (1) {
+        expectToken(3, tokenValue);  // identifier
+        addGlobalVar(tokenValue);
+        strPushRaw(output, " (global $");
+        strPush(output, tokenValue);
+        strPushRaw(output, " (mut i32) (i32.const 0))");
+        token = nextToken(tokenValue);
+        if (token == 59) {  // ;
+          break;
+        } else if (token == 44) {  // ,
+          // continue;
+        } else {
+          strClear(output);
+          strPushRaw(output, "Expected ',' or ';' in global let statement, got ");
+          strPushInt(output, token);
+          strPushRaw(output, " with value '");
+          strMerge(output, tokenValue);
+          strPushRaw(output, "'");
+          throw(strToRaw(output));
+        }
+      }
+      strPushRaw(output, "\n");
+      continue;
+    }
+
+    // Class
+    if (token == 12) {
+      strMerge(output, compileClass());
+      continue;
+    }
+
+    strClear(output);
+    strPushRaw(output, "Expected fn or let at module level, got ");
+    strPushInt(output, token);
+    strPushRaw(output, " with value '");
+    strMerge(output, tokenValue);
+    strPushRaw(output, "'");
+    throw(strToRaw(output));
+  }
+
+  // String constants
+  stringConstantsLen = dictLen(stringConstantOffsets);
+  i = 0;
+  while (i < stringConstantsLen) {
+    strPushRaw(output, "  (data (i32.const ");
+    strPushInt(output, dictGetValueAt(stringConstantOffsets, i));
+    strPushRaw(output, ") ");
+    strPushChar(output, 34);  // "
+    strPush(output, dictGetKeyAt(stringConstantOffsets, i));
+    strPushRaw(output, "\\00");
+    strPushChar(output, 34);  // "
+    strPushRaw(output, ")\n");
+    i = i + 1;
+  }
+
+  dictClear(globalVars);
+  strDelete(tokenValue);
+  rawOutput = strToRaw(output);
+  free(output);
+  return rawOutput;
+}
+
+// Lexer.
+//
+// Token types:
+//   00 - EOF
+//   01 - Number literal
+//   02 - String literal
+//   03 - Identifier
+//   04 - fn
+//   05 - let
+//   06 - if
+//   07 - else
+//   08 - while
+//   09 - return
+//   10 - break
+//   11 - continue
+//   12 - class
+// Single letter operators and symbol are their ASCII value. Double letter
+// operators are 128 + the ASCII value of the first letter.
+let keywords;
+let twoCharOperators;
+fn lexerInit(input) {
+  inputPtr = input;
+  keywords = dictNew(16);
+  // Keywords in the order of their values.
+  dictSetRaw(keywords, "fn", 1, 0);
+  dictSetRaw(keywords, "let", 1, 0);
+  dictSetRaw(keywords, "if", 1, 0);
+  dictSetRaw(keywords, "else", 1, 0);
+  dictSetRaw(keywords, "while", 1, 0);
+  dictSetRaw(keywords, "return", 1, 0);
+  dictSetRaw(keywords, "break", 1, 0);
+  dictSetRaw(keywords, "continue", 1, 0);
+  dictSetRaw(keywords, "class", 1, 0);
+  twoCharOperators = dictNew(16);
+  dictSetRaw(twoCharOperators, "==", 1, 0);
+  dictSetRaw(twoCharOperators, "!=", 1, 0);
+  dictSetRaw(twoCharOperators, "<=", 1, 0);
+  dictSetRaw(twoCharOperators, ">=", 1, 0);
+  dictSetRaw(twoCharOperators, "&&", 1, 0);
+  dictSetRaw(twoCharOperators, "||", 1, 0);
+}
+fn lexerCleanUp() {
+  dictDelete(keywords);
+  dictDelete(twoCharOperators);
+}
+fn nextToken(tokenValue) {
+  let c, c2;
+
+  strClear(tokenValue);
+  skipWhitespaceAndComments();
+  c = curChar();
+
+  // EOF
+  if (c == 0) {
+    return 0;
+  }
+
+  // Number literal
+  if (isDigit(c)
+    || (c == 45 && isDigit(peekNextChar()))) {  // -
+    while (1) {
+      strPushChar(tokenValue, c);
+      c = nextChar();
+      if (!isDigit(c)) {
+        break;
+      }
+    }
+    return 1;
+  }
+
+  // String literal
+  if (c == 34) {  // "
+    while (1) {
+      c = nextChar();
+      if (c == 0) {
+        throw("Unterminated string literal");
+      }
+      if (c == 34) {  // "
+        break;
+      }
+      strPushChar(tokenValue, c);
+    }
+    nextChar();
+    return 2;
+  }
+
+  // Identifier or keyword.
+  if (isIdent(c)) {
+    while (isIdent(c)) {
+      strPushChar(tokenValue, c);
+      c = nextChar();
+    }
+    return 4 + dictFind(keywords, tokenValue);
+  }
+
+  // Operators.
+  if (strchr("(){}[]<>=+-*/%!&|.,;:^", c)) {
+    strPushChar(tokenValue, c);
+    strPushChar(tokenValue, nextChar());
+    if (dictFind(twoCharOperators, tokenValue) >= 0) {
+      nextChar();
+      return c + 128;
+    } else {
+      strPop(tokenValue);
+      return c;
+    }
+  }
+
+  throw("Unrecognized character");
+}
+fn peekNextToken(tokenValue) {
+  let origInputPtr, token;
+  origInputPtr = inputPtr;
+  token = nextToken(tokenValue);
+  inputPtr = origInputPtr;
+  return token;
+}
+fn skipWhitespaceAndComments() {
+  let c;
+  c = curChar();
+  while (1) {
+    if (isSpace(c)) {
+      c = nextChar();
+    } else if (c == 47 && peekNextChar() == 47) {  // "/"
+      nextChar();
+      c = nextChar();
+      while (c != 10 && c != 0) {  // LF
+        c = nextChar();
+      }
+    } else {
+      break;
+    }
+  }
+}
+fn nextChar() {
+  inputPtr = inputPtr + 1;
+  return load8_u(inputPtr);
+}
+fn peekNextChar() {
+  return load8_u(inputPtr + 1);
+}
+fn curChar() {
+  return load8_u(inputPtr);
+}
+fn isSpace(c) {
+  return c == 32  // space
+    || c == 9     // tab
+    || c == 13    // CR
+    || c == 10;   // LF
+}
+fn isDigit(c) {
+  return c >= 48  // 0
+    && c <= 57;   // 9
+}
+fn isAlpha(c) {
+  return (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+}
+fn isIdent(c) {
+  return isAlpha(c) || isDigit(c) || c == 95; // _
+}
+fn strchr(rawStr, c) {
+  let c2;
+  while (1) {
+    c2 = load8_u(rawStr);
+    if (c2 == 0) {
+      return 0;
+    }
+    if (c == c2) {
+      return rawStr;
+    }
+    rawStr = rawStr + 1;
+  }
+}
+
+fn indent(indentLevel) {
+  let str, i;
+  str = strNew(indentLevel * 2);
+  i = 0;
+  while (i < indentLevel) {
+    strPushRaw(str, "  ");
+    i = i + 1;
+  }
+  return str;
+}
+fn init(input, heapStart, heapEnd) {
+  memoryInit(heapStart, heapEnd);
+  lexerInit(input);
+  symbolsInit(heapEnd);
+}
+fn cleanUp() {
+  lexerCleanUp();
+  symbolsCleanUp();
+}
