@@ -2,7 +2,7 @@ import {getRawStr, setRawStr, loadQuoWasmModule} from '../quo-driver';
 import {expectUsedChunks} from './memory.test';
 import {getStr} from './strings.test';
 
-const stages = ['0', '1a', '1b', '1c'];
+const stages = ['0', '1a', '1b', '1c', '2a'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -69,6 +69,15 @@ for (const stage of stages) {
         ['let x;', '(local $x i32)'],
         ['let x, y;', '(local $x i32) (local $y i32)'],
         ['let x, y, z;', '(local $x i32) (local $y i32) (local $z i32)'],
+        ...(stage[0] === '2'
+          ? ([
+              ['let x: Foo;', '(local $x (ref $Foo))'],
+              [
+                'let x: Foo, y: Bar;',
+                '(local $x (ref $Foo)) (local $y (ref $Bar))',
+              ],
+            ] as TestCases)
+          : []),
       ]);
     });
     describe('if', () => {
@@ -243,6 +252,19 @@ for (const stage of stages) {
   (export "foo" (func $foo))
 `.slice(1),
         ],
+        ...(stage[0] === '2'
+          ? ([
+              [
+                'fn foo(x: Foo) {}',
+                `
+  (func $foo (param $x (ref $Foo)) (result i32)
+    (i32.const 0)
+  )
+  (export "foo" (func $foo))
+`.slice(1),
+              ],
+            ] as TestCases)
+          : []),
       ]);
     });
   });

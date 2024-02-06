@@ -29,11 +29,17 @@ for (const stage of stages) {
     }
   };
 
-  describe(`stage ${stage} compile expr`, () => {
+  describe(`stage ${stage} compile class`, () => {
     testCompileClass([
-      ['class A {}', '  (type $A (struct))\n'],
-      ['class A { x; y; }', '  (type $A (struct (field $x (mut i32)) (field $y (mut i32))))\n'],
-      ['class A { x: X; y: Y; }', '  (type $A (struct (field $x (mut (ref $X))) (field $y (mut (ref $Y)))))\n'],
+      ['class A {}', '  (type $A (struct (field i32)))\n'],
+      [
+        'class A { x; y; }',
+        '  (type $A (struct (field i32) (field $x (mut i32)) (field $y (mut i32))))\n',
+      ],
+      [
+        'class A { x: X; y: Y; }',
+        '  (type $A (struct (field i32) (field $x (mut (ref $X))) (field $y (mut (ref $Y)))))\n',
+      ],
     ]);
   });
 }

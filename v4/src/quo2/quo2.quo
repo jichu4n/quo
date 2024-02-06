@@ -328,8 +328,16 @@ fn compileStmt(indentLevel) {
       addLocalVar(tokenValue);
       strPushRaw(output, "(local $");
       strPush(output, tokenValue);
-      strPushRaw(output, " i32)");
       token = nextToken(tokenValue);
+      if (token == 58) {  // :
+        expectToken(3, tokenValue);
+        strPushRaw(output, " (ref $");
+        strPush(output, tokenValue);
+        strPushRaw(output, "))");
+        token = nextToken(tokenValue);
+      } else {
+        strPushRaw(output, " i32)");
+      }
       if (token == 59) {  // ;
         break;
       } else if (token == 44) {  // ,
@@ -539,8 +547,16 @@ fn compileFn() {
       addLocalVar(tokenValue);
       strPushRaw(output, " (param $");
       strPush(output, tokenValue);
-      strPushRaw(output, " i32)");
       token = nextToken(tokenValue);
+      if (token == 58) {  // :
+        expectToken(3, tokenValue);
+        strPushRaw(output, " (ref $");
+        strPush(output, tokenValue);
+        strPushRaw(output, "))");
+        token = nextToken(tokenValue);
+      } else {
+        strPushRaw(output, " i32)");
+      }
       if (token == 41) {  // )
         break;
       } else if ( token == 44) {  // ,
@@ -584,6 +600,8 @@ fn compileClass() {
   expectToken(3, tokenValue);
   strPush(output, tokenValue);
   strPushRaw(output, " (struct");
+  // reserved for vtable pointer
+  strPushRaw(output, " (field i32)");
   expectToken(123, tokenValue); // {
   
   while (1) {
