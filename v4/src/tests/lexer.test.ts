@@ -1,6 +1,5 @@
 import {getRawStr, loadQuoWasmModule, setRawStr} from '../quo-driver';
-import {expectUsedChunks} from './memory.test';
-import {getStr} from './strings.test';
+import {expectUsedMemChunks, getStr} from './test-helpers';
 
 const stages = ['0', '1a', '1b', '1c'];
 
@@ -45,7 +44,7 @@ export async function tokenize(
   } while (tokens[tokens.length - 1].type !== 0);
   if (stage !== '0') {
     cleanUp();
-    expectUsedChunks(wasmMemory, heapStart, 2); // token value's header + data chunk
+    expectUsedMemChunks(wasmMemory, heapStart, 2); // token value's header + data chunk
   }
   return tokens;
 }

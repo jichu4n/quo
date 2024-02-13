@@ -1,6 +1,5 @@
-import {getRawStr, setRawStr, loadQuoWasmModule} from '../quo-driver';
-import {expectUsedChunks} from './memory.test';
-import {getStr} from './strings.test';
+import {getRawStr, loadQuoWasmModule, setRawStr} from '../quo-driver';
+import {expectUsedMemChunks, getStr} from './test-helpers';
 
 const stages = ['0', '1a', '1b', '1c', '2a'];
 
@@ -26,7 +25,7 @@ async function compile(
     strFlatten(resultAddress);
     result = getStr(wasmMemory, resultAddress);
     cleanUp();
-    expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
+    expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk
   }
   return result;
 }

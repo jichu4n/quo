@@ -1,6 +1,5 @@
-import {getRawStr, setRawStr, loadQuoWasmModule} from '../quo-driver';
-import {expectUsedChunks} from './memory.test';
-import {getStr} from './strings.test';
+import {loadQuoWasmModule, setRawStr} from '../quo-driver';
+import {expectUsedMemChunks, getStr} from './test-helpers';
 
 const stages = ['2a'];
 
@@ -16,7 +15,7 @@ async function compileClass(stage: string, input: string): Promise<string> {
   strFlatten(resultAddress);
   const result = getStr(wasmMemory, resultAddress);
   cleanUp();
-  expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
+  expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk
   return result;
 }
 

@@ -1,4 +1,3 @@
-import fs from 'fs-extra';
 import path from 'path';
 import {
   compileFiles,
@@ -6,7 +5,7 @@ import {
   loadQuoWasmModule,
   setRawStr,
 } from '../quo-driver';
-import {expectUsedChunks} from './memory.test';
+import {expectUsedMemChunks} from './test-helpers';
 
 interface TestInputFile {
   name: string;
@@ -30,7 +29,7 @@ async function compileModule(stage: string, input: string): Promise<string> {
   const result = getRawStr(wasmMemory, compileModule());
   if (stage !== '0') {
     cleanUp();
-    expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
+    expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk
   }
   return result;
 }

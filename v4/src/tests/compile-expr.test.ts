@@ -4,8 +4,7 @@ import {
   loadQuoWasmModule,
   setRawStr,
 } from '../quo-driver';
-import {expectUsedChunks} from './memory.test';
-import {getStr} from './strings.test';
+import {expectUsedMemChunks, getStr} from './test-helpers';
 
 const stages = ['0', '1a', '1b', '1c'];
 
@@ -25,7 +24,7 @@ async function compileExpr(stage: string, input: string): Promise<string> {
     strFlatten(resultAddress);
     result = getStr(wasmMemory, resultAddress);
     cleanUp();
-    expectUsedChunks(wasmMemory, heapStart, 2); // returned string + data chunk
+    expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk
   }
   return result;
 }
