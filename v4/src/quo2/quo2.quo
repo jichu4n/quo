@@ -43,7 +43,6 @@ fn getOrAddStringConstantOffset(str) {
 // Pointer to next char in input string.
 let inputPtr;
 
-
 // Compile expressions.
 fn compileExpr0() {
   let token, tokenValue, token2, tokenValue2, output, origInputPtr, outputPrefix;
@@ -664,8 +663,16 @@ fn compileModule() {
         addGlobalVar(tokenValue);
         strPushRaw(output, " (global $");
         strPush(output, tokenValue);
-        strPushRaw(output, " (mut i32) (i32.const 0))");
         token = nextToken(tokenValue);
+        if (token == 58) {  // :
+          expectToken(3, tokenValue);
+          strPushRaw(output, " (mut (ref $");
+          strPush(output, tokenValue);
+          strPushRaw(output, ")))");
+          token = nextToken(tokenValue);
+        } else {
+          strPushRaw(output, " (mut i32) (i32.const 0))");
+        }
         if (token == 59) {  // ;
           break;
         } else if (token == 44) {  // ,

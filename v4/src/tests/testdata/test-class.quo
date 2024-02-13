@@ -7,6 +7,8 @@ class Segment {
   p2: Point;
 }
 
+let gp: Point, gs: Segment;
+
 fn f1(x: Point) {
   let p: Point, s: Segment;
 }
