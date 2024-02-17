@@ -1,0 +1,52 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Quo",
+  "patterns": [
+    {
+      "name": "comment.line.double-slash",
+      "match": "//.*$"
+    },
+    {
+      "name": "string.quoted.double",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "constant.numeric",
+      "match": "\\b\\d+\\b"
+    },
+    {
+      "name": "keyword.operator",
+      "match": "[-<>=+*/%!&|.,;:^]"
+    },
+    {
+      "name": "keyword.control",
+      "match": "\\b(if|else|while|return|break|continue)\\b"
+    },
+    {
+      "match": "\\b(class)\\s+(\\w+)",
+      "captures": {
+        "1": {"name": "storage.type"},
+        "2": {"name": "entity.name.class"}
+      }
+    },
+    {
+      "match": "\\b(new)\\s+(\\w+)",
+      "captures": {
+        "1": {"name": "storage.type"},
+        "2": {"name": "entity.name.class"}
+      }
+    },
+    {
+      "name": "storage.type",
+      "match": "\\b(fn|let|class|new)\\b"
+    },
+    {
+      "match": "\\b(\\w+)\\s*\\(",
+      "captures": {
+        "1": {"name": "entity.name.function"}
+      }
+    }
+  ],
+  "scopeName": "source.quo"
+}

@@ -1,0 +1,38 @@
+{
+  "name": "quo",
+  "displayName": "Quo",
+  "description": "Quo language support",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jichu4n/quo.git"
+  },
+  "version": "0.0.6",
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "quo",
+        "aliases": [
+          "Quo",
+          "quo"
+        ],
+        "extensions": [
+          ".quo"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "quo",
+        "scopeName": "source.quo",
+        "path": "./syntaxes/quo.tmLanguage.json"
+      }
+    ]
+  }
+}
