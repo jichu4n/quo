@@ -6,7 +6,7 @@ import {
 } from '../quo-driver';
 import {expectUsedMemChunks, getStr} from './test-helpers';
 
-const stages = ['0', '1a', '1b', '1c'];
+const stages = ['0', '1a', '1b', '1c', '2a'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;
@@ -53,6 +53,12 @@ for (const stage of stages) {
           '(call $hello (i32.const 1) (i32.const 2) (i32.const 3))',
         ],
         ['(f(g()))', '(call $f (call $g))'],
+        ...(stage[0] === '2'
+          ? ([
+              ['new Foo()', '(struct.new_default $Foo)'],
+              ['(new Foo())', '(struct.new_default $Foo)'],
+            ] as const)
+          : []),
       ]);
       test('invalid input', async () => {
         await expect(compileExpr(stage, ';')).rejects.toThrow();

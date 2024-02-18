@@ -123,6 +123,18 @@ fn compileExpr0() {
     return output;
   }
 
+  // new MyClass()
+  if (token == 13) {
+    expectToken(3, tokenValue);  // identifier
+    output = strFromRaw("(struct.new_default $");
+    strPush(output, tokenValue);
+    expectToken(40, tokenValue);  // (
+    expectToken(41, tokenValue);  // )
+    strPushRaw(output, ")");
+    strDelete(tokenValue);
+    return output;
+  }
+
   output = strFromRaw("Expected expression, got token type ");
   strPushInt(output, token);
   strPushRaw(output, " with value '");
@@ -572,6 +584,7 @@ fn compileFn() {
     }
   }
 
+  // TODO: support returning objects.
   strPushRaw(output, " (result i32)\n");
 
   // Body
@@ -744,6 +757,7 @@ fn compileModule() {
 //   10 - break
 //   11 - continue
 //   12 - class
+//   13 - new
 // Single letter operators and symbol are their ASCII value. Double letter
 // operators are 128 + the ASCII value of the first letter.
 let keywords;
@@ -761,6 +775,7 @@ fn lexerInit(input) {
   dictSetRaw(keywords, "break", 1, 0);
   dictSetRaw(keywords, "continue", 1, 0);
   dictSetRaw(keywords, "class", 1, 0);
+  dictSetRaw(keywords, "new", 1, 0);
   twoCharOperators = dictNew(16);
   dictSetRaw(twoCharOperators, "==", 1, 0);
   dictSetRaw(twoCharOperators, "!=", 1, 0);
