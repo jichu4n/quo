@@ -1,8 +1,0 @@
-.*.sw[op]
-*.py[cod]
-.env/
-deps/
-build/
-*.dSYM
-
-.vscode/tags
