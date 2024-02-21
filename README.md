@@ -1,10 +1,10 @@
-# Quo: Toy self-hosted language
+# Quo
 
 Quo is a toy language with C-style syntax that compiles to WebAssembly. It is
-bootstrapped with a minimal compiler implemented in hand-written WebAssembly.
-Each subsequent iteration of the compiler is written in the subset of the
-language supported by the previous iteration, and provides additional language
-features for the next iteration.
+bootstrapped with a minimal version of the compiler implemented in hand-written
+WebAssembly. Each subsequent iteration of the compiler is written in the subset
+of the language supported by the previous iteration, and provides additional
+language features for the next iteration.
 
 ## Why?
 
