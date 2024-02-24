@@ -13,7 +13,7 @@ const heapEnd = 15 * 1024 * 1024;
 
 async function compileExpr(stage: string, input: string): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, compileExpr, cleanUp, strFlatten} = fns;
+  const {init, compileExpr, cleanUp, _strFlatten} = fns;
   setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
   const resultAddress = compileExpr();
@@ -21,7 +21,7 @@ async function compileExpr(stage: string, input: string): Promise<string> {
   if (stage === '0') {
     result = getRawStr(wasmMemory, resultAddress);
   } else {
-    strFlatten(resultAddress);
+    _strFlatten(resultAddress);
     result = getStr(wasmMemory, resultAddress);
     cleanUp();
     expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk

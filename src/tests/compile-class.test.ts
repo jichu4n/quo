@@ -8,11 +8,11 @@ const heapEnd = 15 * 1024 * 1024;
 
 async function compileClass(stage: string, input: string): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, compileClass, cleanUp, strFlatten} = fns;
+  const {init, compileClass, cleanUp, _strFlatten} = fns;
   setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
   const resultAddress = compileClass();
-  strFlatten(resultAddress);
+  _strFlatten(resultAddress);
   const result = getStr(wasmMemory, resultAddress);
   cleanUp();
   expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk
@@ -44,5 +44,4 @@ for (const stage of stages) {
     */
     test('dummy', () => {});
   });
-
 }

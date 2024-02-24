@@ -13,7 +13,7 @@ async function compile(
   input: string
 ): Promise<string> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, strFlatten, cleanUp} = fns;
+  const {init, _strFlatten, cleanUp} = fns;
   const fn = fns[fnName];
   setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
@@ -22,7 +22,7 @@ async function compile(
   if (stage === '0') {
     result = getRawStr(wasmMemory, resultAddress);
   } else {
-    strFlatten(resultAddress);
+    _strFlatten(resultAddress);
     result = getStr(wasmMemory, resultAddress);
     cleanUp();
     expectUsedMemChunks(wasmMemory, heapStart, 2); // returned string + data chunk
@@ -71,10 +71,7 @@ for (const stage of stages) {
         ...(stage[0] === '2'
           ? ([
               ['let x: Foo;', '(local $x i32)'],
-              [
-                'let x: Foo, y: Bar;',
-                '(local $x i32) (local $y i32)',
-              ],
+              ['let x: Foo, y: Bar;', '(local $x i32) (local $y i32)'],
             ] as TestCases)
           : []),
       ]);

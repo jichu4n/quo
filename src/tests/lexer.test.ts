@@ -16,7 +16,7 @@ export async function tokenize(
   input: string
 ): Promise<Array<Token>> {
   const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-  const {init, nextToken, strNew, cleanUp} = fns;
+  const {init, nextToken, _strNew, cleanUp} = fns;
 
   setRawStr(wasmMemory, 0, input);
   init(0, heapStart, heapEnd);
@@ -24,7 +24,7 @@ export async function tokenize(
   if (stage === '0') {
     tokenValueAddress = 4096;
   } else {
-    tokenValueAddress = strNew(128);
+    tokenValueAddress = _strNew(128);
   }
   const tokens: Array<Token> = [];
   do {

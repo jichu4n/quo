@@ -58,7 +58,7 @@
     (i32.store (i32.add (global.get $stringConstantOffsets) (i32.mul (global.get $stringCount) (i32.const 4))) (global.get $stringConstantOffset))
     (global.set $stringCount (i32.add (global.get $stringCount) (i32.const 1)))
     (local.set $prevStringConstantOffset (global.get $stringConstantOffset))
-    (global.set $stringConstantOffset (i32.add (global.get $stringConstantOffset) (i32.add (call $strlen (local.get $str)) (i32.const 1))))
+    (global.set $stringConstantOffset (i32.add (global.get $stringConstantOffset) (i32.add (call $_strLen (local.get $str)) (i32.const 1))))
     (local.get $prevStringConstantOffset)
   )
 
@@ -753,7 +753,7 @@
         (call $strcat (local.get $outputPtr) (i32.const 131072) (local.get $stringPtr))
         (call $strcat (local.get $outputPtr) (i32.const 131072) (i32.const 15731076))
         (local.set $stringPtr
-          (i32.add (i32.add (local.get $stringPtr) (call $strlen (local.get $stringPtr))) (i32.const 1)))
+          (i32.add (i32.add (local.get $stringPtr) (call $_strLen (local.get $stringPtr))) (i32.const 1)))
         (local.set $stringConstantOffsetPtr (i32.add (local.get $stringConstantOffsetPtr) (i32.const 4)))
         (br $loop)
       )
@@ -980,7 +980,7 @@
   )
 
   ;; String functions.
-  (func $strlen (param $str i32) (result i32)
+  (func $_strLen (param $str i32) (result i32)
     (local $len i32)
     (block $loop_end
       (loop $loop
@@ -1046,7 +1046,7 @@
     )
     (i32.const 0)
   )
-  (func $strcmp (param $str1 i32) (param $str2 i32) (result i32)
+  (func $_strCmp (param $str1 i32) (param $str2 i32) (result i32)
     (local $c1 i32)
     (local $c2 i32)
     (block $loop_end
@@ -1072,12 +1072,12 @@
     (block $loop_end
       (loop $loop
         (br_if $loop_end (i32.eqz (i32.load8_u (local.get $strlist))))
-        (if (i32.eqz (call $strcmp (local.get $str) (local.get $strlist)))
+        (if (i32.eqz (call $_strCmp (local.get $str) (local.get $strlist)))
           (then (return (local.get $index)))
         )
         (local.set $strlist
           (i32.add
-            (i32.add (local.get $strlist) (call $strlen (local.get $strlist)))
+            (i32.add (local.get $strlist) (call $_strLen (local.get $strlist)))
             (i32.const 1)
           )
         )
@@ -1095,12 +1095,12 @@
       (loop $loop
         (br_if $loop_end (i32.eqz (i32.load8_u (local.get $p))))
         (local.set $p
-          (i32.add (i32.add (local.get $p) (call $strlen (local.get $p))) (i32.const 1))
+          (i32.add (i32.add (local.get $p) (call $_strLen (local.get $p))) (i32.const 1))
         )
         (br $loop)
       )
     )
-    (local.set $len (call $strlen (local.get $str)))
+    (local.set $len (call $_strLen (local.get $str)))
     (if
       (i32.ge_u
         (i32.add (i32.add (i32.sub (local.get $p) (local.get $strlist)) (local.get $len)) (i32.const 2))
@@ -1136,8 +1136,8 @@
   (func $strcat (param $str1 i32) (param $str1Size i32) (param $str2 i32)
     (local $len1 i32)
     (local $len2 i32)
-    (local.set $len1 (call $strlen (local.get $str1)))
-    (local.set $len2 (call $strlen (local.get $str2)))
+    (local.set $len1 (call $_strLen (local.get $str1)))
+    (local.set $len2 (call $_strLen (local.get $str2)))
     (if
       (i32.ge_u
         (i32.add (i32.add (local.get $len1) (local.get $len2)) (i32.const 1))
@@ -1152,7 +1152,7 @@
   )
   (func $strcpy (param $dest i32) (param $destSize i32) (param $src i32)
     (local $srcLen i32)
-    (local.set $srcLen (call $strlen (local.get $src)))
+    (local.set $srcLen (call $_strLen (local.get $src)))
     (if (i32.ge_u (i32.add (local.get $srcLen) (i32.const 1)) (local.get $destSize))
       (then (throw $error (i32.const 15728800)))
     )

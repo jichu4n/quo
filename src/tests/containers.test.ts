@@ -29,9 +29,9 @@ for (const stage of stages) {
     const {wasmMemory, fns} = await loadQuoWasmModule(stage);
     const {
       _memoryInit,
-      strNew,
-      strDelete,
-      strFromRaw,
+      _strNew,
+      _strDelete,
+      _strFromRaw,
       arrNew,
       arrDelete,
       arrPush,
@@ -47,9 +47,9 @@ for (const stage of stages) {
 
     _memoryInit(heapStart, heapEnd);
     return {
-      strNew,
-      strDelete,
-      strFromRaw,
+      _strNew,
+      _strDelete,
+      _strFromRaw,
       arrNew,
       arrDelete,
       arrPush,
@@ -128,8 +128,8 @@ for (const stage of stages) {
     });
     test('dict set and get', async function () {
       const {
-        strFromRaw,
-        strDelete,
+        _strFromRaw,
+        _strDelete,
         dictNew,
         dictDelete,
         dictFind,
@@ -142,10 +142,10 @@ for (const stage of stages) {
       expectUsedMemChunks(wasmMemory, heapStart, 5); // dict header, 2x array headers, 2x array data
 
       setRawStr(wasmMemory, 4096, 'foo');
-      const str1 = strFromRaw(4096);
-      const str2 = strFromRaw(4096);
+      const str1 = _strFromRaw(4096);
+      const str2 = _strFromRaw(4096);
       setRawStr(wasmMemory, 4096 + 10, 'bar');
-      const str3 = strFromRaw(4096 + 10);
+      const str3 = _strFromRaw(4096 + 10);
 
       expect(dictFind(dict, str1)).toStrictEqual(-1);
       expect(dictGet(dict, str1)).toStrictEqual(0);
@@ -168,9 +168,9 @@ for (const stage of stages) {
       expect(dictFind(dict, str3)).toStrictEqual(1);
       expect(dictGet(dict, str3)).toStrictEqual(33);
 
-      strDelete(str1);
-      strDelete(str2);
-      strDelete(str3);
+      _strDelete(str1);
+      _strDelete(str2);
+      _strDelete(str3);
       dictDelete(dict, 0);
       expectUsedMemChunks(wasmMemory, heapStart, 0);
     });
