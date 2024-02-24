@@ -1,43 +1,43 @@
 // Symbol tables.
 let globalVars, localVars, fns, stringConstantOffsets, nextStringConstantOffset, loopId, classes;
 fn symbolsInit(stringConstantOffset) {
-  globalVars = dictNew(0);
-  localVars = dictNew(0);
-  fns = dictNew(0);
-  stringConstantOffsets = dictNew(0);
+  globalVars = _dictNew(0);
+  localVars = _dictNew(0);
+  fns = _dictNew(0);
+  stringConstantOffsets = _dictNew(0);
   nextStringConstantOffset = stringConstantOffset;
   loopId = 1;
-  classes = dictNew(0);
+  classes = _dictNew(0);
 }
 fn symbolsCleanUp() {
-  dictDelete(globalVars);
-  dictDelete(localVars);
-  dictDelete(fns);
-  dictDelete(stringConstantOffsets);
+  _dictDelete(globalVars);
+  _dictDelete(localVars);
+  _dictDelete(fns);
+  _dictDelete(stringConstantOffsets);
   nextStringConstantOffset = 0;
   loopId = 0;
-  dictDelete(classes);
+  _dictDelete(classes);
 }
 fn addGlobalVar(name) {
-  dictSet(globalVars, name, 1, 0);
+  _dictSet(globalVars, name, 1, 0);
 }
 fn isGlobalVar(name) {
-  return dictFind(globalVars, name) >= 0;
+  return _dictFind(globalVars, name) >= 0;
 }
 fn addLocalVar(name) {
-  dictSet(localVars, name, 1, 0);
+  _dictSet(localVars, name, 1, 0);
 }
 fn isLocalVar(name) {
-  return dictFind(localVars, name) >= 0;
+  return _dictFind(localVars, name) >= 0;
 }
 fn getOrAddStringConstantOffset(str) {
   let offset;
-  offset = dictGet(stringConstantOffsets, str);
+  offset = _dictGet(stringConstantOffsets, str);
   if (offset) {
     return offset;
   }
   offset = nextStringConstantOffset;
-  dictSet(stringConstantOffsets, str, offset, 0);
+  _dictSet(stringConstantOffsets, str, offset, 0);
   nextStringConstantOffset = nextStringConstantOffset + _strLen(str) + 1;
   return offset;
 }
@@ -553,7 +553,7 @@ fn compileFn() {
 
   // Parameters
   expectToken(40, tokenValue);  // (
-  dictClear(localVars);
+  _dictClear(localVars);
   origInputPtr = inputPtr;
   token = nextToken(tokenValue);
   if (token != 41) {  // )
@@ -604,7 +604,7 @@ fn compileFn() {
   _strPush(output, name);
   _strPushRaw(output, "))\n");
   
-  dictClear(localVars);
+  _dictClear(localVars);
   _strDelete(name);
   _strDelete(tokenValue);
   return output;
@@ -629,22 +629,22 @@ fn compileClass() {
 
   expectToken(3, tokenValue);
   className = _strClone(tokenValue);
-  classId = dictLen(classes) + 1;
-  dictSet(classes, className, classId, 1);
+  classId = _dictLen(classes) + 1;
+  _dictSet(classes, className, classId, 1);
   expectToken(123, tokenValue); // {
 
   output = _strFromRaw("  (func $_class_");
   _strPush(output, className);
   _strPushRaw(output, "_fields (result i32)\n");
   _strPushRaw(output, "    (local $fields i32)\n");
-  _strPushRaw(output, "    (local.set $fields (call $dictNew (i32.const 0)))\n");
+  _strPushRaw(output, "    (local.set $fields (call $_dictNew (i32.const 0)))\n");
   offset = 4;
   while (1) {
     token = nextToken(tokenValue);
     if (token == 125) {  // }
       break;
     } else if (token == 3) {
-      _strPushRaw(output, "    (call $dictSetRaw (local.get $fields) (i32.const ");
+      _strPushRaw(output, "    (call $_dictSetRaw (local.get $fields) (i32.const ");
       _strPushInt(output, getOrAddStringConstantOffset(tokenValue));
       _strPushRaw(output, ") (i32.const ");
       _strPushInt(output, offset);
@@ -696,7 +696,7 @@ fn compileModule() {
 
   output = _strNew(0);
   tokenValue = _strNew(0);
-  dictClear(globalVars);
+  _dictClear(globalVars);
 
   // Main body.
   while (1) {
@@ -761,18 +761,18 @@ fn compileModule() {
   }
 
   // Classes
-  classesLen = dictLen(classes);
+  classesLen = _dictLen(classes);
   if (classesLen > 0) {
     _strPushRaw(output, "  (global $_classes (mut i32) (i32.const 0))\n");
     _strPushRaw(output, "  (func $_classesInit\n");
-    _strPushRaw(output, "    (global.set $_classes (call $arrNew (i32.const ");
+    _strPushRaw(output, "    (global.set $_classes (call $_arrNew (i32.const ");
     _strPushInt(output, classesLen + 1);
     _strPushRaw(output, ")))\n");
-    _strPushRaw(output, "    (call $arrPush (global.get $_classes) (i32.const 0))\n");
+    _strPushRaw(output, "    (call $_arrPush (global.get $_classes) (i32.const 0))\n");
     i = 0;
     while (i < classesLen) {
-      _strPushRaw(output, "    (call $arrPush (global.get $_classes) (call $_class_");
-      _strPush(output, dictGetKeyAt(classes, i));
+      _strPushRaw(output, "    (call $_arrPush (global.get $_classes) (call $_class_");
+      _strPush(output, _dictGetKeyAt(classes, i));
       _strPushRaw(output, "_fields))\n");
       i = i + 1;
     }
@@ -780,22 +780,22 @@ fn compileModule() {
   }
 
   // String constants
-  stringConstantsLen = dictLen(stringConstantOffsets);
+  stringConstantsLen = _dictLen(stringConstantOffsets);
   i = 0;
   while (i < stringConstantsLen) {
     _strPushRaw(output, "  (data (i32.const ");
-    _strPushInt(output, dictGetValueAt(stringConstantOffsets, i));
+    _strPushInt(output, _dictGetValueAt(stringConstantOffsets, i));
     _strPushRaw(output, ") ");
     _strPushChar(output, 34);  // "
-    _strPush(output, dictGetKeyAt(stringConstantOffsets, i));
+    _strPush(output, _dictGetKeyAt(stringConstantOffsets, i));
     _strPushRaw(output, "\\00");
     _strPushChar(output, 34);  // "
     _strPushRaw(output, ")\n");
     i = i + 1;
   }
 
-  dictClear(globalVars);
-  dictClear(classes);
+  _dictClear(globalVars);
+  _dictClear(classes);
   _strDelete(tokenValue);
   rawOutput = _strToRaw(output);
   _free(output);
@@ -826,30 +826,30 @@ let keywords;
 let twoCharOperators;
 fn lexerInit(input) {
   inputPtr = input;
-  keywords = dictNew(16);
+  keywords = _dictNew(16);
   // Keywords in the order of their values.
-  dictSetRaw(keywords, "fn", 1, 0);
-  dictSetRaw(keywords, "let", 1, 0);
-  dictSetRaw(keywords, "if", 1, 0);
-  dictSetRaw(keywords, "else", 1, 0);
-  dictSetRaw(keywords, "while", 1, 0);
-  dictSetRaw(keywords, "return", 1, 0);
-  dictSetRaw(keywords, "break", 1, 0);
-  dictSetRaw(keywords, "continue", 1, 0);
-  dictSetRaw(keywords, "class", 1, 0);
-  dictSetRaw(keywords, "new", 1, 0);
-  dictSetRaw(keywords, "delete", 1, 0);
-  twoCharOperators = dictNew(16);
-  dictSetRaw(twoCharOperators, "==", 1, 0);
-  dictSetRaw(twoCharOperators, "!=", 1, 0);
-  dictSetRaw(twoCharOperators, "<=", 1, 0);
-  dictSetRaw(twoCharOperators, ">=", 1, 0);
-  dictSetRaw(twoCharOperators, "&&", 1, 0);
-  dictSetRaw(twoCharOperators, "||", 1, 0);
+  _dictSetRaw(keywords, "fn", 1, 0);
+  _dictSetRaw(keywords, "let", 1, 0);
+  _dictSetRaw(keywords, "if", 1, 0);
+  _dictSetRaw(keywords, "else", 1, 0);
+  _dictSetRaw(keywords, "while", 1, 0);
+  _dictSetRaw(keywords, "return", 1, 0);
+  _dictSetRaw(keywords, "break", 1, 0);
+  _dictSetRaw(keywords, "continue", 1, 0);
+  _dictSetRaw(keywords, "class", 1, 0);
+  _dictSetRaw(keywords, "new", 1, 0);
+  _dictSetRaw(keywords, "delete", 1, 0);
+  twoCharOperators = _dictNew(16);
+  _dictSetRaw(twoCharOperators, "==", 1, 0);
+  _dictSetRaw(twoCharOperators, "!=", 1, 0);
+  _dictSetRaw(twoCharOperators, "<=", 1, 0);
+  _dictSetRaw(twoCharOperators, ">=", 1, 0);
+  _dictSetRaw(twoCharOperators, "&&", 1, 0);
+  _dictSetRaw(twoCharOperators, "||", 1, 0);
 }
 fn lexerCleanUp() {
-  dictDelete(keywords);
-  dictDelete(twoCharOperators);
+  _dictDelete(keywords);
+  _dictDelete(twoCharOperators);
 }
 fn nextToken(tokenValue) {
   let c, c2;
@@ -898,14 +898,14 @@ fn nextToken(tokenValue) {
       _strPushChar(tokenValue, c);
       c = nextChar();
     }
-    return 4 + dictFind(keywords, tokenValue);
+    return 4 + _dictFind(keywords, tokenValue);
   }
 
   // Operators.
   if (strchr("(){}[]<>=+-*/%!&|.,;:^", c)) {
     _strPushChar(tokenValue, c);
     _strPushChar(tokenValue, nextChar());
-    if (dictFind(twoCharOperators, tokenValue) >= 0) {
+    if (_dictFind(twoCharOperators, tokenValue) >= 0) {
       nextChar();
       return c + 128;
     } else {

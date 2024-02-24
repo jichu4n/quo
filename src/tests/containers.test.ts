@@ -32,16 +32,16 @@ for (const stage of stages) {
       _strNew,
       _strDelete,
       _strFromRaw,
-      arrNew,
-      arrDelete,
-      arrPush,
-      arrGet,
-      arrSet,
-      dictNew,
-      dictDelete,
-      dictFind,
-      dictGet,
-      dictSet,
+      _arrNew,
+      _arrDelete,
+      _arrPush,
+      _arrGet,
+      _arrSet,
+      _dictNew,
+      _dictDelete,
+      _dictFind,
+      _dictGet,
+      _dictSet,
       _malloc,
     } = fns;
 
@@ -50,16 +50,16 @@ for (const stage of stages) {
       _strNew,
       _strDelete,
       _strFromRaw,
-      arrNew,
-      arrDelete,
-      arrPush,
-      arrGet,
-      arrSet,
-      dictNew,
-      dictDelete,
-      dictFind,
-      dictGet,
-      dictSet,
+      _arrNew,
+      _arrDelete,
+      _arrPush,
+      _arrGet,
+      _arrSet,
+      _dictNew,
+      _dictDelete,
+      _dictFind,
+      _dictGet,
+      _dictSet,
       _malloc,
       wasmMemory,
     };
@@ -67,9 +67,9 @@ for (const stage of stages) {
 
   describe(`stage ${stage} strings`, () => {
     test('array push', async function () {
-      const {arrNew, arrDelete, arrPush, wasmMemory} = await setup();
+      const {_arrNew, _arrDelete, _arrPush, wasmMemory} = await setup();
       expectUsedMemChunks(wasmMemory, heapStart, 0);
-      const arr = arrNew(0);
+      const arr = _arrNew(0);
       expectUsedMemChunks(wasmMemory, heapStart, 2); // header + data
       expect(toArr(wasmMemory, arr)).toStrictEqual({
         size: 4,
@@ -78,7 +78,7 @@ for (const stage of stages) {
       });
 
       for (let i = 0; i < 100; i++) {
-        arrPush(arr, i);
+        _arrPush(arr, i);
         expect(toArr(wasmMemory, arr)).toMatchObject({
           len: i + 1,
           data: Array(i + 1)
@@ -87,58 +87,59 @@ for (const stage of stages) {
         });
       }
       expectUsedMemChunks(wasmMemory, heapStart, 2);
-      arrDelete(arr);
+      _arrDelete(arr);
       expectUsedMemChunks(wasmMemory, heapStart, 0);
     });
     test('array get and set', async function () {
-      const {arrNew, arrDelete, arrGet, arrSet, arrPush, wasmMemory} =
+      const {_arrNew, _arrDelete, _arrGet, _arrSet, _arrPush, wasmMemory} =
         await setup();
       expectUsedMemChunks(wasmMemory, heapStart, 0);
-      const arr = arrNew(0);
+      const arr = _arrNew(0);
       for (let i = 0; i < 100; i++) {
-        arrPush(arr, i);
+        _arrPush(arr, i);
       }
 
       for (let i = 0; i < 100; i++) {
-        expect(arrGet(arr, i)).toStrictEqual(i);
+        expect(_arrGet(arr, i)).toStrictEqual(i);
       }
-      expect(() => arrGet(arr, 100)).toThrow();
+      expect(() => _arrGet(arr, 100)).toThrow();
 
       for (let i = 0; i < 100; i++) {
-        arrSet(arr, i, arrGet(arr, i) * 2);
+        _arrSet(arr, i, _arrGet(arr, i) * 2);
       }
-      expect(() => arrSet(arr, 100, 200)).toThrow();
+      expect(() => _arrSet(arr, 100, 200)).toThrow();
       for (let i = 0; i < 100; i++) {
-        expect(arrGet(arr, i)).toStrictEqual(i * 2);
+        expect(_arrGet(arr, i)).toStrictEqual(i * 2);
       }
 
-      arrDelete(arr);
+      _arrDelete(arr);
       expectUsedMemChunks(wasmMemory, heapStart, 0);
     });
     test('array free values', async function () {
-      const {arrNew, arrDelete, arrPush, _malloc, wasmMemory} = await setup();
+      const {_arrNew, _arrDelete, _arrPush, _malloc, wasmMemory} =
+        await setup();
       expectUsedMemChunks(wasmMemory, heapStart, 0);
-      const arr = arrNew(0);
+      const arr = _arrNew(0);
       for (let i = 0; i < 10; i++) {
-        arrPush(arr, _malloc(1));
+        _arrPush(arr, _malloc(1));
       }
       expectUsedMemChunks(wasmMemory, heapStart, 2 + 10);
-      arrDelete(arr);
+      _arrDelete(arr);
       expectUsedMemChunks(wasmMemory, heapStart, 10);
     });
     test('dict set and get', async function () {
       const {
         _strFromRaw,
         _strDelete,
-        dictNew,
-        dictDelete,
-        dictFind,
-        dictGet,
-        dictSet,
+        _dictNew,
+        _dictDelete,
+        _dictFind,
+        _dictGet,
+        _dictSet,
         wasmMemory,
       } = await setup();
       expectUsedMemChunks(wasmMemory, heapStart, 0);
-      const dict = dictNew(0);
+      const dict = _dictNew(0);
       expectUsedMemChunks(wasmMemory, heapStart, 5); // dict header, 2x array headers, 2x array data
 
       setRawStr(wasmMemory, 4096, 'foo');
@@ -147,31 +148,31 @@ for (const stage of stages) {
       setRawStr(wasmMemory, 4096 + 10, 'bar');
       const str3 = _strFromRaw(4096 + 10);
 
-      expect(dictFind(dict, str1)).toStrictEqual(-1);
-      expect(dictGet(dict, str1)).toStrictEqual(0);
-      expect(dictFind(dict, str3)).toStrictEqual(-1);
-      expect(dictGet(dict, str3)).toStrictEqual(0);
+      expect(_dictFind(dict, str1)).toStrictEqual(-1);
+      expect(_dictGet(dict, str1)).toStrictEqual(0);
+      expect(_dictFind(dict, str3)).toStrictEqual(-1);
+      expect(_dictGet(dict, str3)).toStrictEqual(0);
 
-      dictSet(dict, str1, 42, 0);
-      expect(dictFind(dict, str1)).toStrictEqual(0);
-      expect(dictGet(dict, str1)).toStrictEqual(42);
-      expect(dictFind(dict, str2)).toStrictEqual(0);
-      expect(dictGet(dict, str2)).toStrictEqual(42);
-      expect(dictFind(dict, str3)).toStrictEqual(-1);
-      expect(dictGet(dict, str3)).toStrictEqual(0);
+      _dictSet(dict, str1, 42, 0);
+      expect(_dictFind(dict, str1)).toStrictEqual(0);
+      expect(_dictGet(dict, str1)).toStrictEqual(42);
+      expect(_dictFind(dict, str2)).toStrictEqual(0);
+      expect(_dictGet(dict, str2)).toStrictEqual(42);
+      expect(_dictFind(dict, str3)).toStrictEqual(-1);
+      expect(_dictGet(dict, str3)).toStrictEqual(0);
 
-      dictSet(dict, str3, 33, 0);
-      expect(dictFind(dict, str1)).toStrictEqual(0);
-      expect(dictGet(dict, str1)).toStrictEqual(42);
-      expect(dictFind(dict, str2)).toStrictEqual(0);
-      expect(dictGet(dict, str2)).toStrictEqual(42);
-      expect(dictFind(dict, str3)).toStrictEqual(1);
-      expect(dictGet(dict, str3)).toStrictEqual(33);
+      _dictSet(dict, str3, 33, 0);
+      expect(_dictFind(dict, str1)).toStrictEqual(0);
+      expect(_dictGet(dict, str1)).toStrictEqual(42);
+      expect(_dictFind(dict, str2)).toStrictEqual(0);
+      expect(_dictGet(dict, str2)).toStrictEqual(42);
+      expect(_dictFind(dict, str3)).toStrictEqual(1);
+      expect(_dictGet(dict, str3)).toStrictEqual(33);
 
       _strDelete(str1);
       _strDelete(str2);
       _strDelete(str3);
-      dictDelete(dict, 0);
+      _dictDelete(dict, 0);
       expectUsedMemChunks(wasmMemory, heapStart, 0);
     });
   });

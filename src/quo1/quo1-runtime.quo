@@ -128,7 +128,7 @@ fn _strNew(reserveLen) {
 }
 fn _strFromRaw(rawStr) {
   let len, str;
-  len = rawStrLen(rawStr);
+  len = _rawStrLen(rawStr);
   str = _malloc(8);
   _store(str + 0, len);
   _store(str + 4, _strNewChunk(len, len, 0, rawStr));
@@ -247,7 +247,7 @@ fn _strPush(str1, str2) {
 }
 fn _strPushRaw(str1, str2) {
   let str1Len, str2Len, str1TailChunk, str1TailChunkSize, str1TailChunkLen, newChunk;
-  str2Len = rawStrLen(str2);
+  str2Len = _rawStrLen(str2);
   if (str2Len == 0) {
     return str1;
   }
@@ -329,13 +329,13 @@ fn _strNewChunk(minSize, len, next, src) {
 // Compare str against raw string.
 fn _strCmpRaw(str1, str2) {
   _strFlatten(str1);
-  return memcmp2(_load(str1 + 4) + 12, _strLen(str1), str2, rawStrLen(str2));
+  return _memcmp2(_load(str1 + 4) + 12, _strLen(str1), str2, _rawStrLen(str2));
 }
 // Compare str against str.
 fn _strCmp(str1, str2) {
   _strFlatten(str1);
   _strFlatten(str2);
-  return memcmp2(_load(str1 + 4) + 12, _strLen(str1), _load(str2 + 4) + 12, _strLen(str2));
+  return _memcmp2(_load(str1 + 4) + 12, _strLen(str1), _load(str2 + 4) + 12, _strLen(str2));
 }
 fn _strClone(str) {
   let len, newStr, newChunk, chunk;
@@ -352,7 +352,7 @@ fn _strClone(str) {
 fn _strFromInt(n) {
   let rawStr, str;
   rawStr = _malloc(16);
-  str = _strFromRaw(itoa(n, rawStr));
+  str = _strFromRaw(_itoa(n, rawStr));
   _free(rawStr);
   return str;
 }
@@ -370,7 +370,7 @@ fn _strPushInt(str1, n) {
 //   04 i32 len - number of elements in use.
 //   08 i32 data - address of data
 // So address of element k is data + k * 4.
-fn arrNew(reserveLen) {
+fn _arrNew(reserveLen) {
   let arr, size, data;
   if (reserveLen < 4) {
     size = 4;
@@ -383,12 +383,12 @@ fn arrNew(reserveLen) {
   _store(arr + 8, _malloc(size * 4));
   return arr;
 }
-fn arrDelete(arr) {
-  arrClear(arr);
+fn _arrDelete(arr) {
+  _arrClear(arr);
   _free(_load(arr + 8));
   _free(arr);
 }
-fn arrPush(arr, elem) {
+fn _arrPush(arr, elem) {
   let size, len, data, newSize, newData;
   size = _load(arr + 0);
   len = _load(arr + 4);
@@ -408,20 +408,20 @@ fn arrPush(arr, elem) {
   _store(arr + 4, len + 1);
   _store(data + len * 4, elem);
 }
-fn arrLen(arr) {
+fn _arrLen(arr) {
   return _load(arr + 4);
 }
-fn arrClear(arr) {
+fn _arrClear(arr) {
   _store(arr + 4, 0);
 }
-fn arrGet(arr, i) {
-  if (i < 0 || i >= arrLen(arr)) {
+fn _arrGet(arr, i) {
+  if (i < 0 || i >= _arrLen(arr)) {
     _throw("Array index out of bounds");
   }
   return _load(_load(arr + 8) + i * 4);
 }
-fn arrSet(arr, i, v) {
-  if (i < 0 || i >= arrLen(arr)) {
+fn _arrSet(arr, i, v) {
+  if (i < 0 || i >= _arrLen(arr)) {
     _throw("Array index out of bounds");
   }
   _store(_load(arr + 8) + i * 4, v);
@@ -437,103 +437,103 @@ fn arrSet(arr, i, v) {
 // Dict header is 8 bytes:
 //   00 i32 - address of keys array
 //   04 i32 - address of values array
-fn dictNew(reserveLen) {
+fn _dictNew(reserveLen) {
   let dict;
   dict = _malloc(8);
-  _store(dict + 0, arrNew(reserveLen));
-  _store(dict + 4, arrNew(reserveLen));
+  _store(dict + 0, _arrNew(reserveLen));
+  _store(dict + 4, _arrNew(reserveLen));
   return dict;
 }
-fn dictClear(dict) {
+fn _dictClear(dict) {
   let len, i, keys, values;
   keys = _load(dict + 0);
   values = _load(dict + 4);
-  len = arrLen(keys);
+  len = _arrLen(keys);
   i = 0;
   while (i < len) {
-    _strDelete(arrGet(keys, i));
+    _strDelete(_arrGet(keys, i));
     i = i + 1;
   }
-  arrClear(keys);
-  arrClear(values);
+  _arrClear(keys);
+  _arrClear(values);
 }
-fn dictDelete(dict) {
+fn _dictDelete(dict) {
   let keys, values;
   keys = _load(dict + 0);
   values = _load(dict + 4);
-  dictClear(dict);
-  arrDelete(keys);
-  arrDelete(values);
+  _dictClear(dict);
+  _arrDelete(keys);
+  _arrDelete(values);
   _free(dict);
 }
-fn dictFind(dict, str) {
+fn _dictFind(dict, str) {
   let len, i, keys, values;
   keys = _load(dict + 0);
-  len = arrLen(keys);
+  len = _arrLen(keys);
   i = 0;
   while (i < len) {
-    if (_strCmp(str, arrGet(keys, i)) == 0) {
+    if (_strCmp(str, _arrGet(keys, i)) == 0) {
       return i;
     }
     i = i + 1;
   }
   return -1;
 }
-fn dictGet(dict, key) {
+fn _dictGet(dict, key) {
   let i, values;
-  i = dictFind(dict, key);
+  i = _dictFind(dict, key);
   if (i >= 0) {
     values = _load(dict + 4);
-    return arrGet(values, i);
+    return _arrGet(values, i);
   }
   // This is rather awkward - since dict is storing i32 values, there are
   // no obvious ways to return an invalid value. But we'll mostly be using
   // dict to _store pointers, so 0 i.e. null is the most reasonable result.
   return 0;
 }
-fn dictSet(dict, key, v, shouldFreeOldValue) {
+fn _dictSet(dict, key, v, shouldFreeOldValue) {
   let len, i, keys, values, newKey;
   keys = _load(dict + 0);
   values = _load(dict + 4);
-  len = arrLen(keys);
-  i = dictFind(dict, key);
+  len = _arrLen(keys);
+  i = _dictFind(dict, key);
   if (i < 0) {
     i = len;
     newKey = _strClone(key);
-    arrPush(keys, newKey);
-    arrPush(values, v);
+    _arrPush(keys, newKey);
+    _arrPush(values, v);
   } else {
     if (shouldFreeOldValue) {
-      _free(arrGet(values, i));
+      _free(_arrGet(values, i));
     }
-    arrSet(values, i, v);
+    _arrSet(values, i, v);
   }
 }
-fn dictSetRaw(dict, rawKey, v, shouldFreeOldValue) {
+fn _dictSetRaw(dict, rawKey, v, shouldFreeOldValue) {
   let key;
   key = _strFromRaw(rawKey);
-  dictSet(dict, key, v, shouldFreeOldValue);
+  _dictSet(dict, key, v, shouldFreeOldValue);
   _strDelete(key);
 }
-fn dictLen(dict) {
+fn _dictLen(dict) {
   let keys;
   keys = _load(dict + 0);
-  return arrLen(keys);
+  return _arrLen(keys);
 }
-fn dictGetKeyAt(dict, i) {
+fn _dictGetKeyAt(dict, i) {
   let keys;
   keys = _load(dict + 0);
-  return arrGet(keys, i);
+  return _arrGet(keys, i);
 }
-fn dictGetValueAt(dict, i) {
+fn _dictGetValueAt(dict, i) {
   let values;
   values = _load(dict + 4);
-  return arrGet(values, i);
+  return _arrGet(values, i);
 }
 
 
 // Raw (i.e., C-style, null terminated) strings.
-fn rawStrLen(str) {
+fn _rawStrLen(str) {
   let len;
   while (_load8_u(str)) {
     len = len + 1;
@@ -541,7 +541,7 @@ fn rawStrLen(str) {
   }
   return len;
 }
-fn itoa(n, rawStr) {
+fn _itoa(n, rawStr) {
   let p;
   p = rawStr + 11;
   _store8(p, 0);
@@ -555,7 +555,7 @@ fn itoa(n, rawStr) {
   }
   return p;
 }
-fn memcmp(p1, p2, size) {
+fn _memcmp(p1, p2, size) {
   let offset, v1, v2;
   if (p1 == p2 || size == 0) {
     return 0;
@@ -571,11 +571,11 @@ fn memcmp(p1, p2, size) {
   }
   return 0;
 }
-fn memcmp2(p1, p1Size, p2, p2Size) {
+fn _memcmp2(p1, p1Size, p2, p2Size) {
   if (p1Size < p2Size) {
-    return memcmp(p1, p2, p1Size) || -1;
+    return _memcmp(p1, p2, p1Size) || -1;
   } else if (p1Size > p2Size) {
-    return memcmp(p1, p2, p2Size) || 1;
+    return _memcmp(p1, p2, p2Size) || 1;
   }
-  return memcmp(p1, p2, p1Size);
+  return _memcmp(p1, p2, p1Size);
 }
