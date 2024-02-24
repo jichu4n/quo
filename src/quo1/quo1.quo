@@ -98,7 +98,7 @@ fn compileExpr0() {
           } else if (token2 == 44) { // ,
             // Do nothing
           } else {
-            throw("Expected ',' or ')' after function call argument");
+            _throw("Expected ',' or ')' after function call argument");
           }
         }
       }
@@ -114,7 +114,7 @@ fn compileExpr0() {
         output = strFromRaw("Undeclared variable '");
         strMerge(output, tokenValue);
         strPushRaw(output, "' in expression");
-        throw(strToRaw(output));
+        _throw(strToRaw(output));
       }
       output = strFromRaw(outputPrefix);
       strMerge(output, tokenValue);
@@ -129,7 +129,7 @@ fn compileExpr0() {
   strPushRaw(output, " with value '");
   strMerge(output, tokenValue);
   strPushRaw(output, "'");
-  throw(strToRaw(output));
+  _throw(strToRaw(output));
 }
 fn compileExpr1() {
   let token, tokenValue, output, rightOutput, origInputPtr, outputPrefix;
@@ -247,7 +247,7 @@ fn compileExpr5() {
     origInputPtr = inputPtr;
     token = nextToken(tokenValue);
     if (token == 166) {  // &&
-      outputPrefix = "(call $and ";
+      outputPrefix = "(call $_and ";
     } else {
       inputPtr = origInputPtr;
       break;
@@ -274,7 +274,7 @@ fn compileExpr6() {
     origInputPtr = inputPtr;
     token = nextToken(tokenValue);
     if (token == 252) {  // ||
-      outputPrefix = "(call $or ";
+      outputPrefix = "(call $_or ";
     } else {
       inputPtr = origInputPtr;
       break;
@@ -304,7 +304,7 @@ fn expectToken(expectedToken, tokenValue) {
     strPushRaw(output, " with value '");
     strMerge(output, tokenValue);
     strPushRaw(output, "'");
-    throw(strToRaw(output));
+    _throw(strToRaw(output));
   }
 }
 
@@ -337,7 +337,7 @@ fn compileStmt(indentLevel) {
         strPushRaw(output, " with value '");
         strMerge(output, tokenValue);
         strPushRaw(output, "'");
-        throw(strToRaw(output));
+        _throw(strToRaw(output));
       }
     }
     strDelete(tokenValue);
@@ -407,7 +407,7 @@ fn compileStmt(indentLevel) {
   // Break
   if (token == 10) {
     if (loopId <= 1) {
-      throw("Found break statement outside of a loop block");
+      _throw("Found break statement outside of a loop block");
     }
     expectToken(59, tokenValue);  // ;
     output = strFromRaw("(br $loop_");
@@ -420,7 +420,7 @@ fn compileStmt(indentLevel) {
   // Continue
   if (token == 11) {
     if (loopId <= 1) {
-      throw("Found continue statement outside of a loop block");
+      _throw("Found continue statement outside of a loop block");
     }
     expectToken(59, tokenValue);  // ;
     output = strFromRaw("(br $loop_");
@@ -461,7 +461,7 @@ fn compileStmt(indentLevel) {
         output = strFromRaw("Undeclared variable '");
         strPush(output, tokenValue);
         strPushRaw(output, "' in assignment");
-        throw(strToRaw(output));
+        _throw(strToRaw(output));
       }
       output = strFromRaw(outputPrefix);
       strPush(output, tokenValue);
@@ -549,7 +549,7 @@ fn compileFn() {
         strPushRaw(output, " with value '");
         strMerge(output, tokenValue);
         strPushRaw(output, "'");
-        throw(strToRaw(output));
+        _throw(strToRaw(output));
       }
     }
   }
@@ -615,7 +615,7 @@ fn compileModule() {
           strPushRaw(output, " with value '");
           strMerge(output, tokenValue);
           strPushRaw(output, "'");
-          throw(strToRaw(output));
+          _throw(strToRaw(output));
         }
       }
       strPushRaw(output, "\n");
@@ -628,7 +628,7 @@ fn compileModule() {
     strPushRaw(output, " with value '");
     strMerge(output, tokenValue);
     strPushRaw(output, "'");
-    throw(strToRaw(output));
+    _throw(strToRaw(output));
   }
 
   // String constants
@@ -726,7 +726,7 @@ fn nextToken(tokenValue) {
     while (1) {
       c = nextChar();
       if (c == 0) {
-        throw("Unterminated string literal");
+        _throw("Unterminated string literal");
       }
       if (c == 34) {  // "
         break;
@@ -759,7 +759,7 @@ fn nextToken(tokenValue) {
     }
   }
 
-  throw("Unrecognized character");
+  _throw("Unrecognized character");
 }
 fn peekNextToken(tokenValue) {
   let origInputPtr, token;
@@ -787,13 +787,13 @@ fn skipWhitespaceAndComments() {
 }
 fn nextChar() {
   inputPtr = inputPtr + 1;
-  return load8_u(inputPtr);
+  return _load8_u(inputPtr);
 }
 fn peekNextChar() {
-  return load8_u(inputPtr + 1);
+  return _load8_u(inputPtr + 1);
 }
 fn curChar() {
-  return load8_u(inputPtr);
+  return _load8_u(inputPtr);
 }
 fn isSpace(c) {
   return c == 32  // space
@@ -814,7 +814,7 @@ fn isIdent(c) {
 fn strchr(rawStr, c) {
   let c2;
   while (1) {
-    c2 = load8_u(rawStr);
+    c2 = _load8_u(rawStr);
     if (c2 == 0) {
       return 0;
     }

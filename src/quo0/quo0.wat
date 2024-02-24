@@ -1299,10 +1299,10 @@
     "(i32.le_s \00"
   )
   (data (i32.const 15730148)
-    "(call $and \00"
+    "(call $_and \00"
   )
   (data (i32.const 15730180)
-    "(call $or \00"
+    "(call $_or \00"
   )
   (data (i32.const 15730212)
     "(i32.neg \00"

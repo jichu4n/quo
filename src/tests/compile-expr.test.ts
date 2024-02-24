@@ -115,27 +115,27 @@ for (const stage of stages) {
       testCompileExpr([
         [
           '1 == 2 || 3 == 4',
-          '(call $or (i32.eq (i32.const 1) (i32.const 2)) (i32.eq (i32.const 3) (i32.const 4)))',
+          '(call $_or (i32.eq (i32.const 1) (i32.const 2)) (i32.eq (i32.const 3) (i32.const 4)))',
         ],
         [
           '1 == 2 || 3 == 4 && 5 == 6',
-          '(call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6))))',
+          '(call $_or (i32.eq (i32.const 1) (i32.const 2)) (call $_and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6))))',
         ],
         [
           '1 || 3 == 4 && 5 == 6 || 7',
-          '(call $or (call $or (i32.const 1) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.const 7))',
+          '(call $_or (call $_or (i32.const 1) (call $_and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.const 7))',
         ],
         [
           '1 == 2 || 3 == 4 && 5 == 6 || 7 == 8',
-          '(call $or (call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8)))',
+          '(call $_or (call $_or (i32.eq (i32.const 1) (i32.const 2)) (call $_and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8)))',
         ],
         [
           '1 == 2 || 3 == 4 && 5 == 6 || 7 == 8 || 9 == 10',
-          '(call $or (call $or (call $or (i32.eq (i32.const 1) (i32.const 2)) (call $and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8))) (i32.eq (i32.const 9) (i32.const 10)))',
+          '(call $_or (call $_or (call $_or (i32.eq (i32.const 1) (i32.const 2)) (call $_and (i32.eq (i32.const 3) (i32.const 4)) (i32.eq (i32.const 5) (i32.const 6)))) (i32.eq (i32.const 7) (i32.const 8))) (i32.eq (i32.const 9) (i32.const 10)))',
         ],
         [
           '!(1 == 2 && 3 >= 4)',
-          '(i32.eqz (call $and (i32.eq (i32.const 1) (i32.const 2)) (i32.ge_s (i32.const 3) (i32.const 4))))',
+          '(i32.eqz (call $_and (i32.eq (i32.const 1) (i32.const 2)) (i32.ge_s (i32.const 3) (i32.const 4))))',
         ],
       ]);
     });
