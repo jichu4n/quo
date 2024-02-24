@@ -649,7 +649,7 @@ fn compileModule() {
   dictClear(globalVars);
   strDelete(tokenValue);
   rawOutput = strToRaw(output);
-  free(output);
+  _free(output);
   return rawOutput;
 }
 
@@ -836,7 +836,7 @@ fn indent(indentLevel) {
   return str;
 }
 fn init(input, heapStart, heapEnd) {
-  memoryInit(heapStart, heapEnd);
+  _memoryInit(heapStart, heapEnd);
   lexerInit(input);
   symbolsInit(heapEnd);
 }

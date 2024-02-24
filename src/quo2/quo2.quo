@@ -493,7 +493,7 @@ fn compileStmt(indentLevel) {
 
   // Delete
   if (token == 14) {  // delete
-    output = strFromRaw("(call $free ");
+    output = strFromRaw("(call $_free ");
     strMerge(output, compileExpr());
     expectToken(59, tokenValue);  // ;
     strPushRaw(output, ")");
@@ -677,7 +677,7 @@ fn compileClass() {
   strPush(output, className);
   strPushRaw(output, "_new (result i32)\n");
   strPushRaw(output, "    (local $obj i32)\n");
-  strPushRaw(output, "    (local.set $obj (call $malloc (i32.const ");
+  strPushRaw(output, "    (local.set $obj (call $_malloc (i32.const ");
   strPushInt(output, offset);
   strPushRaw(output, ")))\n");
   strPushRaw(output, "    (i32.store (local.get $obj) (i32.const ");
@@ -798,7 +798,7 @@ fn compileModule() {
   dictClear(classes);
   strDelete(tokenValue);
   rawOutput = strToRaw(output);
-  free(output);
+  _free(output);
   return rawOutput;
 }
 
@@ -991,7 +991,7 @@ fn indent(indentLevel) {
   return str;
 }
 fn init(input, heapStart, heapEnd) {
-  memoryInit(heapStart, heapEnd);
+  _memoryInit(heapStart, heapEnd);
   lexerInit(input);
   symbolsInit(heapEnd);
 }

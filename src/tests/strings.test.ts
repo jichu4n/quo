@@ -10,7 +10,7 @@ for (const stage of stages) {
   const setup = async () => {
     const {wasmMemory, fns} = await loadQuoWasmModule(stage);
     const {
-      memoryInit,
+      _memoryInit,
       strNew,
       strDelete,
       strFromRaw,
@@ -23,7 +23,7 @@ for (const stage of stages) {
       strCmp,
     } = fns;
 
-    memoryInit(heapStart, heapEnd);
+    _memoryInit(heapStart, heapEnd);
     return {
       strNew,
       strDelete,

@@ -28,7 +28,7 @@ for (const stage of stages) {
   const setup = async () => {
     const {wasmMemory, fns} = await loadQuoWasmModule(stage);
     const {
-      memoryInit,
+      _memoryInit,
       strNew,
       strDelete,
       strFromRaw,
@@ -42,10 +42,10 @@ for (const stage of stages) {
       dictFind,
       dictGet,
       dictSet,
-      malloc,
+      _malloc,
     } = fns;
 
-    memoryInit(heapStart, heapEnd);
+    _memoryInit(heapStart, heapEnd);
     return {
       strNew,
       strDelete,
@@ -60,7 +60,7 @@ for (const stage of stages) {
       dictFind,
       dictGet,
       dictSet,
-      malloc,
+      _malloc,
       wasmMemory,
     };
   };
@@ -116,11 +116,11 @@ for (const stage of stages) {
       expectUsedMemChunks(wasmMemory, heapStart, 0);
     });
     test('array free values', async function () {
-      const {arrNew, arrDelete, arrPush, malloc, wasmMemory} = await setup();
+      const {arrNew, arrDelete, arrPush, _malloc, wasmMemory} = await setup();
       expectUsedMemChunks(wasmMemory, heapStart, 0);
       const arr = arrNew(0);
       for (let i = 0; i < 10; i++) {
-        arrPush(arr, malloc(1));
+        arrPush(arr, _malloc(1));
       }
       expectUsedMemChunks(wasmMemory, heapStart, 2 + 10);
       arrDelete(arr);

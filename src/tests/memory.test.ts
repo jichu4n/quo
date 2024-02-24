@@ -11,13 +11,13 @@ const headerSize = 16;
 for (const stage of stages) {
   const setup = async () => {
     const {wasmMemory, fns} = await loadQuoWasmModule(stage);
-    const {memoryInit, malloc, free} = fns;
+    const {_memoryInit, _malloc, _free} = fns;
 
-    memoryInit(heapStart, heapEnd);
-    return {malloc, free, wasmMemory};
+    _memoryInit(heapStart, heapEnd);
+    return {_malloc, _free, wasmMemory};
   };
 
-  describe(`stage ${stage} malloc & free`, () => {
+  describe(`stage ${stage} _malloc & _free`, () => {
     test('initial state', async () => {
       let {wasmMemory} = await setup();
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
@@ -31,8 +31,8 @@ for (const stage of stages) {
       ]);
     });
     test('allocate and split', async () => {
-      const {wasmMemory, malloc} = await setup();
-      const p1 = malloc(1);
+      const {wasmMemory, _malloc} = await setup();
+      const p1 = _malloc(1);
       expect(p1).toStrictEqual(heapStart + headerSize);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
@@ -50,7 +50,7 @@ for (const stage of stages) {
           used: false,
         },
       ]);
-      const p2 = malloc(50);
+      const p2 = _malloc(50);
       expect(p2).toStrictEqual(p1 + 16 + headerSize);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
@@ -76,7 +76,7 @@ for (const stage of stages) {
         },
       ]);
       // Now use up the entire remaining space
-      const p3 = malloc(heapEnd - (p2 + 64) - 16);
+      const p3 = _malloc(heapEnd - (p2 + 64) - 16);
       expect(p3).toStrictEqual(p2 + 64 + headerSize);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
@@ -102,19 +102,19 @@ for (const stage of stages) {
         },
       ]);
       // Now there should be no more space
-      expect(() => malloc(1)).toThrow();
+      expect(() => _malloc(1)).toThrow();
     });
     test('allocate invalid sizes', async () => {
-      const {wasmMemory, malloc} = await setup();
-      let p = malloc(0);
+      const {wasmMemory, _malloc} = await setup();
+      let p = _malloc(0);
       expect(p).toStrictEqual(0);
-      expect(() => malloc(1024)).toThrow();
+      expect(() => _malloc(1024)).toThrow();
     });
     test('free with and without merging', async () => {
-      const {wasmMemory, malloc, free} = await setup();
-      const p1 = malloc(1),
-        p2 = malloc(1),
-        p3 = malloc(1);
+      const {wasmMemory, _malloc, _free} = await setup();
+      const p1 = _malloc(1),
+        p2 = _malloc(1),
+        p3 = _malloc(1);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
           address: p1 - headerSize,
@@ -146,7 +146,7 @@ for (const stage of stages) {
         },
       ]);
       // Free p2 -- should not merge.
-      free(p2);
+      _free(p2);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
           address: p1 - headerSize,
@@ -178,7 +178,7 @@ for (const stage of stages) {
         },
       ]);
       // Free p1 -- should merge with p2.
-      free(p1);
+      _free(p1);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
           address: p1 - headerSize,
@@ -203,7 +203,7 @@ for (const stage of stages) {
         },
       ]);
       // Free p3 -- should all merge into one big chunk.
-      free(p3);
+      _free(p3);
       expect(getMemChunks(wasmMemory, heapStart)).toStrictEqual([
         {
           address: heapStart,
