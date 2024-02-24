@@ -55,8 +55,8 @@ for (const stage of stages) {
         ['(f(g()))', '(call $f (call $g))'],
         ...(stage[0] === '2'
           ? ([
-              ['new Foo()', '(struct.new_default $Foo)'],
-              ['(new Foo())', '(struct.new_default $Foo)'],
+              ['new Foo()', '(call $malloc (global.get $class_Foo_size))'],
+              ['(new Foo())', '(call $malloc (global.get $class_Foo_size))'],
             ] as const)
           : []),
       ]);

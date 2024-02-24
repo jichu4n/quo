@@ -32,6 +32,4 @@ bootstrapping a self-hosted compiler.
     - Memory management with malloc / free
     - Data structures including dynamic strings, arrays and maps
 - **(WIP) Stage 2 ([quo2.quo](./src/quo2/quo2.quo)):** Written in Quo0,
-  compiles a more advanced version of Quo (Quo1) supporting data types that
-  compile to WasmGC `struct`s.
-
+  compiles a more advanced version of Quo (Quo1) supporting structs.

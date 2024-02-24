@@ -45,6 +45,15 @@ function getTestInputFilePath(name: string) {
     `${name}.quo`
   );
 }
+function getRuntimeFilePath(name: string) {
+  return path.join(
+    __dirname,
+    '..',
+    '..',
+    'dist',
+    name,
+  );
+}
 
 for (const stage of stages) {
   describe(`stage ${stage} compile module`, () => {
@@ -80,12 +89,17 @@ for (const stage of stages) {
       }
       test(`compile ${inputFile}`, async () => {
         const inputFilePath = getTestInputFilePath(inputFile.name);
+        const runtimeFilePaths = [];
+        if (stage !== '0') {
+          runtimeFilePaths.push(getRuntimeFilePath('quo0-runtime.wat'));
+          runtimeFilePaths.push(getRuntimeFilePath('quo1-runtime.quo'));
+        }
         const outputFile = path.format({
           ...path.parse(inputFilePath),
           base: '',
           ext: `.stage${stage}.wasm`,
         });
-        await compileFiles(stage, [inputFilePath], outputFile);
+        await compileFiles(stage, [...runtimeFilePaths, inputFilePath], outputFile);
       });
     }
   });

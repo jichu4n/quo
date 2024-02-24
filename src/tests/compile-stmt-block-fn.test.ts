@@ -70,10 +70,10 @@ for (const stage of stages) {
         ['let x, y, z;', '(local $x i32) (local $y i32) (local $z i32)'],
         ...(stage[0] === '2'
           ? ([
-              ['let x: Foo;', '(local $x (ref $Foo))'],
+              ['let x: Foo;', '(local $x i32)'],
               [
                 'let x: Foo, y: Bar;',
-                '(local $x (ref $Foo)) (local $y (ref $Bar))',
+                '(local $x i32) (local $y i32)',
               ],
             ] as TestCases)
           : []),
@@ -256,7 +256,16 @@ for (const stage of stages) {
               [
                 'fn foo(x: Foo) {}',
                 `
-  (func $foo (param $x (ref $Foo)) (result i32)
+  (func $foo (param $x i32) (result i32)
+    (i32.const 0)
+  )
+  (export "foo" (func $foo))
+`.slice(1),
+              ],
+              [
+                'fn foo(x: Foo): Bar {}',
+                `
+  (func $foo (param $x i32) (result i32)
     (i32.const 0)
   )
   (export "foo" (func $foo))

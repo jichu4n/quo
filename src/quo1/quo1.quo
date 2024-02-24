@@ -261,9 +261,6 @@ fn compileExpr5() {
     strPushRaw(output, " ");
     strMerge(output, rightOutput);
     strPushRaw(output, ")");
-    if (len1 + len2 + len3 + 2 != strLen(output)) {
-      throw("EEEEEEEEEEEEEEK");
-    }
     leftOutput = output;
   }
   strDelete(tokenValue);

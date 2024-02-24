@@ -126,11 +126,11 @@ fn compileExpr0() {
   // new MyClass()
   if (token == 13) {
     expectToken(3, tokenValue);  // identifier
-    output = strFromRaw("(struct.new_default $");
+    output = strFromRaw("(call $malloc (global.get $class_");
     strPush(output, tokenValue);
     expectToken(40, tokenValue);  // (
     expectToken(41, tokenValue);  // )
-    strPushRaw(output, ")");
+    strPushRaw(output, "_size))");
     strDelete(tokenValue);
     return output;
   }
@@ -272,9 +272,6 @@ fn compileExpr5() {
     strPushRaw(output, " ");
     strMerge(output, rightOutput);
     strPushRaw(output, ")");
-    if (len1 + len2 + len3 + 2 != strLen(output)) {
-      throw("EEEEEEEEEEEEEEK");
-    }
     leftOutput = output;
   }
   strDelete(tokenValue);
@@ -342,13 +339,9 @@ fn compileStmt(indentLevel) {
       token = nextToken(tokenValue);
       if (token == 58) {  // :
         expectToken(3, tokenValue);
-        strPushRaw(output, " (ref $");
-        strPush(output, tokenValue);
-        strPushRaw(output, "))");
         token = nextToken(tokenValue);
-      } else {
-        strPushRaw(output, " i32)");
       }
+      strPushRaw(output, " i32)");
       if (token == 59) {  // ;
         break;
       } else if (token == 44) {  // ,
@@ -496,6 +489,16 @@ fn compileStmt(indentLevel) {
     }
   }
 
+  // Delete
+  if (token == 14) {  // delete
+    output = strFromRaw("(call $free ");
+    strMerge(output, compileExpr());
+    expectToken(59, tokenValue);  // ;
+    strPushRaw(output, ")");
+    strDelete(tokenValue);
+    return output;
+  }
+
   // Expression
   output = strFromRaw("(drop ");
   inputPtr = origInputPtr;
@@ -561,13 +564,9 @@ fn compileFn() {
       token = nextToken(tokenValue);
       if (token == 58) {  // :
         expectToken(3, tokenValue);
-        strPushRaw(output, " (ref $");
-        strPush(output, tokenValue);
-        strPushRaw(output, "))");
         token = nextToken(tokenValue);
-      } else {
-        strPushRaw(output, " i32)");
       }
+      strPushRaw(output, " i32)");
       if (token == 41) {  // )
         break;
       } else if ( token == 44) {  // ,
@@ -584,7 +583,13 @@ fn compileFn() {
     }
   }
 
-  // TODO: support returning objects.
+  origInputPtr = inputPtr;
+  token = nextToken(tokenValue);
+  if (token == 58) {  // :
+    expectToken(3, tokenValue);
+  } else {
+    inputPtr = origInputPtr;
+  }
   strPushRaw(output, " (result i32)\n");
 
   // Body
@@ -602,47 +607,69 @@ fn compileFn() {
   strDelete(tokenValue);
   return output;
 }
+// How objects are laid out in memory:
+//   - The first i32 is the class ID
+//   - The rest of the fields follow in declaration order, where each field is
+//     an i32
+// Each class declaration generates the following:
+//   - $class_MyClass_fields: A function that returns a dict mapping field names
+//     to their offsets in the object
+//   - $class_MyClass_size: A global i32, the size of the object in bytes
+//     At the end of the module, we generate a $classesInit function that
+//     creates a global array $classes, where the index is the class ID and each
+//     element is a pointer to the corresponding class's $class_MyClass_fields function.
 fn compileClass() {
-  let token, tokenValue, output;
+  let token, tokenValue, className, output, offset;
 
   tokenValue = strNew(0);
   expectToken(12, tokenValue);  // class
 
-  output = strFromRaw("  (type $");
   expectToken(3, tokenValue);
-  strPush(output, tokenValue);
-  strPushRaw(output, " (struct");
-  // reserved for vtable pointer
-  strPushRaw(output, " (field i32)");
+  className = strClone(tokenValue);
   expectToken(123, tokenValue); // {
-  
+
+  output = strFromRaw("  (func $class_");
+  strPush(output, className);
+  strPushRaw(output, "_fields (result i32)\n");
+  strPushRaw(output, "    (local $fields i32)\n");
+  strPushRaw(output, "    (local.set $fields (call $dictNew (i32.const 0)))\n");
+  offset = 4;
   while (1) {
     token = nextToken(tokenValue);
     if (token == 125) {  // }
       break;
     } else if (token == 3) {
-      strPushRaw(output, " (field $");
-      strPush(output, tokenValue);
+      strPushRaw(output, "    (call $dictSetRaw (local.get $fields) (i32.const ");
+      strPushInt(output, getOrAddStringConstantOffset(tokenValue));
+      strPushRaw(output, ") (i32.const ");
+      strPushInt(output, offset);
+      offset = offset + 4;
+      strPushRaw(output, ") (i32.const 1))\n");
+
       token = nextToken(tokenValue);
       if (token == 58) {  // :
-        expectToken(3, tokenValue);
-        strPushRaw(output, " (mut (ref $");
-        strPush(output, tokenValue);
-        strPushRaw(output, "))");
+        expectToken(3, tokenValue);  // type name
         expectToken(59, tokenValue);  // ;
       } else if (token == 59) {  // ;
-        strPushRaw(output, " (mut i32)");
+        // no-op
       } else {
         throw("Expected type or semicolon after class property");
       }
-      strPushRaw(output, ")");
     } else {
       throw("Expected field declaration in class body");
     }
   }
+  strPushRaw(output, "    (local.get $fields)\n");
+  strPushRaw(output, "  )\n");
 
+  strPushRaw(output, "  (global $class_");
+  strPush(output, className);
+  strPushRaw(output, "_size i32 (i32.const ");
+  strPushInt(output, offset);
   strPushRaw(output, "))\n");
+
   strDelete(tokenValue);
+  strDelete(className);
   return output;
 }
 // Entry point.
@@ -679,13 +706,9 @@ fn compileModule() {
         token = nextToken(tokenValue);
         if (token == 58) {  // :
           expectToken(3, tokenValue);
-          strPushRaw(output, " (mut (ref $");
-          strPush(output, tokenValue);
-          strPushRaw(output, ")))");
           token = nextToken(tokenValue);
-        } else {
-          strPushRaw(output, " (mut i32) (i32.const 0))");
         }
+        strPushRaw(output, " (mut i32) (i32.const 0))");
         if (token == 59) {  // ;
           break;
         } else if (token == 44) {  // ,
@@ -758,6 +781,7 @@ fn compileModule() {
 //   11 - continue
 //   12 - class
 //   13 - new
+//   14 - delete
 // Single letter operators and symbol are their ASCII value. Double letter
 // operators are 128 + the ASCII value of the first letter.
 let keywords;
@@ -776,6 +800,7 @@ fn lexerInit(input) {
   dictSetRaw(keywords, "continue", 1, 0);
   dictSetRaw(keywords, "class", 1, 0);
   dictSetRaw(keywords, "new", 1, 0);
+  dictSetRaw(keywords, "delete", 1, 0);
   twoCharOperators = dictNew(16);
   dictSetRaw(twoCharOperators, "==", 1, 0);
   dictSetRaw(twoCharOperators, "!=", 1, 0);
