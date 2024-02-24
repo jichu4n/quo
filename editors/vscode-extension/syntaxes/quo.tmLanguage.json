@@ -24,6 +24,10 @@
       "match": "\\b(if|else|while|return|break|continue)\\b"
     },
     {
+      "name": "keyword.other",
+      "match": "\\b(delete)\\b"
+    },
+    {
       "match": "\\b(class)\\s+(\\w+)",
       "captures": {
         "1": {"name": "storage.type"},
