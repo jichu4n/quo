@@ -1,5 +1,5 @@
 // Symbol tables.
-let globalVars, localVars, fns, stringConstantOffsets, nextStringConstantOffset, loopId;
+let globalVars, localVars, fns, stringConstantOffsets, nextStringConstantOffset, loopId, classes;
 fn symbolsInit(stringConstantOffset) {
   globalVars = dictNew(0);
   localVars = dictNew(0);
@@ -7,6 +7,7 @@ fn symbolsInit(stringConstantOffset) {
   stringConstantOffsets = dictNew(0);
   nextStringConstantOffset = stringConstantOffset;
   loopId = 1;
+  classes = dictNew(0);
 }
 fn symbolsCleanUp() {
   dictDelete(globalVars);
@@ -15,6 +16,7 @@ fn symbolsCleanUp() {
   dictDelete(stringConstantOffsets);
   nextStringConstantOffset = 0;
   loopId = 0;
+  dictDelete(classes);
 }
 fn addGlobalVar(name) {
   dictSet(globalVars, name, 1, 0);
@@ -126,11 +128,11 @@ fn compileExpr0() {
   // new MyClass()
   if (token == 13) {
     expectToken(3, tokenValue);  // identifier
-    output = strFromRaw("(call $malloc (global.get $class_");
+    output = strFromRaw("(call $_class_");
     strPush(output, tokenValue);
+    strPushRaw(output, "_new)");
     expectToken(40, tokenValue);  // (
     expectToken(41, tokenValue);  // )
-    strPushRaw(output, "_size))");
     strDelete(tokenValue);
     return output;
   }
@@ -612,23 +614,26 @@ fn compileFn() {
 //   - The rest of the fields follow in declaration order, where each field is
 //     an i32
 // Each class declaration generates the following:
-//   - $class_MyClass_fields: A function that returns a dict mapping field names
+//   - $_class_MyClass_size: A global i32, the size of the object in bytes
+//   - $_class_MyClass_new: Instantiate a new object
+//   - $_class_MyClass_fields: A function that returns a dict mapping field names
 //     to their offsets in the object
-//   - $class_MyClass_size: A global i32, the size of the object in bytes
-//     At the end of the module, we generate a $classesInit function that
-//     creates a global array $classes, where the index is the class ID and each
-//     element is a pointer to the corresponding class's $class_MyClass_fields function.
+// At the end of the module, we generate a $_classesInit function that
+// creates a global array $_classes, where the index is the class ID and each
+// element is a pointer to the corresponding class's $class_MyClass_fields function.
 fn compileClass() {
-  let token, tokenValue, className, output, offset;
+  let token, tokenValue, className, output, offset, classId;
 
   tokenValue = strNew(0);
   expectToken(12, tokenValue);  // class
 
   expectToken(3, tokenValue);
   className = strClone(tokenValue);
+  classId = dictLen(classes) + 1;
+  dictSet(classes, className, classId, 1);
   expectToken(123, tokenValue); // {
 
-  output = strFromRaw("  (func $class_");
+  output = strFromRaw("  (func $_class_");
   strPush(output, className);
   strPushRaw(output, "_fields (result i32)\n");
   strPushRaw(output, "    (local $fields i32)\n");
@@ -662,11 +667,24 @@ fn compileClass() {
   strPushRaw(output, "    (local.get $fields)\n");
   strPushRaw(output, "  )\n");
 
-  strPushRaw(output, "  (global $class_");
+  strPushRaw(output, "  (global $_class_");
   strPush(output, className);
   strPushRaw(output, "_size i32 (i32.const ");
   strPushInt(output, offset);
   strPushRaw(output, "))\n");
+
+  strPushRaw(output, "  (func $_class_");
+  strPush(output, className);
+  strPushRaw(output, "_new (result i32)\n");
+  strPushRaw(output, "    (local $obj i32)\n");
+  strPushRaw(output, "    (local.set $obj (call $malloc (i32.const ");
+  strPushInt(output, offset);
+  strPushRaw(output, ")))\n");
+  strPushRaw(output, "    (i32.store (local.get $obj) (i32.const ");
+  strPushInt(output, classId);
+  strPushRaw(output, "))\n");
+  strPushRaw(output, "    (local.get $obj)\n");
+  strPushRaw(output, "  )\n");
 
   strDelete(tokenValue);
   strDelete(className);
@@ -674,7 +692,7 @@ fn compileClass() {
 }
 // Entry point.
 fn compileModule() {
-  let output, token, tokenValue, stringConstantsLen, i, rawOutput;
+  let output, token, tokenValue, stringConstantsLen, classesLen, i, rawOutput;
 
   output = strNew(0);
   tokenValue = strNew(0);
@@ -742,6 +760,25 @@ fn compileModule() {
     throw(strToRaw(output));
   }
 
+  // Classes
+  classesLen = dictLen(classes);
+  if (classesLen > 0) {
+    strPushRaw(output, "  (global $_classes (mut i32) (i32.const 0))\n");
+    strPushRaw(output, "  (func $_classesInit\n");
+    strPushRaw(output, "    (global.set $_classes (call $arrNew (i32.const ");
+    strPushInt(output, classesLen + 1);
+    strPushRaw(output, ")))\n");
+    strPushRaw(output, "    (call $arrPush (global.get $_classes) (i32.const 0))\n");
+    i = 0;
+    while (i < classesLen) {
+      strPushRaw(output, "    (call $arrPush (global.get $_classes) (call $_class_");
+      strPush(output, dictGetKeyAt(classes, i));
+      strPushRaw(output, "_fields))\n");
+      i = i + 1;
+    }
+    strPushRaw(output, "  )\n");
+  }
+
   // String constants
   stringConstantsLen = dictLen(stringConstantOffsets);
   i = 0;
@@ -758,6 +795,7 @@ fn compileModule() {
   }
 
   dictClear(globalVars);
+  dictClear(classes);
   strDelete(tokenValue);
   rawOutput = strToRaw(output);
   free(output);
