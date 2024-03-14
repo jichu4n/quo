@@ -1,0 +1,14 @@
+// Field accessor for objects.
+fn _objGet(obj, rawFieldName) {
+  let fields, fieldIdx, fieldName, message;
+  fields = _arrGet(_classes, _load(obj));
+  fieldName = _strFromRaw(rawFieldName);
+  fieldIdx = _dictFind(fields, fieldName);
+  if (fieldIdx < 0) {
+    message = _strFromRaw("Field not found: ");
+    _strMerge(message, fieldName);
+    _throw(_strToRaw(message));
+  }
+  _strDelete(fieldName);
+  return obj + (fieldIdx + 1) * 4;
+}

@@ -7,11 +7,14 @@ all: quo2
 quo2: quo2a
 
 .PHONY: quo2a
-quo2a: dist/quo2a.wasm
+quo2a: dist/quo2a.wasm dist/quo2-runtime.quo
 
 dist/quo2a.wasm: quo1 src/quo2/quo2.quo
 	@echo "> Building stage 2a compiler using stage 1c compiler"
 	node dist/quo-driver.js 1c dist/quo0-runtime.wat dist/quo1-runtime.quo src/quo2/quo2.quo -o $@
+
+dist/quo2-runtime.quo: src/quo2/quo2-runtime.quo
+	cp -a $< $@
 
 .PHONY: quo1
 quo1: quo1c

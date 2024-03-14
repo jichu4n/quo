@@ -46,13 +46,7 @@ function getTestInputFilePath(name: string) {
   );
 }
 function getRuntimeFilePath(name: string) {
-  return path.join(
-    __dirname,
-    '..',
-    '..',
-    'dist',
-    name,
-  );
+  return path.join(__dirname, '..', '..', 'dist', name);
 }
 
 for (const stage of stages) {
@@ -90,16 +84,23 @@ for (const stage of stages) {
       test(`compile ${inputFile}`, async () => {
         const inputFilePath = getTestInputFilePath(inputFile.name);
         const runtimeFilePaths = [];
-        if (stage !== '0') {
+        if (stage[0] !== '0') {
           runtimeFilePaths.push(getRuntimeFilePath('quo0-runtime.wat'));
           runtimeFilePaths.push(getRuntimeFilePath('quo1-runtime.quo'));
+        }
+        if (stage[0] !== '0' && stage[0] !== '1') {
+          runtimeFilePaths.push(getRuntimeFilePath('quo2-runtime.quo'));
         }
         const outputFile = path.format({
           ...path.parse(inputFilePath),
           base: '',
           ext: `.stage${stage}.wasm`,
         });
-        await compileFiles(stage, [...runtimeFilePaths, inputFilePath], outputFile);
+        await compileFiles(
+          stage,
+          [...runtimeFilePaths, inputFilePath],
+          outputFile
+        );
       });
     }
   });

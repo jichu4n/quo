@@ -22,6 +22,12 @@ fn addGlobalVar(name) {
   _dictSet(globalVars, name, 1, 0);
 }
 fn isGlobalVar(name) {
+  // Assume anything starting with underscore is a global variable.
+  // This is necessary to allow the quo2 runtime to access global state
+  // like $_classes.
+  if (_strGetChar(name, 0) == 95) {  // _
+    return 1;
+  }
   return _dictFind(globalVars, name) >= 0;
 }
 fn addLocalVar(name) {
@@ -144,7 +150,29 @@ fn compileExpr0() {
   _strPushRaw(output, "'");
   _throw(_strToRaw(output));
 }
-fn compileExpr1() {
+fn compileExpr1a() {
+  let token, tokenValue, leftOutput, origInputPtr, output;
+  leftOutput = compileExpr0();
+  tokenValue = _strNew(0);
+  while (1) {
+    origInputPtr = inputPtr;
+    token = nextToken(tokenValue);
+    if (token == 46) {  // .
+      expectToken(3, tokenValue);  // field name
+      output = _strFromRaw("(call $_objGet ");
+      _strMerge(output, leftOutput);
+      _strPushRaw(output, " (i32.const ");
+      _strPushInt(output, getOrAddStringConstantOffset(tokenValue));
+      _strPushRaw(output, "))");
+      leftOutput = output;
+    } else {
+      inputPtr = origInputPtr;
+      _strDelete(tokenValue);
+      return leftOutput;
+    }
+  }
+}
+fn compileExpr1b() {
   let token, tokenValue, output, rightOutput, origInputPtr, outputPrefix;
   origInputPtr = inputPtr;
   tokenValue = _strNew(0);
@@ -156,16 +184,16 @@ fn compileExpr1() {
     outputPrefix = "(i32.eqz ";
   } else {
     inputPtr = origInputPtr;
-    return compileExpr0();
+    return compileExpr1a();
   }
   output = _strFromRaw(outputPrefix);
-  _strMerge(output, compileExpr0());
+  _strMerge(output, compileExpr1a());
   _strPushRaw(output, ")");
   return output;
 }
 fn compileExpr2() {
   let token, tokenValue, output, leftOutput, rightOutput, origInputPtr, outputPrefix;
-  leftOutput = compileExpr1();
+  leftOutput = compileExpr1b();
   tokenValue = _strNew(0);
   while (1) {
     origInputPtr = inputPtr;
@@ -180,7 +208,7 @@ fn compileExpr2() {
       inputPtr = origInputPtr;
       break;
     }
-    rightOutput = compileExpr1();
+    rightOutput = compileExpr1b();
     output = _strFromRaw(outputPrefix);
     _strMerge(output, leftOutput);
     _strPushRaw(output, " ");

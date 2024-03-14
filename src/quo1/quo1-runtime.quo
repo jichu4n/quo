@@ -294,6 +294,13 @@ fn _strPop(str) {
 fn _strLen(str) {
   return _load(str + 0);
 }
+fn _strGetChar(str, i) {
+  if (i < 0 || i >= _strLen(str)) {
+    _throw("String index out of bounds");
+  }
+  _strFlatten(str);
+  return _load8_u(_load(str + 4) + 12 + i);
+}
 fn _strGetTailChunk(str) {
   let chunk, nextChunk, chunkCount;
   chunk = _load(str + 4);

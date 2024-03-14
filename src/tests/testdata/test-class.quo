@@ -13,4 +13,6 @@ fn f1(x: Point) {
   let p: Point, s: Segment;
   p = new Point();
   delete p;
+  s = new Segment();
+  s.p1.x;
 }
