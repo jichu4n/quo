@@ -1,5 +1,7 @@
 # Quo
 
+[![Build Status][build-status-image]][github-url]
+
 Quo is a toy language with C-style syntax that compiles to WebAssembly. It is bootstrapped with a minimal version of the compiler implemented in hand-written WebAssembly. Each subsequent iteration of the compiler is written in the subset of the language supported by the previous iteration, and provides additional language features for the next iteration.
 
 ## Why?
@@ -24,8 +26,11 @@ Because it's a fun challenge! I've always been interested in compilers and wante
     - `quo1a.wasm`: stage 1 compiler compiled by stage 0 compiler
     - `quo1b.wasm`: stage 1 compiler compiled by `quo1a.wasm`
     - `quo1c.wasm`: stage 1 compiler compiled by `quo1b.wasm`, i.e. a fully self-hosted compiler!
-- **(WIP) Stage 2 ([quo2.quo](./src/quo2/quo2.quo)):** Written in Quo0, compiles a more advanced version of Quo (Quo1).
+- **(WIP) Stage 2 ([quo2.quo](./src/quo2/quo2.quo)):** Written in Quo0, compiles a more advanced version of Quo - **Quo1**.
   - Fetaures:
     - Structs
   - Artifacts:
     - `quo2a.wasm`: stage 2 compiler compiled by stage 1 compiler `quo1c.wasm`
+
+[github-url]: https://github.com/jichu4n/quo
+[build-status-image]: https://github.com/jichu4n/quo/actions/workflows/build.yaml/badge.svg
