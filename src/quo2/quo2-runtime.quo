@@ -12,3 +12,9 @@ fn _objGet(obj, rawFieldName) {
   _strDelete(fieldName);
   return obj + (fieldIdx + 1) * 4;
 }
+
+fn _objSet(obj, rawFieldName, value) {
+  let fieldAddr;
+  fieldAddr = _objGet(obj, rawFieldName);
+  _store(fieldAddr, value);
+}

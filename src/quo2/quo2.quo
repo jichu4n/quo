@@ -352,7 +352,7 @@ fn expectToken(expectedToken, tokenValue) {
 
 // Compile statements, blocks and functions.
 fn compileStmt(indentLevel) {
-  let token, tokenValue, token2, tokenValue2, output, outputPrefix, origInputPtr;
+  let token, tokenValue, token2, tokenValue2, output, outputPrefix, origInputPtr, leftOutput;
   
   origInputPtr = inputPtr;
   tokenValue = _strNew(0);
@@ -516,6 +516,48 @@ fn compileStmt(indentLevel) {
       expectToken(59, tokenValue);  // ;
       _strDelete(tokenValue);
       return output;
+    } else if (token2 == 46) {  // .
+      if (isLocalVar(tokenValue)) {
+        outputPrefix = "(local.get $";
+      } else if (isGlobalVar(tokenValue)) {
+        outputPrefix = "(global.get $";
+      } else {
+        output = _strFromRaw("Undeclared variable '");
+        _strPush(output, tokenValue);
+        _strPushRaw(output, "' in assignment");
+        _throw(_strToRaw(output));
+      }
+      leftOutput = _strFromRaw(outputPrefix);
+      _strPush(leftOutput, tokenValue);
+      _strPushRaw(leftOutput, ")");
+
+      while (1) {
+        expectToken(3, tokenValue);  // field name
+        tokenValue2 = _strNew(0);
+        token2 = nextToken(tokenValue2);
+        _strDelete(tokenValue2);
+        if (token2 == 61) {  // =
+          output = _strFromRaw("(call $_objSet ");
+          _strMerge(output, leftOutput);
+          _strPushRaw(output, " (i32.const ");
+          _strPushInt(output, getOrAddStringConstantOffset(tokenValue));
+          _strPushRaw(output, ") ");
+          _strMerge(output, compileExpr());
+          _strPushRaw(output, ")");
+          expectToken(59, tokenValue);  // ;
+          _strDelete(tokenValue);
+          return output;
+        } else if (token2 == 46) {  // .
+          output = _strFromRaw("(call $_objGet ");
+          _strMerge(output, leftOutput);
+          _strPushRaw(output, " (i32.const ");
+          _strPushInt(output, getOrAddStringConstantOffset(tokenValue));
+          _strPushRaw(output, "))");
+          leftOutput = output;
+        } else {
+          break;
+        }
+      }
     }
   }
 

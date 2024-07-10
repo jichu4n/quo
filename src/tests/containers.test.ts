@@ -65,7 +65,7 @@ for (const stage of stages) {
     };
   };
 
-  describe(`stage ${stage} strings`, () => {
+  describe(`stage ${stage} containers`, () => {
     test('array push', async function () {
       const {_arrNew, _arrDelete, _arrPush, wasmMemory} = await setup();
       expectUsedMemChunks(wasmMemory, heapStart, 0);

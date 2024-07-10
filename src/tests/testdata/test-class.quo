@@ -10,9 +10,18 @@ class Segment {
 let gp: Point, gs: Segment;
 
 fn f1(x: Point) {
-  let p: Point, s: Segment;
+  let p: Point;
   p = new Point();
   delete p;
+}
+
+fn f2() {
+  let s: Segment;
   s = new Segment();
+  s.p1;
   s.p1.x;
+
+  s.p1 = new Point();
+  s.p1.x = 1;
+  s.p1.y = 2;
 }
