@@ -156,6 +156,36 @@ ${watOutputs.join('\n')}
   return {watOutputFile, wasmOutputFile};
 }
 
+function getRuntimeFilePath(name: string) {
+  return path.join(__dirname, '..', 'dist', name);
+}
+
+function getRuntimeFilesForStage(stage: string) {
+  const runtimeFiles = ['quo0-runtime.wat'];
+  if (stage[0] > '0') {
+    runtimeFiles.push('quo1-runtime.quo');
+  }
+  if (stage[0] > '1') {
+    runtimeFiles.push('quo2-runtime.quo');
+  }
+  return runtimeFiles;
+}
+
+function getRuntimeFilePathsForStage(stage: string) {
+  return getRuntimeFilesForStage(stage).map(getRuntimeFilePath);
+}
+
+export async function compileFilesWithRuntime(
+  ...args: Parameters<typeof compileFiles>
+) {
+  const [stage, inputFiles, ...rest] = args;
+  return await compileFiles(
+    stage,
+    [...getRuntimeFilePathsForStage(stage), ...inputFiles],
+    ...rest
+  );
+}
+
 if (require.main === module) {
   program
     .name('quo')
@@ -163,9 +193,11 @@ if (require.main === module) {
     .argument('<stage>', 'compiler stage, e.g. 0, 1a, 1b')
     .argument('<input-files...>', 'Quo and WAT source files')
     .option('-o, --output <output>', 'output WebAssembly (.wasm) file')
+    .option('--no-rt', 'do not include runtime files')
     .action(async (stage, inputFiles) => {
-      const {output: outputFile} = program.opts();
-      const {watOutputFile, wasmOutputFile} = await compileFiles(
+      const {output: outputFile, noRt} = program.opts();
+      const compileFn = noRt ? compileFiles : compileFilesWithRuntime;
+      const {watOutputFile, wasmOutputFile} = await compileFn(
         stage,
         inputFiles,
         outputFile

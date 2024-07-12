@@ -1,6 +1,6 @@
 import path from 'path';
 import {
-  compileFiles,
+  compileFilesWithRuntime,
   getRawStr,
   loadQuoWasmModule,
   setRawStr,
@@ -45,9 +45,6 @@ function getTestInputFilePath(name: string) {
     `${name}.quo`
   );
 }
-function getRuntimeFilePath(name: string) {
-  return path.join(__dirname, '..', '..', 'dist', name);
-}
 
 for (const stage of stages) {
   describe(`stage ${stage} compile module`, () => {
@@ -83,24 +80,12 @@ for (const stage of stages) {
       }
       test(`compile ${inputFile}`, async () => {
         const inputFilePath = getTestInputFilePath(inputFile.name);
-        const runtimeFilePaths = [];
-        if (stage[0] !== '0') {
-          runtimeFilePaths.push(getRuntimeFilePath('quo0-runtime.wat'));
-          runtimeFilePaths.push(getRuntimeFilePath('quo1-runtime.quo'));
-        }
-        if (stage[0] !== '0' && stage[0] !== '1') {
-          runtimeFilePaths.push(getRuntimeFilePath('quo2-runtime.quo'));
-        }
         const outputFile = path.format({
           ...path.parse(inputFilePath),
           base: '',
           ext: `.stage${stage}.wasm`,
         });
-        await compileFiles(
-          stage,
-          [...runtimeFilePaths, inputFilePath],
-          outputFile
-        );
+        await compileFilesWithRuntime(stage, [inputFilePath], outputFile);
       });
     }
   });
