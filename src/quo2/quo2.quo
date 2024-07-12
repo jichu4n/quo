@@ -838,12 +838,12 @@ fn compileModule() {
     _strPushRaw(output, "    (global.set $_classes (call $_arrNew (i32.const ");
     _strPushInt(output, classesLen + 1);
     _strPushRaw(output, ")))\n");
-    _strPushRaw(output, "    (call $_arrPush (global.get $_classes) (i32.const 0))\n");
+    _strPushRaw(output, "    (drop (call $_arrPush (global.get $_classes) (i32.const 0)))\n");
     i = 0;
     while (i < classesLen) {
-      _strPushRaw(output, "    (call $_arrPush (global.get $_classes) (call $_class_");
+      _strPushRaw(output, "    (drop (call $_arrPush (global.get $_classes) (call $_class_");
       _strPush(output, _dictGetKeyAt(classes, i));
-      _strPushRaw(output, "_fields))\n");
+      _strPushRaw(output, "_fields)))\n");
       i = i + 1;
     }
     _strPushRaw(output, "  )\n");

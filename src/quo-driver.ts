@@ -28,9 +28,13 @@ export function setRawStr(
 const wasmExceptionTag = new WebAssembly.Tag({parameters: ['i32']});
 
 export async function loadQuoWasmModule(stage: string) {
-  const wasmFile = await fs.readFile(
+  return await loadWasmModule(
     path.join(__dirname, '..', 'dist', `quo${stage}.wasm`)
   );
+}
+
+export async function loadWasmModule(wasmFilePath: string) {
+  const wasmFile = await fs.readFile(wasmFilePath);
   const wasmMemory = new WebAssembly.Memory({initial: defaultMemoryPages});
   const wasmModule = await WebAssembly.instantiate(wasmFile, {
     env: {memory: wasmMemory, tag: wasmExceptionTag},
@@ -129,31 +133,33 @@ ${watOutput}
   }
   const watModule = `
 ;; Compiled by quo stage ${stage}
+${inputFiles.map((inputFile) => `;;   - ${inputFile}`).join('\n')}
+
 (module
 ${watOutputs.join('\n')}
 )
 `.trimStart();
-  const watOutputFile = path.format({
-    ...path.parse(outputFile || inputFiles[0]),
+  const watOutputFilePath = path.format({
+    ...path.parse(outputFile || inputFiles[inputFiles.length - 1]),
     base: '',
     ext: '.wat',
   });
-  await fs.writeFile(watOutputFile, watModule);
-  const wasmModule = (await wabt()).parseWat(watOutputFile, watModule, {
+  await fs.writeFile(watOutputFilePath, watModule);
+  const wasmModule = (await wabt()).parseWat(watOutputFilePath, watModule, {
     exceptions: true,
     gc: true,
     reference_types: true,
     function_references: true,
   });
-  const wasmOutputFile =
+  const wasmOutputFilePath =
     outputFile ||
     path.format({
-      ...path.parse(inputFiles[0]),
+      ...path.parse(inputFiles[inputFiles.length - 1]),
       base: '',
       ext: '.wasm',
     });
-  await fs.writeFile(wasmOutputFile, wasmModule.toBinary({}).buffer);
-  return {watOutputFile, wasmOutputFile};
+  await fs.writeFile(wasmOutputFilePath, wasmModule.toBinary({}).buffer);
+  return {watOutputFilePath, wasmOutputFilePath};
 }
 
 function getRuntimeFilePath(name: string) {
@@ -197,13 +203,13 @@ if (require.main === module) {
     .action(async (stage, inputFiles) => {
       const {output: outputFile, noRt} = program.opts();
       const compileFn = noRt ? compileFiles : compileFilesWithRuntime;
-      const {watOutputFile, wasmOutputFile} = await compileFn(
+      const {watOutputFilePath, wasmOutputFilePath} = await compileFn(
         stage,
         inputFiles,
         outputFile
       );
-      console.log(`-> ${watOutputFile}`);
-      console.log(`-> ${wasmOutputFile}`);
+      console.log(`-> ${watOutputFilePath}`);
+      console.log(`-> ${wasmOutputFilePath}`);
     });
   program.parse(process.argv);
 }

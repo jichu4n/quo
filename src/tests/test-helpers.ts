@@ -1,3 +1,7 @@
+import fs from 'fs-extra';
+import path from 'path';
+import {compileFilesWithRuntime, loadWasmModule} from '../quo-driver';
+
 export interface MemChunk {
   address: number;
   size: number;
@@ -122,4 +126,35 @@ export function getStr(memory: WebAssembly.Memory, address: number) {
     );
   }
   return result;
+}
+
+export async function compileAndLoadAsModule(
+  stage: string,
+  input: string,
+  name: string
+) {
+  const [inputFilePath, outputFilePath] = ['quo', 'wasm'].map((ext) =>
+    path.join(__dirname, 'testdata', `tmp-${name}.stage${stage}.${ext}`)
+  );
+  await fs.writeFile(inputFilePath, input);
+  const {watOutputFilePath, wasmOutputFilePath} = await compileFilesWithRuntime(
+    stage,
+    [inputFilePath],
+    outputFilePath
+  );
+  const {wasmModule, wasmMemory, fns} =
+    await loadWasmModule(wasmOutputFilePath);
+  const deleteTempFiles = async () => {
+    await Promise.all([
+      fs.rm(inputFilePath),
+      fs.rm(watOutputFilePath),
+      fs.rm(wasmOutputFilePath),
+    ]);
+  };
+  return {
+    wasmModule,
+    wasmMemory,
+    fns,
+    deleteTempFiles,
+  };
 }

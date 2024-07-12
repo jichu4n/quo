@@ -12,8 +12,8 @@ interface TestInputFile {
   stages: Array<string>;
 }
 const testInputFiles: Array<TestInputFile> = [
-  {name: 'test1', stages: ['0', '1a', '1b', '1c']},
-  {name: 'test-class', stages: ['2a']},
+  {name: 'test1.quo', stages: ['0', '1a', '1b', '1c']},
+  {name: 'test-class.quo', stages: ['2a']},
 ];
 
 const stages = ['0', '1a', '1b', '1c', '2a'];
@@ -42,51 +42,45 @@ function getTestInputFilePath(name: string) {
     'src',
     'tests',
     'testdata',
-    `${name}.quo`
+    `${name}`
   );
 }
 
-for (const stage of stages) {
-  describe(`stage ${stage} compile module`, () => {
-    const testCompileModule = (testCases: Array<readonly [string, string]>) => {
-      for (const [input, expectedOutput] of testCases) {
-        test(`compile '${input}'`, async () => {
-          expect(await compileModule(stage, input)).toStrictEqual(
-            expectedOutput
-          );
-        });
-      }
-    };
-
-    describe('compileModule', () => {
-      testCompileModule([
-        ['// empty module', ''],
-        ['let x;', '  (global $x (mut i32) (i32.const 0))\n'],
-        [
-          'let x, y;',
-          '  (global $x (mut i32) (i32.const 0)) (global $y (mut i32) (i32.const 0))\n',
-        ],
-        [
-          'fn f1() {} fn f2() {}',
-          '  (func $f1 (result i32)\n    (i32.const 0)\n  )\n  (export "f1" (func $f1))\n' +
-            '  (func $f2 (result i32)\n    (i32.const 0)\n  )\n  (export "f2" (func $f2))\n',
-        ],
-      ]);
-    });
-
-    for (const inputFile of testInputFiles) {
-      if (!inputFile.stages.includes(stage)) {
-        continue;
-      }
-      test(`compile ${inputFile}`, async () => {
-        const inputFilePath = getTestInputFilePath(inputFile.name);
-        const outputFile = path.format({
-          ...path.parse(inputFilePath),
-          base: '',
-          ext: `.stage${stage}.wasm`,
-        });
-        await compileFilesWithRuntime(stage, [inputFilePath], outputFile);
+describe.each(stages)(`stage %s compile module`, (stage) => {
+  const testCompileModule = (testCases: Array<readonly [string, string]>) => {
+    for (const [input, expectedOutput] of testCases) {
+      test(`compile '${input}'`, async () => {
+        expect(await compileModule(stage, input)).toStrictEqual(expectedOutput);
       });
     }
+  };
+
+  describe('compileModule', () => {
+    testCompileModule([
+      ['// empty module', ''],
+      ['let x;', '  (global $x (mut i32) (i32.const 0))\n'],
+      [
+        'let x, y;',
+        '  (global $x (mut i32) (i32.const 0)) (global $y (mut i32) (i32.const 0))\n',
+      ],
+      [
+        'fn f1() {} fn f2() {}',
+        '  (func $f1 (result i32)\n    (i32.const 0)\n  )\n  (export "f1" (func $f1))\n' +
+          '  (func $f2 (result i32)\n    (i32.const 0)\n  )\n  (export "f2" (func $f2))\n',
+      ],
+    ]);
   });
-}
+
+  test.each(testInputFiles.filter(({stages}) => stages.includes(stage)))(
+    'compile test file $name',
+    async ({name}) => {
+      const inputFilePath = getTestInputFilePath(name);
+      const outputFile = path.format({
+        ...path.parse(inputFilePath),
+        base: '',
+        ext: `.stage${stage}.wasm`,
+      });
+      await compileFilesWithRuntime(stage, [inputFilePath], outputFile);
+    }
+  );
+});
