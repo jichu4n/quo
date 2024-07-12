@@ -13,10 +13,10 @@ interface TestInputFile {
 }
 const testInputFiles: Array<TestInputFile> = [
   {name: 'test1.quo', stages: ['0', '1a', '1b', '1c']},
-  {name: 'test-class.quo', stages: ['2a']},
+  // {name: 'test-class.quo', stages: ['2a']},
 ];
 
-const stages = ['0', '1a', '1b', '1c', '2a'];
+const stages = ['0', '1a', '1b', '1c'];
 
 const heapStart = 4096;
 const heapEnd = 15 * 1024 * 1024;

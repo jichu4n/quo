@@ -23,6 +23,9 @@
     (local.get $ptr)
   )
 
+  (global $input (mut i32) (i32.const 0))
+  (global $inputPtr (mut i32) (i32.const 0))
+
   ;; Symbol tables used by parser / code generator.
   (global $globalVars (mut i32) (i32.const 0))
   (global $localVars (mut i32) (i32.const 0))
@@ -802,8 +805,6 @@
   ;;   11 - continue
   ;; Single letter operators and symbol are their ASCII value. Double letter
   ;; operators are 128 + the ASCII value of the first letter.
-  (global $input (mut i32) (i32.const 0))
-  (global $inputPtr (mut i32) (i32.const 0))
   (func $nextToken (param $tokenValuePtr i32) (result i32)
     (local $c i32)
     (local $p i32)
@@ -1131,7 +1132,7 @@
       (local.set $str (i32.add (local.get $str) (i32.const 1)))
       (br $loop)
     )
-    unreachable
+    (unreachable)
   )
   (func $strcat (param $str1 i32) (param $str1Size i32) (param $str2 i32)
     (local $len1 i32)

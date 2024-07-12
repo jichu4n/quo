@@ -11,6 +11,7 @@
   "author": "Chuan Ji <chuan@jichu4n.com>",
   "license": "ISC",
   "dependencies": {
+    "binaryen": "^118.0.0",
     "commander": "^12.1.0",
     "fs-extra": "^11.2.0",
     "wabt": "^1.0.32"

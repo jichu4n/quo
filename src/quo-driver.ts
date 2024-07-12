@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import wabt from 'wabt';
 import {program} from 'commander';
+import {execFile} from 'child_process';
 
 const defaultMemoryPages = 256; // 256 * 64KB = 16MB
 export const defaultHeapEnd = 15 * 1024 * 1024;
@@ -100,6 +101,66 @@ export async function compileModule(
   return getRawStr(wasmMemory, compileModule());
 }
 
+export enum Assembler {
+  WABT = 'wabt',
+  BINARYEN = 'binaryen',
+}
+
+type AssemblerFn = (args: {
+  watFilePath: string;
+  watModule: string;
+  wasmOutputFilePath: string;
+}) => Promise<void>;
+
+export const AssemberMap: {[key in Assembler]: AssemblerFn} = {
+  [Assembler.WABT]: assembleWatModuleWithWabt,
+  [Assembler.BINARYEN]: assembleWatModuleWithBinaryen,
+};
+
+async function assembleWatModuleWithWabt({
+  watFilePath,
+  watModule,
+  wasmOutputFilePath,
+}: {
+  watFilePath: string;
+  watModule: string;
+  wasmOutputFilePath: string;
+}) {
+  const wasmModule = (await wabt()).parseWat(watFilePath, watModule, {
+    exceptions: true,
+    gc: true,
+    reference_types: true,
+    function_references: true,
+  });
+  const {buffer} = wasmModule.toBinary({});
+  await fs.writeFile(wasmOutputFilePath, buffer);
+}
+
+async function assembleWatModuleWithBinaryen({
+  watFilePath,
+  wasmOutputFilePath,
+}: {
+  watFilePath: string;
+  watModule: string;
+  wasmOutputFilePath: string;
+}) {
+  const wasmAsPath = path.join(
+    __dirname,
+    '..',
+    'node_modules',
+    '.bin',
+    'wasm-as'
+  );
+  const args = ['--all-features', '-o', wasmOutputFilePath, watFilePath];
+  await new Promise<void>((resolve, reject) => {
+    const child = execFile(wasmAsPath, args, (err) =>
+      err ? reject(err) : resolve()
+    );
+    child.stderr?.pipe(process.stderr);
+    child.stdout?.pipe(process.stdout);
+  });
+}
+
 export async function compileFiles(
   stage: string,
   inputFiles: Array<string>,
@@ -107,7 +168,12 @@ export async function compileFiles(
   {
     stringConstantsSize = defaultStringConstantsSize,
     heapEnd = defaultHeapEnd,
-  }: {stringConstantsSize?: number; heapEnd?: number} = {}
+    assembler = Assembler.BINARYEN,
+  }: {
+    stringConstantsSize?: number;
+    heapEnd?: number;
+    assembler?: Assembler;
+  } = {}
 ) {
   // Compile input files to WAT.
   const watOutputs: Array<string> = [];
@@ -145,12 +211,6 @@ ${watOutputs.join('\n')}
     ext: '.wat',
   });
   await fs.writeFile(watOutputFilePath, watModule);
-  const wasmModule = (await wabt()).parseWat(watOutputFilePath, watModule, {
-    exceptions: true,
-    gc: true,
-    reference_types: true,
-    function_references: true,
-  });
   const wasmOutputFilePath =
     outputFile ||
     path.format({
@@ -158,7 +218,12 @@ ${watOutputs.join('\n')}
       base: '',
       ext: '.wasm',
     });
-  await fs.writeFile(wasmOutputFilePath, wasmModule.toBinary({}).buffer);
+  const assemblerFn = AssemberMap[assembler];
+  await assemblerFn({
+    watFilePath: watOutputFilePath,
+    watModule,
+    wasmOutputFilePath,
+  });
   return {watOutputFilePath, wasmOutputFilePath};
 }
 
@@ -200,13 +265,22 @@ if (require.main === module) {
     .argument('<input-files...>', 'Quo and WAT source files')
     .option('-o, --output <output>', 'output WebAssembly (.wasm) file')
     .option('--no-rt', 'do not include runtime files')
+    .option(
+      '--assembler <as>',
+      'assembler to use ("wabt" or "binaryen")',
+      'binaryen'
+    )
     .action(async (stage, inputFiles) => {
-      const {output: outputFile, noRt} = program.opts();
+      const {output: outputFile, noRt, assembler} = program.opts();
       const compileFn = noRt ? compileFiles : compileFilesWithRuntime;
+      if (!Object.values(Assembler).includes(assembler)) {
+        throw new Error(`Unknown assembler "${assembler}"`);
+      }
       const {watOutputFilePath, wasmOutputFilePath} = await compileFn(
         stage,
         inputFiles,
-        outputFile
+        outputFile,
+        {assembler}
       );
       console.log(`-> ${watOutputFilePath}`);
       console.log(`-> ${wasmOutputFilePath}`);
